@@ -1,0 +1,11 @@
+# Ignore generated sources from ANTLR
+src/main/java/xyz/jadonfowler/compiler/parser/
+
+# IntelliJ
+*.ipr
+*.iws
+.idea/
+
+# Gradle
+.gradle/
+build/
