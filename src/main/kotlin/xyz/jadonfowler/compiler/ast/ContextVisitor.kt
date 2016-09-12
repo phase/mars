@@ -13,13 +13,13 @@ class ContextVisitor : LangBaseVisitor<Node>() {
 
         val variables = externalDeclarations?.filter { it.variableDeclaration() != null }?.map {
             visitVariableDeclaration(it.variableDeclaration())
-        }?.filterIsInstance<Variable>()
+        }?.filterIsInstance<Variable>().orEmpty()
 
         val functions = externalDeclarations?.filter { it.functionDeclaration() != null }?.map {
             visitFunctionDeclaration(it.functionDeclaration())
-        }?.filterIsInstance<Function>()
+        }?.filterIsInstance<Function>().orEmpty()
 
-        return Program(variables.orEmpty(), functions.orEmpty())
+        return Program(variables, functions)
     }
 
     override fun visitExternalDeclaration(ctx: LangParser.ExternalDeclarationContext?): Node {
@@ -35,10 +35,14 @@ class ContextVisitor : LangBaseVisitor<Node>() {
         val formals = ctx?.argumentList()?.argument()?.map {
             Formal(getType(it.variableSignature().typeAnnotation().ID().symbol.text),
                     it.variableSignature().ID().symbol.text)
-        }
+        }.orEmpty()
+        val statements = statementListFromContext(ctx?.statementList())
 
+        return Function(returnType, identifier, formals, statements)
+    }
+
+    fun statementListFromContext(statementListContext: LangParser.StatementListContext?) : List<Statement> {
         // Create list
-        val statementListContext: LangParser.StatementListContext? = ctx?.statementList()
         val statements: MutableList<Statement> = mutableListOf(visit(statementListContext?.statement()))
                 .filterIsInstance<Statement>().toMutableList()
 
@@ -46,13 +50,13 @@ class ContextVisitor : LangBaseVisitor<Node>() {
         var statementListContextChild: LangParser.StatementListContext? = statementListContext?.statementList()
         while (statementListContextChild != null) {
             // Check if Node returned from visit is really a Statement
-            val statementListContextChildStatement: Node = visit(statementListContextChild.statement())
+            val statementListContextChildStatement: Node = visitStatement(statementListContextChild.statement())
             if (statementListContextChildStatement is Statement)
                 statements.add(statementListContextChildStatement)
             statementListContextChild = statementListContextChild.statementList()
         }
 
-        return Function(returnType, identifier, formals.orEmpty(), statements)
+        return statements
     }
 
     override fun visitVariableDeclaration(ctx: LangParser.VariableDeclarationContext?): Node {
@@ -63,23 +67,25 @@ class ContextVisitor : LangBaseVisitor<Node>() {
     }
 
     override fun visitFunctionCall(ctx: LangParser.FunctionCallContext?): Node {
-        return EmptyNode()
-    }
-
-    override fun visitVariableModifier(ctx: LangParser.VariableModifierContext?): Node {
+        // TODO: Return FunctionCallStatement
         return EmptyNode()
     }
 
     override fun visitVariableReassignment(ctx: LangParser.VariableReassignmentContext?): Node {
+        // TODO: Return VariableReassignmentStatement
         return EmptyNode()
     }
 
     override fun visitStatement(ctx: LangParser.StatementContext?): Node {
-        return EmptyNode()
-    }
-
-    override fun visitStatementList(ctx: LangParser.StatementListContext?): Node {
-        return EmptyNode()
+        val id: String = ctx?.getChild(0)?.text.orEmpty()
+        when(id) {
+            "if" -> {
+                val expression = visitExpression(ctx?.expression()) as Expression
+                val statements = statementListFromContext(ctx?.statementList(0))
+                return IfStatement(expression, statements, null)
+            }
+            else -> return EmptyNode()
+        }
     }
 
     override fun visitExpressionList(ctx: LangParser.ExpressionListContext?): Node {
@@ -87,7 +93,10 @@ class ContextVisitor : LangBaseVisitor<Node>() {
     }
 
     override fun visitExpression(ctx: LangParser.ExpressionContext?): Node {
-        return EmptyNode()
+        if(ctx?.INT() != null) {
+            return IntegerLiteral(ctx?.INT()?.text?.toInt()!!)
+        }
+        return TrueExpression()
     }
 
     override fun visitArgumentList(ctx: LangParser.ArgumentListContext?): Node {

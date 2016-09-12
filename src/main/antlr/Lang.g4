@@ -25,7 +25,7 @@ statement
     | functionCall
     | 'if' '(' expression ')' '{' statementList '}'
     | 'if' '(' expression ')' '{' statementList '}' 'else' '{' statementList '}'
-    | 'for' '(' ID 'in' expression ')' expression
+    | 'for' '(' ID 'in' expression ')' '{' statementList '}'
     | 'while' '(' expression ')' '{' statementList '}'
     | 'continue'
     | 'break'

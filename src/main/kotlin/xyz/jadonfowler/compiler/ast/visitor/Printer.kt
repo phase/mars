@@ -8,6 +8,7 @@ class Printer : Visitor() {
     val tab = "    "
     var tabIndent = 0
 
+    fun printI(any: Any) = System.out.print(any)
     fun print(any: Any) = System.out.print(tab.repeat(tabIndent) + any)
     fun println(any: Any) = System.out.println(tab.repeat(tabIndent) + any)
 
@@ -21,6 +22,7 @@ class Printer : Visitor() {
         function.formals.map { it.accept(this); print(" -> ") }
         println("(${function.returnType}) {")
         tabIndent++
+        println("${function.statements.size} statements:")
         function.statements.map { it.accept(this) }
         tabIndent--
         println("}\n")
@@ -43,7 +45,9 @@ class Printer : Visitor() {
     }
 
     override fun visit(ifStatement: IfStatement) {
-        println("if ${ifStatement.exp.accept(this)} {")
+        print("if ")
+        ifStatement.exp.accept(this)
+        printI(" {\n")
         tabIndent++
         ifStatement.statements.map { it.accept(this) }
         tabIndent--
@@ -69,22 +73,22 @@ class Printer : Visitor() {
     }
 
     override fun visit(trueExpression: TrueExpression) {
-        print("true")
+        printI("true")
     }
 
     override fun visit(falseExpression: FalseExpression) {
-        print("false")
+        printI("false")
     }
 
     override fun visit(integerLiteral: IntegerLiteral) {
-        print(integerLiteral.value)
+        printI(integerLiteral.value)
     }
 
     override fun visit(identifierExpression: IdentifierExpression) {
-        print(identifierExpression.identifier)
+        printI(identifierExpression.identifier)
     }
 
     override fun visit(binaryOperator: BinaryOperator) {
-        print("(${binaryOperator.expA.accept(this)} ${binaryOperator.operator.string} ${binaryOperator.expB.accept(this)})")
+        printI("(${binaryOperator.expA.accept(this)} ${binaryOperator.operator.string} ${binaryOperator.expB.accept(this)})")
     }
 }
