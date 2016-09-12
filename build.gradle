@@ -31,7 +31,7 @@ dependencies {
 
 generateGrammarSource {
     maxHeapSize = "64m"
-    arguments += ['-package', 'xyz.jadonfowler.compiler.parser']
+    arguments += ['-visitor', '-package', 'xyz.jadonfowler.compiler.parser']
     outputDirectory = new File("src//main/java/xyz/jadonfowler/compiler/parser/".toString())
 }
 

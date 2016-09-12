@@ -4,6 +4,10 @@ import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.RuleContext
+import org.antlr.v4.runtime.tree.ParseTreeWalker
+import xyz.jadonfowler.compiler.ast.ContextVisitor
+import xyz.jadonfowler.compiler.ast.Program
+import xyz.jadonfowler.compiler.ast.visitor.Printer
 import xyz.jadonfowler.compiler.parser.LangLexer
 import xyz.jadonfowler.compiler.parser.LangParser
 
@@ -24,7 +28,11 @@ fun main(args: Array<String>) {
     val tokens = CommonTokenStream(lexer)
     val parser = LangParser(tokens)
     val result = parser.program()
+    val contextVisitor = ContextVisitor()
     explore(result, 0)
+    val program = contextVisitor.visitProgram(result) as Program
+    val printer = Printer()
+    printer.visit(program)
 }
 
 fun explore(ctx: RuleContext, indentation: Int) {

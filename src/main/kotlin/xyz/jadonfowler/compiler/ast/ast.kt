@@ -2,19 +2,21 @@ package xyz.jadonfowler.compiler.ast
 
 import xyz.jadonfowler.compiler.ast.visitor.Visitor
 
-class Program(val globalVariables: List<Variable>, val globalFunctions: List<Function>) {
+interface Node
+
+class Program(val globalVariables: List<Variable>, val globalFunctions: List<Function>) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-class Function(val returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>) {
+class Function(val returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>): Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-class Formal(val type: Type, val name: String) {
+class Formal(val type: Type, val name: String): Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-class Variable(val type: Type, val name: String) {
+class Variable(val type: Type, val name: String): Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
@@ -22,7 +24,7 @@ class Variable(val type: Type, val name: String) {
 abstract class Type
 
 
-abstract class Statement {
+abstract class Statement: Node {
     open fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
@@ -99,7 +101,7 @@ class WhileStatement(exp: Expression, statements: List<Statement>) : CheckedBloc
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-abstract class Expression {
+abstract class Expression: Node {
     open fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
