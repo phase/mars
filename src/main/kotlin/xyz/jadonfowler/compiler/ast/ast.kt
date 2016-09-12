@@ -4,6 +4,11 @@ import xyz.jadonfowler.compiler.ast.visitor.Visitor
 
 interface Node
 
+/**
+ * Used in ContextVisitor for areas where we need to return something.
+ */
+class EmptyNode : Node
+
 class Program(val globalVariables: List<Variable>, val globalFunctions: List<Function>) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
@@ -21,8 +26,21 @@ class Variable(val type: Type, val name: String): Node {
 }
 
 
-abstract class Type
+open class Type(val name: String) {
+    override fun toString(): String {
+        return name
+    }
+}
 
+class Void : Type("void")
+
+fun getType(name: String) : Type {
+    // TODO: Real name lookup
+    when(name) {
+        "void" -> Void()
+    }
+    return Type(name)
+}
 
 abstract class Statement: Node {
     open fun accept(visitor: Visitor) = visitor.visit(this)

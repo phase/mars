@@ -8,7 +8,7 @@ class Printer : Visitor() {
     val tab = "    "
     var tabIndent = 0
 
-    fun print(any: Any) = System.out.println(tab.repeat(tabIndent) + any)
+    fun print(any: Any) = System.out.print(tab.repeat(tabIndent) + any)
     fun println(any: Any) = System.out.println(tab.repeat(tabIndent) + any)
 
     override fun visit(program: Program) {
@@ -17,7 +17,9 @@ class Printer : Visitor() {
     }
 
     override fun visit(function: Function) {
-        println("${function.name} (${function.formals.map { it.accept(this); print(" -> ") }}${function.returnType}) {")
+        print(function.name + " ")
+        function.formals.map { it.accept(this); print(" -> ") }
+        println("(${function.returnType}) {")
         tabIndent++
         function.statements.map { it.accept(this) }
         tabIndent--

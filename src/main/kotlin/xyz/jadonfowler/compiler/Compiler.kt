@@ -4,7 +4,6 @@ import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.RuleContext
-import org.antlr.v4.runtime.tree.ParseTreeWalker
 import xyz.jadonfowler.compiler.ast.ContextVisitor
 import xyz.jadonfowler.compiler.ast.Program
 import xyz.jadonfowler.compiler.ast.visitor.Printer
@@ -13,10 +12,10 @@ import xyz.jadonfowler.compiler.parser.LangParser
 
 fun main(args: Array<String>) {
     val stream = ANTLRInputStream("""
-    let c : int = fun(5, 6)
+    let c : int = foo(5, 6)
     var d : int = 0
 
-    fun (a : int, b : int) : int {
+    foo (a : int, b : int) : int {
         if (true) {
             d = b
         }
