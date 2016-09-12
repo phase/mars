@@ -1,26 +1,41 @@
 grammar Lang;
 
-program: (externalDeclaration | NL)* EOF;
+program: externalDeclaration* EOF;
 
 externalDeclaration
     : functionDeclaration
     | variableDeclaration
     ;
 
-functionDeclaration: ID '(' argumentList ')' typeAnnotation? '{' (statement | NL)* '}';
-variableDeclaration: variableSignature '=' expression;
+functionDeclaration: ID '(' argumentList ')' typeAnnotation? '{' statementList '}';
+variableDeclaration: variableModifier variableSignature '=' expression;
 
 functionCall: ID '(' expressionList? ')';
 
+variableModifier
+    : 'let'
+    | 'var'
+    ;
+
+variableReassignment: ID '=' expression;
+
 statement
     : variableDeclaration
-    | 'if' '(' expression ')' expression
-    | 'if' '(' expression ')' expression 'else' expression
+    | variableReassignment
+    | functionCall
+    | 'if' '(' expression ')' '{' statementList '}'
+    | 'if' '(' expression ')' '{' statementList '}' 'else' '{' statementList '}'
     | 'for' '(' ID 'in' expression ')' expression
-    | 'while' '(' expression ')' expression
+    | 'while' '(' expression ')' '{' statementList '}'
     | 'continue'
     | 'break'
     | 'return' expression
+    ;
+
+statementList
+    :
+    | statement
+    | statement statementList
     ;
 
 expressionList
@@ -29,8 +44,7 @@ expressionList
     ;
 
 expression
-    : expression '^'<assoc=right> expression
-    | ('-'|'+') expression
+    : ('-'|'+') expression
     | expression ':' expression
     | expression ('*'|'/') expression
     | expression ('+'|'-') expression
@@ -110,11 +124,6 @@ ID: LETTER (LETTER|DIGIT|'_')*;
 
 fragment LETTER: [a-zA-Z];
 
-COMMENT: '#' .*? '\r'? '\n' -> type(NL);
+COMMENT: '#' .*? '\r'? '\n' -> type(WS);
 
-NL
-    : '\r'? '\n'
-    | ';'
-    ;
-
-WS: [ \t\u000C]+ -> skip;
+WS: [ \r\n\t\u000C]+ -> skip;

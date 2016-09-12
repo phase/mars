@@ -2,17 +2,23 @@ package xyz.jadonfowler.compiler
 
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.RuleContext
 import xyz.jadonfowler.compiler.parser.LangLexer
 import xyz.jadonfowler.compiler.parser.LangParser
 
 fun main(args: Array<String>) {
     val stream = ANTLRInputStream("""
-    add(a : int, b : int) : int {
-        return a + b
-    }
+    let c : int = fun(5, 6)
+    var d : int = 0
 
-    c : int = add(5, 6)
+    fun (a : int, b : int) : int {
+        if (true) {
+            d = b
+        }
+        printf("%d", a + b)
+        return a + b + 1
+    }
     """)
     val lexer = LangLexer(stream)
     val tokens = CommonTokenStream(lexer)
@@ -22,15 +28,21 @@ fun main(args: Array<String>) {
 }
 
 fun explore(ctx: RuleContext, indentation: Int) {
-    val ruleName = LangParser.ruleNames[ctx.ruleIndex]
-    for (i in 0..indentation - 1) {
-        print("  ")
+    val ignore = ctx.childCount === 1 && ctx.getChild(0) is ParserRuleContext
+    if (!ignore) {
+        val ruleName = LangParser.ruleNames[ctx.ruleIndex]
+        println("    ".repeat(indentation)
+                + ctx.javaClass.name.split(".").last()
+                + " " + ruleName + ":\n"
+                + "    ".repeat(indentation)
+                + ctx.text
+                + "\n")
     }
-    println(ruleName + " " + ctx.text.replace('\n', ' '))
+
     for (i in 0..ctx.childCount - 1) {
         val element = ctx.getChild(i)
         if (element is RuleContext) {
-            explore(element, indentation + 1)
+            explore(element, indentation + (if (ignore) 0 else 1))
         }
     }
 }
