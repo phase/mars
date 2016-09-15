@@ -21,7 +21,7 @@ class Formal(val type: Type, val name: String) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-class Variable(val type: Type, val name: String) : Node {
+class Variable(val type: Type, val name: String, val initialExpression: Expression? = null) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 

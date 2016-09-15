@@ -13,7 +13,7 @@ import xyz.jadonfowler.compiler.parser.LangParser
 fun main(args: Array<String>) {
     val stream = ANTLRInputStream("""
     let c : int = foo(5, 6)
-    let d : int = 3 + 2 let e : int = 0
+    let d : int = 3 + 2 let e : int = 0 let f : int
 
     foo (a : int, b : int) : int {
         if (1 != (2 + 2)) {

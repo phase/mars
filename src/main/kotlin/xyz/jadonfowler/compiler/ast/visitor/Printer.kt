@@ -14,13 +14,14 @@ class Printer : Visitor() {
 
     override fun visit(program: Program) {
         program.globalVariables.map { it.accept(this) }
+        println()
         program.globalFunctions.map { it.accept(this) }
     }
 
     override fun visit(function: Function) {
-        print(function.name + " ")
-        function.formals.map { it.accept(this); print(" -> ") }
-        println("(${function.returnType}) {")
+        print("function ${function.name} (")
+        function.formals.map { it.accept(this); if (!function.formals.last().equals(it)) print(", ") }
+        println(") -> ${function.returnType} {")
         tabIndent++
         println("${function.statements.size} statements:")
         function.statements.map { it.accept(this) }
@@ -29,11 +30,16 @@ class Printer : Visitor() {
     }
 
     override fun visit(formal: Formal) {
-        print("(${formal.name} : ${formal.type})")
+        print("${formal.name}: ${formal.type}")
     }
 
     override fun visit(variable: Variable) {
-        println("let ${variable.name} : ${variable.type}")
+        print("variable ${variable.name}: ${variable.type}")
+        if (variable.initialExpression != null) {
+            printI(" = ")
+            variable.initialExpression.accept(this)
+        }
+        printI("\n")
     }
 
     override fun visit(block: Block) {

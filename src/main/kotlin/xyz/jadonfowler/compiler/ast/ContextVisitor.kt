@@ -62,8 +62,11 @@ class ContextVisitor : LangBaseVisitor<Node>() {
     override fun visitVariableDeclaration(ctx: LangParser.VariableDeclarationContext?): Variable {
         val identifier = ctx?.variableSignature()?.ID()?.symbol?.text.orEmpty()
         val type = getType(ctx?.variableSignature()?.typeAnnotation()?.ID()?.symbol?.text.orEmpty())
-        // TODO: Initialize variables with expressions
-        return Variable(type, identifier)
+        var expression: Expression? = null
+        val expressionContext: LangParser.ExpressionContext? = ctx?.expression()
+        if (expressionContext != null)
+            expression = visitExpression(expressionContext)
+        return Variable(type, identifier, expression)
     }
 
     override fun visitFunctionCall(ctx: LangParser.FunctionCallContext?): Node {

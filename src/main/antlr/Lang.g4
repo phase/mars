@@ -8,7 +8,7 @@ externalDeclaration
     ;
 
 functionDeclaration: ID '(' argumentList ')' typeAnnotation? '{' statementList '}';
-variableDeclaration: variableModifier variableSignature '=' expression;
+variableDeclaration: variableModifier variableSignature ('=' expression)?;
 
 functionCall: ID '(' expressionList? ')';
 
