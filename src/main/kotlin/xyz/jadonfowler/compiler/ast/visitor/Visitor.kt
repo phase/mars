@@ -17,12 +17,14 @@ abstract class Visitor {
             is Block -> visit(statement)
             is IfStatement -> visit(statement)
             is WhileStatement -> visit(statement)
+            is VariableDeclarationStatement -> visit(statement)
         }
     }
 
     abstract fun visit(block: Block)
     abstract fun visit(ifStatement: IfStatement)
     abstract fun visit(whileStatement: WhileStatement)
+    abstract fun visit(variableDeclarationStatement: VariableDeclarationStatement)
 
     // Expressions
     fun visit(expression: Expression) {

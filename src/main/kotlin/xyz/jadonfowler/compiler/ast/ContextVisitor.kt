@@ -60,13 +60,14 @@ class ContextVisitor : LangBaseVisitor<Node>() {
     }
 
     override fun visitVariableDeclaration(ctx: LangParser.VariableDeclarationContext?): Variable {
+        val constant: Boolean = ctx?.variableModifier()?.text.equals("let")
         val identifier = ctx?.variableSignature()?.ID()?.symbol?.text.orEmpty()
         val type = getType(ctx?.variableSignature()?.typeAnnotation()?.ID()?.symbol?.text.orEmpty())
         var expression: Expression? = null
         val expressionContext: LangParser.ExpressionContext? = ctx?.expression()
         if (expressionContext != null)
             expression = visitExpression(expressionContext)
-        return Variable(type, identifier, expression)
+        return Variable(type, identifier, expression, constant)
     }
 
     override fun visitFunctionCall(ctx: LangParser.FunctionCallContext?): Node {
@@ -80,6 +81,10 @@ class ContextVisitor : LangBaseVisitor<Node>() {
     }
 
     override fun visitStatement(ctx: LangParser.StatementContext?): Node /*TODO: return Statement */ {
+        val variableDeclarationContext = ctx?.variableDeclaration()
+        if(variableDeclarationContext != null) {
+            return VariableDeclarationStatement(visitVariableDeclaration(variableDeclarationContext))
+        }
         val id: String = ctx?.getChild(0)?.text.orEmpty()
         when (id) {
             "if" -> {

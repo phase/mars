@@ -34,7 +34,7 @@ class Printer : Visitor() {
     }
 
     override fun visit(variable: Variable) {
-        print("variable ${variable.name}: ${variable.type}")
+        print("${if(variable.constant) "constant" else "variable"} ${variable.name}: ${variable.type}")
         if (variable.initialExpression != null) {
             printI(" = ")
             variable.initialExpression.accept(this)
@@ -78,6 +78,10 @@ class Printer : Visitor() {
         whileStatement.statements.map { it.accept(this) }
         tabIndent--
         println("}")
+    }
+
+    override fun visit(variableDeclarationStatement: VariableDeclarationStatement) {
+        variableDeclarationStatement.variable.accept(this)
     }
 
     override fun visit(trueExpression: TrueExpression) {

@@ -21,7 +21,7 @@ class Formal(val type: Type, val name: String) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-class Variable(val type: Type, val name: String, val initialExpression: Expression? = null) : Node {
+class Variable(val type: Type, val name: String, val initialExpression: Expression? = null, val constant: Boolean = false) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
@@ -41,6 +41,8 @@ fun getType(name: String): Type {
     }
     return Type(name)
 }
+
+// Statements
 
 abstract class Statement : Node {
     open fun accept(visitor: Visitor) = visitor.visit(this)
@@ -118,6 +120,12 @@ fun elseStatement(statements: List<Statement>): IfStatement {
 class WhileStatement(exp: Expression, statements: List<Statement>) : CheckedBlock(exp, statements) {
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
+
+class VariableDeclarationStatement(val variable: Variable) : Statement() {
+    override fun accept(visitor: Visitor) = visitor.visit(this)
+}
+
+// Expressions
 
 abstract class Expression(val child: List<Expression> = listOf()) : Node {
     open fun accept(visitor: Visitor) = visitor.visit(this)

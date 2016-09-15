@@ -15,6 +15,7 @@ fun main(args: Array<String>) {
     let d : int = 3 + 2 let e : int = 0 let f : int
 
     foo (a : int, b : int) : int {
+        let g : int = 90128
         if (1 != (2 + 2)) {
             d = b
             if (2 != 14 * 7 - 5) {
