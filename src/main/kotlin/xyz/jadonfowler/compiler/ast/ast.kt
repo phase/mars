@@ -13,15 +13,15 @@ class Program(val globalVariables: List<Variable>, val globalFunctions: List<Fun
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-class Function(val returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>): Node {
+class Function(val returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-class Formal(val type: Type, val name: String): Node {
+class Formal(val type: Type, val name: String) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-class Variable(val type: Type, val name: String): Node {
+class Variable(val type: Type, val name: String) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
@@ -34,15 +34,15 @@ open class Type(val name: String) {
 
 class Void : Type("void")
 
-fun getType(name: String) : Type {
+fun getType(name: String): Type {
     // TODO: Real name lookup
-    when(name) {
+    when (name) {
         "void" -> Void()
     }
     return Type(name)
 }
 
-abstract class Statement: Node {
+abstract class Statement : Node {
     open fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
@@ -60,7 +60,7 @@ open class Block(val statements: List<Statement>) : Statement() {
  * </pre>
  *
  * @param exp Expression to test
- * @param block Statement to be run
+ * @param statements Statements to be run
  */
 open class CheckedBlock(val exp: Expression, statements: List<Statement>) : Block(statements)
 
@@ -119,7 +119,7 @@ class WhileStatement(exp: Expression, statements: List<Statement>) : CheckedBloc
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-abstract class Expression: Node {
+abstract class Expression(val child: List<Expression> = listOf()) : Node {
     open fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
@@ -154,8 +154,19 @@ enum class Operator(val string: String) {
     EQUALS("=="),
     GREATER_THAN_EQUAL(">="),
     LESS_THAN_EQUAL("<="),
+    NOT_EQUAL("!="),
     AND("&&"),
     OR("||"),
 }
 
-class BinaryOperator(val expA: Expression, val operator: Operator, val expB: Expression) : Expression()
+fun getOperator(s: String): Operator? {
+    try {
+        return Operator.values().filter { it.string.equals(s) }[0]
+    } catch (e: IndexOutOfBoundsException) {
+        return null
+    }
+}
+
+class BinaryOperator(val expA: Expression, val operator: Operator, val expB: Expression) : Expression(listOf(expA, expB)) {
+    override fun accept(visitor: Visitor) = visitor.visit(this)
+}

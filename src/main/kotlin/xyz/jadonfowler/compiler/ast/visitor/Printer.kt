@@ -33,7 +33,7 @@ class Printer : Visitor() {
     }
 
     override fun visit(variable: Variable) {
-        println("var ${variable.name} : ${variable.type}")
+        println("let ${variable.name} : ${variable.type}")
     }
 
     override fun visit(block: Block) {
@@ -89,6 +89,10 @@ class Printer : Visitor() {
     }
 
     override fun visit(binaryOperator: BinaryOperator) {
-        printI("(${binaryOperator.expA.accept(this)} ${binaryOperator.operator.string} ${binaryOperator.expB.accept(this)})")
+        printI("(")
+        binaryOperator.expA.accept(this)
+        printI(" ${binaryOperator.operator.string} ")
+        binaryOperator.expB.accept(this)
+        printI(")")
     }
 }

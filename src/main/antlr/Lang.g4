@@ -53,8 +53,6 @@ expression
     | expression ('&'|'&&') expression
     | expression ('|'|'||') expression
     | '~' expression
-    | expression '~' expression
-    | expression ('<-'|'<<-'|'='|'->'|'->>'|':=') expression
     | expression '%' ID '%' expression // call function as operator
     | '(' expression ')'
     | functionCall

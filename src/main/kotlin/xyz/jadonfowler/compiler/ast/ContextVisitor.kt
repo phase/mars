@@ -29,7 +29,7 @@ class ContextVisitor : LangBaseVisitor<Node>() {
         return EmptyNode()
     }
 
-    override fun visitFunctionDeclaration(ctx: LangParser.FunctionDeclarationContext?): Node {
+    override fun visitFunctionDeclaration(ctx: LangParser.FunctionDeclarationContext?): Function {
         val identifier = ctx?.ID()?.symbol?.text.orEmpty()
         val returnType = getType(ctx?.typeAnnotation()?.ID()?.symbol?.text.orEmpty())
         val formals = ctx?.argumentList()?.argument()?.map {
@@ -41,7 +41,7 @@ class ContextVisitor : LangBaseVisitor<Node>() {
         return Function(returnType, identifier, formals, statements)
     }
 
-    fun statementListFromContext(statementListContext: LangParser.StatementListContext?) : List<Statement> {
+    fun statementListFromContext(statementListContext: LangParser.StatementListContext?): List<Statement> {
         // Create list
         val statements: MutableList<Statement> = mutableListOf(visit(statementListContext?.statement()))
                 .filterIsInstance<Statement>().toMutableList()
@@ -59,7 +59,7 @@ class ContextVisitor : LangBaseVisitor<Node>() {
         return statements
     }
 
-    override fun visitVariableDeclaration(ctx: LangParser.VariableDeclarationContext?): Node {
+    override fun visitVariableDeclaration(ctx: LangParser.VariableDeclarationContext?): Variable {
         val identifier = ctx?.variableSignature()?.ID()?.symbol?.text.orEmpty()
         val type = getType(ctx?.variableSignature()?.typeAnnotation()?.ID()?.symbol?.text.orEmpty())
         // TODO: Initialize variables with expressions
@@ -76,11 +76,11 @@ class ContextVisitor : LangBaseVisitor<Node>() {
         return EmptyNode()
     }
 
-    override fun visitStatement(ctx: LangParser.StatementContext?): Node {
+    override fun visitStatement(ctx: LangParser.StatementContext?): Node /*TODO: return Statement */ {
         val id: String = ctx?.getChild(0)?.text.orEmpty()
-        when(id) {
+        when (id) {
             "if" -> {
-                val expression = visitExpression(ctx?.expression()) as Expression
+                val expression = visitExpression(ctx?.expression())
                 val statements = statementListFromContext(ctx?.statementList(0))
                 return IfStatement(expression, statements, null)
             }
@@ -92,11 +92,26 @@ class ContextVisitor : LangBaseVisitor<Node>() {
         return EmptyNode()
     }
 
-    override fun visitExpression(ctx: LangParser.ExpressionContext?): Node {
-        if(ctx?.INT() != null) {
+    override fun visitExpression(ctx: LangParser.ExpressionContext?): Expression {
+        val firstSymbol = ctx?.getChild(0)?.text.orEmpty()
+        when (firstSymbol) {
+            "(" -> {
+                // | '(' expression ')'
+                return visitExpression(ctx?.getChild(1) as LangParser.ExpressionContext?)
+            }
+        }
+        if (ctx?.getChild(0) is LangParser.ExpressionContext && ctx?.getChild(2) is LangParser.ExpressionContext) {
+            val expressionA = visitExpression(ctx?.getChild(0) as LangParser.ExpressionContext?)
+            val expressionB = visitExpression(ctx?.getChild(2) as LangParser.ExpressionContext?)
+            val between = ctx?.getChild(1)?.text.orEmpty()
+            val operator = getOperator(between)
+            if (operator != null) {
+                return BinaryOperator(expressionA, operator, expressionB)
+            }
+        } else if (ctx?.INT() != null) {
             return IntegerLiteral(ctx?.INT()?.text?.toInt()!!)
         }
-        return TrueExpression()
+        return TrueExpression() // TODO: Remove
     }
 
     override fun visitArgumentList(ctx: LangParser.ArgumentListContext?): Node {
