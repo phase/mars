@@ -31,6 +31,7 @@ abstract class Visitor {
             is FalseExpression -> visit(expression)
             is IntegerLiteral -> visit(expression)
             is IdentifierExpression -> visit(expression)
+            is BinaryOperator -> visit(expression)
         }
     }
 

@@ -19,11 +19,11 @@ class Printer : Visitor() {
     }
 
     override fun visit(function: Function) {
+        println("// ${function.name} has ${function.statements.size} statements.")
         print("function ${function.name} (")
         function.formals.map { it.accept(this); if (!function.formals.last().equals(it)) print(", ") }
         println(") -> ${function.returnType} {")
         tabIndent++
-        println("${function.statements.size} statements:")
         function.statements.map { it.accept(this) }
         tabIndent--
         println("}\n")
@@ -61,7 +61,9 @@ class Printer : Visitor() {
 
         var child: IfStatement? = ifStatement.elseStatement
         while (child != null) {
-            println("else if ${child.exp.accept(this)} {")
+            print("else if (")
+            child.exp.accept(this)
+            printI(") {\n")
             tabIndent++
             child.statements.map { it.accept(this) }
             tabIndent--

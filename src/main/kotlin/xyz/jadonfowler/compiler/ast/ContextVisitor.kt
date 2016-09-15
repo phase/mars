@@ -8,7 +8,7 @@ import xyz.jadonfowler.compiler.parser.LangParser
  */
 class ContextVisitor : LangBaseVisitor<Node>() {
 
-    override fun visitProgram(ctx: LangParser.ProgramContext?): Node {
+    override fun visitProgram(ctx: LangParser.ProgramContext?): Program {
         val externalDeclarations = ctx?.externalDeclaration()
 
         val variables = externalDeclarations?.filter { it.variableDeclaration() != null }?.map {
@@ -85,7 +85,13 @@ class ContextVisitor : LangBaseVisitor<Node>() {
             "if" -> {
                 val expression = visitExpression(ctx?.expression())
                 val statements = statementListFromContext(ctx?.statementList(0))
-                return IfStatement(expression, statements, null)
+
+                var elseStatement: IfStatement? = null
+                if (ctx?.getChild(7)?.text.equals("else"))
+                    elseStatement = xyz.jadonfowler.compiler.ast.elseStatement(
+                            statementListFromContext(ctx?.getChild(9) as LangParser.StatementListContext))
+
+                return IfStatement(expression, statements, elseStatement)
             }
             else -> return EmptyNode()
         }

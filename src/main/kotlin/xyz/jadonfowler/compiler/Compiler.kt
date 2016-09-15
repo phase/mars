@@ -5,7 +5,6 @@ import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.RuleContext
 import xyz.jadonfowler.compiler.ast.ContextVisitor
-import xyz.jadonfowler.compiler.ast.Program
 import xyz.jadonfowler.compiler.ast.visitor.Printer
 import xyz.jadonfowler.compiler.parser.LangLexer
 import xyz.jadonfowler.compiler.parser.LangParser
@@ -18,6 +17,13 @@ fun main(args: Array<String>) {
     foo (a : int, b : int) : int {
         if (1 != (2 + 2)) {
             d = b
+            if (2 != 14 * 7 - 5) {
+                c = b
+            } else {
+                if (4 >= 2) {
+                    c = 7
+                }
+            }
         }
         printf("%d", a + b)
         return a + b + 1
@@ -29,7 +35,7 @@ fun main(args: Array<String>) {
     val result = parser.program()
     val contextVisitor = ContextVisitor()
     explore(result, 0)
-    val program = contextVisitor.visitProgram(result) as Program
+    val program = contextVisitor.visitProgram(result)
     val printer = Printer()
     printer.visit(program)
 }
