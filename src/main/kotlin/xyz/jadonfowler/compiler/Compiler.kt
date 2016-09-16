@@ -5,14 +5,21 @@ import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.RuleContext
 import xyz.jadonfowler.compiler.ast.ContextVisitor
+import xyz.jadonfowler.compiler.ast.Program
 import xyz.jadonfowler.compiler.ast.visitor.Printer
 import xyz.jadonfowler.compiler.parser.LangLexer
 import xyz.jadonfowler.compiler.parser.LangParser
 
 fun main(args: Array<String>) {
-    val stream = ANTLRInputStream("""
+    // Runtime
+    compileString("""
+    print(a : int, b : int) : void {}
+    """)
+
+    val program = compileString("""
     let c : int = foo(5, 6)
     let d : int = 3 + 2 let e : int = 0 let f : int
+    let h : int = 6 let i : int = 7 let j : int = 8
 
     foo (a : int, b : int) : int {
         let g : int = 90128
@@ -23,22 +30,29 @@ fun main(args: Array<String>) {
             } else {
                 if (4 >= 2) {
                     c = 7
+                    if (h >= i || h <= j) {
+                        print(i, j)
+                    }
                 }
             }
         }
-        printf("%d", a + b)
+        print(a + b, a - b * g)
         return a + b + 1
     }
     """)
+    val printer = Printer()
+    printer.visit(program)
+}
+
+fun compileString(s: String): Program {
+    val stream = ANTLRInputStream(s)
     val lexer = LangLexer(stream)
     val tokens = CommonTokenStream(lexer)
     val parser = LangParser(tokens)
     val result = parser.program()
     val contextVisitor = ContextVisitor()
     explore(result, 0)
-    val program = contextVisitor.visitProgram(result)
-    val printer = Printer()
-    printer.visit(program)
+    return contextVisitor.visitProgram(result)
 }
 
 fun explore(ctx: RuleContext, indentation: Int) {

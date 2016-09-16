@@ -14,6 +14,7 @@ class Program(val globalVariables: List<Variable>, val globalFunctions: List<Fun
 }
 
 class Function(val returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>) : Node {
+    val variableTable = mutableMapOf<Variable, Expression>()
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
@@ -122,6 +123,10 @@ class WhileStatement(exp: Expression, statements: List<Statement>) : CheckedBloc
 }
 
 class VariableDeclarationStatement(val variable: Variable) : Statement() {
+    override fun accept(visitor: Visitor) = visitor.visit(this)
+}
+
+class FunctionCallStatement(val function: Function?, val arguments: List<Expression> = listOf()) : Statement() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 

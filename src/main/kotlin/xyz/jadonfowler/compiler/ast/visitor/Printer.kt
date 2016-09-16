@@ -84,6 +84,12 @@ class Printer : Visitor() {
         variableDeclarationStatement.variable.accept(this)
     }
 
+    override fun visit(functionCallStatement: FunctionCallStatement) {
+        print("${functionCallStatement.function?.name}(")
+        functionCallStatement.arguments.map { it.accept(this); printI(", ") }
+        printI(")\n")
+    }
+
     override fun visit(trueExpression: TrueExpression) {
         printI("true")
     }

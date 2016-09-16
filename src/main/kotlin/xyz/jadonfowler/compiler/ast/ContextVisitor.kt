@@ -3,6 +3,9 @@ package xyz.jadonfowler.compiler.ast
 import xyz.jadonfowler.compiler.parser.LangBaseVisitor
 import xyz.jadonfowler.compiler.parser.LangParser
 
+var globalVariables: MutableList<Variable> = mutableListOf()
+var globalFunctions: MutableList<Function> = mutableListOf()
+
 /**
  * ContextVisitor transforms a ContextTree into an AST
  */
@@ -11,15 +14,15 @@ class ContextVisitor : LangBaseVisitor<Node>() {
     override fun visitProgram(ctx: LangParser.ProgramContext?): Program {
         val externalDeclarations = ctx?.externalDeclaration()
 
-        val variables = externalDeclarations?.filter { it.variableDeclaration() != null }?.map {
+        globalVariables.addAll(externalDeclarations?.filter { it.variableDeclaration() != null }?.map {
             visitVariableDeclaration(it.variableDeclaration())
-        }?.filterIsInstance<Variable>().orEmpty()
+        }?.filterIsInstance<Variable>().orEmpty())
 
-        val functions = externalDeclarations?.filter { it.functionDeclaration() != null }?.map {
+        globalFunctions.addAll(externalDeclarations?.filter { it.functionDeclaration() != null }?.map {
             visitFunctionDeclaration(it.functionDeclaration())
-        }?.filterIsInstance<Function>().orEmpty()
+        }?.filterIsInstance<Function>().orEmpty())
 
-        return Program(variables, functions)
+        return Program(globalVariables.orEmpty(), globalFunctions.orEmpty())
     }
 
     override fun visitExternalDeclaration(ctx: LangParser.ExternalDeclarationContext?): Node {
@@ -43,7 +46,7 @@ class ContextVisitor : LangBaseVisitor<Node>() {
 
     fun statementListFromContext(statementListContext: LangParser.StatementListContext?): List<Statement> {
         // Create list
-        val statements: MutableList<Statement> = mutableListOf(visit(statementListContext?.statement()))
+        val statements: MutableList<Statement> = mutableListOf(visitStatement(statementListContext?.statement()))
                 .filterIsInstance<Statement>().toMutableList()
 
         // Append children to list
@@ -70,9 +73,26 @@ class ContextVisitor : LangBaseVisitor<Node>() {
         return Variable(type, identifier, expression, constant)
     }
 
-    override fun visitFunctionCall(ctx: LangParser.FunctionCallContext?): Node {
-        // TODO: Return FunctionCallStatement
-        return EmptyNode()
+    override fun visitFunctionCall(ctx: LangParser.FunctionCallContext?): FunctionCallStatement {
+        val functionName = ctx?.ID()?.symbol?.text
+        val functions = globalFunctions?.filter { it.name.equals(functionName) }
+        val expressions = expressionListFromContext(ctx?.expressionList())
+        if (functions == null || functions.size < 1)
+            throw IllegalArgumentException("$functionName is not a valid function.")
+        return FunctionCallStatement(functions?.get(0), expressions)
+    }
+
+    fun expressionListFromContext(expressionListContext: LangParser.ExpressionListContext?): List<Expression> {
+        val expressions: MutableList<Expression> = mutableListOf(visitExpression(expressionListContext?.expression()))
+
+        var expressionListContextChild: LangParser.ExpressionListContext? = expressionListContext?.expressionList()
+        while (expressionListContextChild != null) {
+            val expressionListContextChildExpression = visitExpression(expressionListContextChild.expression())
+            expressions.add(expressionListContextChildExpression)
+            expressionListContextChild = expressionListContextChild.expressionList()
+        }
+
+        return expressions
     }
 
     override fun visitVariableReassignment(ctx: LangParser.VariableReassignmentContext?): Node {
@@ -81,10 +101,11 @@ class ContextVisitor : LangBaseVisitor<Node>() {
     }
 
     override fun visitStatement(ctx: LangParser.StatementContext?): Node /*TODO: return Statement */ {
-        val variableDeclarationContext = ctx?.variableDeclaration()
-        if(variableDeclarationContext != null) {
-            return VariableDeclarationStatement(visitVariableDeclaration(variableDeclarationContext))
-        }
+        if (ctx?.variableDeclaration() != null)
+            return VariableDeclarationStatement(visitVariableDeclaration(ctx?.variableDeclaration()))
+        if (ctx?.functionCall() != null)
+            return visitFunctionCall(ctx?.functionCall())
+
         val id: String = ctx?.getChild(0)?.text.orEmpty()
         when (id) {
             "if" -> {
@@ -100,10 +121,6 @@ class ContextVisitor : LangBaseVisitor<Node>() {
             }
             else -> return EmptyNode()
         }
-    }
-
-    override fun visitExpressionList(ctx: LangParser.ExpressionListContext?): Node {
-        return EmptyNode()
     }
 
     override fun visitExpression(ctx: LangParser.ExpressionContext?): Expression {
@@ -124,6 +141,11 @@ class ContextVisitor : LangBaseVisitor<Node>() {
             }
         } else if (ctx?.INT() != null) {
             return IntegerLiteral(ctx?.INT()?.text?.toInt()!!)
+        } else if(ctx?.ID() != null) {
+            val id = ctx?.ID()?.symbol?.text
+            val variables = globalVariables.filter { it.name.equals(id) }
+            if(variables.size > 0)
+                return variables.last().initialExpression!!
         }
         return TrueExpression() // TODO: Remove
     }

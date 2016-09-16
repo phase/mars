@@ -18,6 +18,7 @@ abstract class Visitor {
             is IfStatement -> visit(statement)
             is WhileStatement -> visit(statement)
             is VariableDeclarationStatement -> visit(statement)
+            is FunctionCallStatement -> visit(statement)
         }
     }
 
@@ -25,6 +26,7 @@ abstract class Visitor {
     abstract fun visit(ifStatement: IfStatement)
     abstract fun visit(whileStatement: WhileStatement)
     abstract fun visit(variableDeclarationStatement: VariableDeclarationStatement)
+    abstract fun visit(functionCallStatement: FunctionCallStatement)
 
     // Expressions
     fun visit(expression: Expression) {
