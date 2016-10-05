@@ -35,7 +35,7 @@ fun main(args: Array<String>) {
                     ;
                 ;
             ;
-        ;,
+        ;
         thing(a + b, a - b * g),
         return a + b + 1
 

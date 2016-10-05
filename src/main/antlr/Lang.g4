@@ -24,18 +24,23 @@ statement
     : variableDeclaration
     | variableReassignment
     | functionCall
-    | 'if' expression statementList ';'
-    | 'if' expression statementList 'else' statementList ';'
-    | 'for' ID 'in' expression statementList ';'
-    | 'while' expression statementList ';'
     | 'continue'
     | 'break'
     | 'return' expression
     ;
 
+blockStatement
+    : 'if' expression statementList ';'
+    | 'if' expression statementList 'else' statementList ';'
+    | 'for' ID 'in' expression statementList ';'
+    | 'while' expression statementList ';'
+    ;
+
 statementList
     :
     | statement
+    | blockStatement
+    | blockStatement statementList
     | statement ',' statementList
     ;
 

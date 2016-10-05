@@ -46,7 +46,7 @@ class ContextVisitor : LangBaseVisitor<Node>() {
                     it.variableSignature().ID().symbol.text)
         }.orEmpty()
 
-        val statements = statementListFromContext(ctx?.statementList()).toMutableList()
+        val statements = statementListFromStatementListContext(ctx?.statementList()).toMutableList()
         val lastStatementContext = ctx?.statement()
         if (lastStatementContext != null) {
             val lastStatement: Node = visitStatement(lastStatementContext)
@@ -62,21 +62,27 @@ class ContextVisitor : LangBaseVisitor<Node>() {
         return Function(returnType, identifier, formals, statements, expression)
     }
 
-    fun statementListFromContext(statementListContext: LangParser.StatementListContext?): List<Statement> {
-        // Create list
-        val statements: MutableList<Statement> = mutableListOf(visitStatement(statementListContext?.statement()))
-                .filterIsInstance<Statement>().toMutableList()
-
-        // Append children to list
-        var statementListContextChild: LangParser.StatementListContext? = statementListContext?.statementList()
-        while (statementListContextChild != null) {
-            // Check if Node returned from visit is really a Statement
-            val statementListContextChildStatement: Node = visitStatement(statementListContextChild.statement())
-            if (statementListContextChildStatement is Statement)
-                statements.add(statementListContextChildStatement)
-            statementListContextChild = statementListContextChild.statementList()
+    fun statementListFromStatementListContext(statementListContext: LangParser.StatementListContext?): List<Statement> {
+        var context = statementListContext
+        val statements: MutableList<Statement> = mutableListOf()
+        while (context != null) {
+            var statement: Statement? = null
+            val blockStatementContext = context.blockStatement()
+            val statementContext = context.statement()
+            // There is either a blockStatement or a normal statement, so the order here doesn't matter.
+            if (blockStatementContext != null) {
+                val blockStatementNode = visitBlockStatement(blockStatementContext)
+                if (blockStatementNode is Statement) statement = blockStatementNode
+            }
+            if (statementContext != null) {
+                val statementNode = visitStatement(statementContext)
+                if (statementNode is Statement) statement = statementNode
+            }
+            if (statement != null)
+                statements.add(statement)
+            // Set current context as child
+            context = context.statementList()
         }
-
         return statements
     }
 
@@ -131,17 +137,20 @@ class ContextVisitor : LangBaseVisitor<Node>() {
             return VariableDeclarationStatement(visitVariableDeclaration(ctx?.variableDeclaration()))
         if (ctx?.functionCall() != null)
             return visitFunctionCall(ctx?.functionCall())
+        return EmptyNode()
+    }
 
+    override fun visitBlockStatement(ctx: LangParser.BlockStatementContext?): Node {
         val id: String = ctx?.getChild(0)?.text.orEmpty()
         when (id) {
             "if" -> {
                 val expression = visitExpression(ctx?.expression())
-                val statements = statementListFromContext(ctx?.statementList(0))
+                val statements = statementListFromStatementListContext(ctx?.statementList(0))
 
                 var elseStatement: IfStatement? = null
                 if (ctx?.getChild(3)?.text.equals("else"))
                     elseStatement = xyz.jadonfowler.compiler.ast.elseStatement(
-                            statementListFromContext(ctx?.getChild(4) as LangParser.StatementListContext))
+                            statementListFromStatementListContext(ctx?.getChild(4) as LangParser.StatementListContext))
 
                 return IfStatement(expression, statements, elseStatement)
             }
