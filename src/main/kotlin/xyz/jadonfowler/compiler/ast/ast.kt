@@ -13,7 +13,7 @@ class Program(val globalVariables: List<Variable>, val globalFunctions: List<Fun
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-class Function(val returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>) : Node {
+class Function(val returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>, val expression: Expression? = null) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 

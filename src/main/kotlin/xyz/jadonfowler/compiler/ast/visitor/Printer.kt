@@ -25,9 +25,16 @@ class Printer : Visitor() {
         print("function ${function.name} (")
         function.formals.map { it.accept(this); if (!function.formals.last().equals(it)) print(", ") }
         printI(") -> ${function.returnType} {\n")
+
         tabIndent++
         function.statements.map { it.accept(this) }
+        if (function.expression != null) {
+            print("return ")
+            function.expression.accept(this)
+            println()
+        }
         tabIndent--
+
         println("}\n")
     }
 
@@ -36,7 +43,7 @@ class Printer : Visitor() {
     }
 
     override fun visit(variable: Variable) {
-        print("${if(variable.constant) "constant" else "variable"} ${variable.name}: ${variable.type}")
+        print("${if (variable.constant) "constant" else "variable"} ${variable.name}: ${variable.type}")
         if (variable.initialExpression != null) {
             printI(" = ")
             variable.initialExpression.accept(this)

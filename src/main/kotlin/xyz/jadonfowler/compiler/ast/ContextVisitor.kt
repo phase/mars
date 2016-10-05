@@ -45,9 +45,21 @@ class ContextVisitor : LangBaseVisitor<Node>() {
             Formal(getType(it.variableSignature().typeAnnotation().ID().symbol.text),
                     it.variableSignature().ID().symbol.text)
         }.orEmpty()
-        val statements = statementListFromContext(ctx?.statementList())
 
-        return Function(returnType, identifier, formals, statements)
+        val statements = statementListFromContext(ctx?.statementList()).toMutableList()
+        val lastStatementContext = ctx?.statement()
+        if (lastStatementContext != null) {
+            val lastStatement: Node = visitStatement(lastStatementContext)
+            if (lastStatement is Statement)
+                statements.add(lastStatement)
+        }
+
+        var expression: Expression? = null
+        val expressionContext = ctx?.expression()
+        if (expressionContext != null)
+            expression = visitExpression(ctx?.expression())
+
+        return Function(returnType, identifier, formals, statements, expression)
     }
 
     fun statementListFromContext(statementListContext: LangParser.StatementListContext?): List<Statement> {
@@ -155,10 +167,10 @@ class ContextVisitor : LangBaseVisitor<Node>() {
             }
         } else if (ctx?.INT() != null) {
             return IntegerLiteral(ctx?.INT()?.text?.toInt()!!)
-        } else if(ctx?.ID() != null) {
+        } else if (ctx?.ID() != null) {
             val id = ctx?.ID()?.symbol?.text
             val variables = globalVariables.filter { it.name.equals(id) }
-            if(variables.size > 0)
+            if (variables.size > 0)
                 return variables.last().initialExpression!!
         }
         return TrueExpression() // TODO: Remove

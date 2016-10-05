@@ -41,10 +41,12 @@ fun main(args: Array<String>) {
 
     class Object
 
-        let hashCode : int = 0
+        let field : int = 0
 
-        setHashCode (h : int)
-            hashCode = h
+        method (arg : int)
+            let local : int = arg + 7,
+            let thing : int = local * 5,
+            local / thing
     ;
 
     let variable_defined_after_class : int = 0
@@ -64,7 +66,7 @@ fun compileString(s: String): Program {
     return contextVisitor.visitProgram(result)
 }
 
-fun explore(ctx: RuleContext, indentation: Int) {
+fun explore(ctx: RuleContext, indentation: Int = 0) {
     val ignore = ctx.childCount === 1 && ctx.getChild(0) is ParserRuleContext
     if (!ignore) {
         val ruleName = LangParser.ruleNames[ctx.ruleIndex]
