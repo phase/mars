@@ -113,9 +113,9 @@ class ContextVisitor : LangBaseVisitor<Node>() {
                 val statements = statementListFromContext(ctx?.statementList(0))
 
                 var elseStatement: IfStatement? = null
-                if (ctx?.getChild(7)?.text.equals("else"))
+                if (ctx?.getChild(3)?.text.equals("else"))
                     elseStatement = xyz.jadonfowler.compiler.ast.elseStatement(
-                            statementListFromContext(ctx?.getChild(9) as LangParser.StatementListContext))
+                            statementListFromContext(ctx?.getChild(4) as LangParser.StatementListContext))
 
                 return IfStatement(expression, statements, elseStatement)
             }

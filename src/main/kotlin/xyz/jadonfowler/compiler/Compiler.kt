@@ -11,9 +11,9 @@ import xyz.jadonfowler.compiler.parser.LangLexer
 import xyz.jadonfowler.compiler.parser.LangParser
 
 fun main(args: Array<String>) {
-    // Runtime
+    // "other file"
     compileString("""
-    print(a : int, b : int) : void {}
+    thing(a : int, b : int) : void 0
     """)
 
     val program = compileString("""
@@ -21,24 +21,23 @@ fun main(args: Array<String>) {
     let d : int = 3 + 2 let e : int = 0 let f : int
     let h : int = 6 let i : int = 7 let j : int = 8
 
-    foo (a : int, b : int) : int {
-        let g : int = 90128
-        if (1 != (2 + 2)) {
-            d = b
-            if (2 != 14 * 7 - 5) {
+    foo (a : int, b : int) : int
+        let g : int = 90128,
+        if 1 != (2 + 2)
+            d = b,
+            if 2 != 14 * 7 - 5
                 c = b
-            } else {
-                if (4 >= 2) {
-                    c = 7
-                    if (h >= i || h <= j) {
+            else
+                if 4 >= 2
+                    c = 7,
+                    if h >= i || h <= j:
                         print(i, j)
-                    }
-                }
-            }
-        }
-        print(a + b, a - b * g)
+                    ;
+                ;
+            ;
+        ;,
+        thing(a + b, a - b * g),
         return a + b + 1
-    }
     """)
     val printer = Printer()
     printer.visit(program)

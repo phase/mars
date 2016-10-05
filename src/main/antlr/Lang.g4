@@ -7,7 +7,7 @@ externalDeclaration
     | variableDeclaration
     ;
 
-functionDeclaration: ID '(' argumentList ')' typeAnnotation? '{' statementList '}';
+functionDeclaration: ID '(' argumentList ')' typeAnnotation? (statementList ',')? (statement | expression);
 variableDeclaration: variableModifier variableSignature ('=' expression)?;
 
 functionCall: ID '(' expressionList? ')';
@@ -23,10 +23,10 @@ statement
     : variableDeclaration
     | variableReassignment
     | functionCall
-    | 'if' '(' expression ')' '{' statementList '}'
-    | 'if' '(' expression ')' '{' statementList '}' 'else' '{' statementList '}'
-    | 'for' '(' ID 'in' expression ')' '{' statementList '}'
-    | 'while' '(' expression ')' '{' statementList '}'
+    | 'if' expression statementList ';'
+    | 'if' expression statementList 'else' statementList ';'
+    | 'for' ID 'in' expression statementList ';'
+    | 'while' expression statementList ';'
     | 'continue'
     | 'break'
     | 'return' expression
@@ -35,7 +35,7 @@ statement
 statementList
     :
     | statement
-    | statement statementList
+    | statement ',' statementList
     ;
 
 expressionList
