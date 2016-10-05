@@ -38,6 +38,16 @@ fun main(args: Array<String>) {
         ;,
         thing(a + b, a - b * g),
         return a + b + 1
+
+    class Object
+
+        let hashCode : int = 0
+
+        setHashCode (h : int)
+            hashCode = h
+    ;
+
+    let variable_defined_after_class : int = 0
     """)
     val printer = Printer()
     printer.visit(program)

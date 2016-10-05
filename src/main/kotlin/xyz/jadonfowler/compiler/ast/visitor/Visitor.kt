@@ -10,6 +10,7 @@ abstract class Visitor {
     abstract fun visit(function: Function)
     abstract fun visit(formal: Formal)
     abstract fun visit(variable: Variable)
+    abstract fun visit(clazz: Clazz)
 
     // Statements
     fun visit(statement: Statement) {

@@ -5,6 +5,7 @@ import xyz.jadonfowler.compiler.parser.LangParser
 
 var globalVariables: MutableList<Variable> = mutableListOf()
 var globalFunctions: MutableList<Function> = mutableListOf()
+var globalClasses: MutableList<Clazz> = mutableListOf()
 
 /**
  * ContextVisitor transforms a ContextTree into an AST
@@ -22,12 +23,17 @@ class ContextVisitor : LangBaseVisitor<Node>() {
             visitFunctionDeclaration(it.functionDeclaration())
         }?.filterIsInstance<Function>().orEmpty())
 
-        return Program(globalVariables.orEmpty(), globalFunctions.orEmpty())
+        globalClasses.addAll(externalDeclarations?.filter { it.classDeclaration() != null }?.map {
+            visitClassDeclaration(it.classDeclaration())
+        }?.filterIsInstance<Clazz>().orEmpty())
+
+        return Program(globalVariables.orEmpty(), globalFunctions.orEmpty(), globalClasses.orEmpty())
     }
 
     override fun visitExternalDeclaration(ctx: LangParser.ExternalDeclarationContext?): Node {
         if (ctx?.variableDeclaration() != null) return visitVariableDeclaration(ctx?.variableDeclaration())
         if (ctx?.functionDeclaration() != null) return visitFunctionDeclaration(ctx?.functionDeclaration())
+        if (ctx?.classDeclaration() != null) return visitClassDeclaration(ctx?.classDeclaration())
         // Should be unreachable
         return EmptyNode()
     }
@@ -73,13 +79,21 @@ class ContextVisitor : LangBaseVisitor<Node>() {
         return Variable(type, identifier, expression, constant)
     }
 
+    override fun visitClassDeclaration(ctx: LangParser.ClassDeclarationContext?): Clazz {
+        val identifier = ctx?.ID()?.symbol?.text.orEmpty()
+        val declarations = ctx?.externalDeclaration()?.map { visitExternalDeclaration(it) }.orEmpty()
+        val fields = declarations.filterIsInstance<Variable>()
+        val methods = declarations.filterIsInstance<Function>()
+        return Clazz(identifier, fields, methods)
+    }
+
     override fun visitFunctionCall(ctx: LangParser.FunctionCallContext?): FunctionCallStatement {
         val functionName = ctx?.ID()?.symbol?.text
-        val functions = globalFunctions?.filter { it.name.equals(functionName) }
+        val functions = globalFunctions.filter { it.name.equals(functionName) }
         val expressions = expressionListFromContext(ctx?.expressionList())
-        if (functions == null || functions.size < 1)
+        if (functions.size < 1)
             throw IllegalArgumentException("$functionName is not a valid function.")
-        return FunctionCallStatement(functions?.get(0), expressions)
+        return FunctionCallStatement(functions[0], expressions)
     }
 
     fun expressionListFromContext(expressionListContext: LangParser.ExpressionListContext?): List<Expression> {

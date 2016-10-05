@@ -16,13 +16,15 @@ class Printer : Visitor() {
         program.globalVariables.map { it.accept(this) }
         println()
         program.globalFunctions.map { it.accept(this) }
+        println()
+        program.globalClasses.map { it.accept(this) }
     }
 
     override fun visit(function: Function) {
         println("// ${function.name} has ${function.statements.size} statements.")
         print("function ${function.name} (")
         function.formals.map { it.accept(this); if (!function.formals.last().equals(it)) print(", ") }
-        println(") -> ${function.returnType} {")
+        printI(") -> ${function.returnType} {\n")
         tabIndent++
         function.statements.map { it.accept(this) }
         tabIndent--
@@ -30,7 +32,7 @@ class Printer : Visitor() {
     }
 
     override fun visit(formal: Formal) {
-        print("${formal.name}: ${formal.type}")
+        printI("${formal.name}: ${formal.type}")
     }
 
     override fun visit(variable: Variable) {
@@ -40,6 +42,16 @@ class Printer : Visitor() {
             variable.initialExpression.accept(this)
         }
         printI("\n")
+    }
+
+    override fun visit(clazz: Clazz) {
+        println("class ${clazz.name} {")
+        tabIndent++
+        clazz.fields.map { it.accept(this) }
+        println()
+        clazz.methods.map { it.accept(this) }
+        tabIndent--
+        println("}")
     }
 
     override fun visit(block: Block) {

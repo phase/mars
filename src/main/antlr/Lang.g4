@@ -5,6 +5,7 @@ program: externalDeclaration* EOF;
 externalDeclaration
     : functionDeclaration
     | variableDeclaration
+    | classDeclaration
     ;
 
 functionDeclaration: ID '(' argumentList ')' typeAnnotation? (statementList ',')? (statement | expression);
@@ -36,6 +37,10 @@ statementList
     :
     | statement
     | statement ',' statementList
+    ;
+
+classDeclaration
+    : 'class' ID externalDeclaration* ';'
     ;
 
 expressionList

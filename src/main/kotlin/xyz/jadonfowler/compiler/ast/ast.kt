@@ -9,12 +9,11 @@ interface Node
  */
 class EmptyNode : Node
 
-class Program(val globalVariables: List<Variable>, val globalFunctions: List<Function>) : Node {
+class Program(val globalVariables: List<Variable>, val globalFunctions: List<Function>, val globalClasses: List<Clazz>) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
 class Function(val returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>) : Node {
-    val variableTable = mutableMapOf<Variable, Expression>()
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
@@ -26,6 +25,9 @@ class Variable(val type: Type, val name: String, val initialExpression: Expressi
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
+class Clazz(val name: String, val fields: List<Variable>, val methods: List<Function>) : Node {
+    fun accept(visitor: Visitor) = visitor.visit(this)
+}
 
 open class Type(val name: String) {
     override fun toString(): String {
