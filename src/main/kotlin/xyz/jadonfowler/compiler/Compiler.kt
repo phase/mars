@@ -46,14 +46,16 @@ fun main(args: Array<String>) {
 
         let field : int = 0
 
-        method (arg : int)
-            let local : int = arg + 7,
-            let thing : int = local * 5,
-            local / thing
+        method (arg : int) 0
+            #let local : int = arg + 7,
+            #let thing : int = local * 5,
+            #local / thing
     ;
 
     let variable_defined_after_class : int = 0
     """)
+
+    // Go through passes
     TypePass().visit(program)
     Printer().visit(program)
 }

@@ -32,6 +32,7 @@ dependencies {
 generateGrammarSource {
     maxHeapSize = "64m"
     arguments += ['-visitor', '-package', 'xyz.jadonfowler.compiler.parser']
+    // Output generated sources from ANTLR into xyz.jadonfowler.compiler.parser
     outputDirectory = new File("src//main/java/xyz/jadonfowler/compiler/parser/".toString())
 }
 
