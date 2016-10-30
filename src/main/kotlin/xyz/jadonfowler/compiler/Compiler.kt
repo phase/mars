@@ -16,18 +16,18 @@ val globalModules = mutableListOf<Module>()
 fun main(args: Array<String>) {
     // "other file"
     compileString("other", """
-    thing(a : int, b : int) 0
+    thing(a : Int, b : Int) 0
     """)
 
     val program = compileString("main", """
     let c = foo(5, 6)
-    let d = 3 + 2 let e = 0 let f : int
-    let h = 6 let i : int = 7 let j : int = 8
-    #let wrong_type : bool = 7
+    let d = 3 + 2 let e = 0 let f : Int
+    let h = 6 let i : Int = 7 let j : Int = 8
+    #let wrong_type : Bool = 7
     let str = "test"
 
-    foo (a : int, b : int)
-        let g : int = 90128,
+    foo (a : Int, b : Int)
+        let g : Int = 90128,
         if 1 != (2 + 2)
             d = b,
             if 2 != 14 * 7 - 5
@@ -46,15 +46,15 @@ fun main(args: Array<String>) {
 
     class Object
 
-        let field : int = 0
+        let field : Int = 0
 
-        method (arg : int) 0
+        method (arg : Int) 0
             #let local : int = arg + 7,
             #let thing : int = local * 5,
             #local / thing
     ;
 
-    let variable_defined_after_class : int = 0
+    let variable_defined_after_class : Int = 0
     """)
 
     // Go through passes
