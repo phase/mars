@@ -3,9 +3,8 @@ package xyz.jadonfowler.compiler.ast.visitor
 import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.ast.Function
 
-abstract class Visitor {
+abstract class Visitor(val module: Module) {
     // Module Structure
-    abstract fun visit(module: Module)
 
     abstract fun visit(function: Function)
     abstract fun visit(formal: Formal)
@@ -36,7 +35,8 @@ abstract class Visitor {
             is FalseExpression -> visit(expression)
             is IntegerLiteral -> visit(expression)
             is StringLiteral -> visit(expression)
-            is IdentifierExpression -> visit(expression)
+            is ReferenceExpression -> visit(expression)
+            is FunctionCallExpression -> visit(expression)
             is BinaryOperator -> visit(expression)
         }
     }
@@ -45,6 +45,7 @@ abstract class Visitor {
     abstract fun visit(falseExpression: FalseExpression)
     abstract fun visit(integerLiteral: IntegerLiteral)
     abstract fun visit(stringLiteral: StringLiteral)
-    abstract fun visit(identifierExpression: IdentifierExpression)
+    abstract fun visit(referenceExpression: ReferenceExpression)
+    abstract fun visit(functionCallExpression: FunctionCallExpression)
     abstract fun visit(binaryOperator: BinaryOperator)
 }

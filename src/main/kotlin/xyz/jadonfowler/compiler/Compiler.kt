@@ -42,7 +42,10 @@ fun main(args: Array<String>) {
             ;
         ;
         thing(a + b, a - b * g),
-        return a + b + 1
+        a + b + 1
+
+
+    let functionWrapper = foo
 
     class Object
 
@@ -58,8 +61,8 @@ fun main(args: Array<String>) {
     """)
 
     // Go through passes
-    TypePass().visit(program)
-    Printer().visit(program)
+    TypePass(program)
+    Printer(program)
 }
 
 fun compileString(moduleName: String, code: String): Module {

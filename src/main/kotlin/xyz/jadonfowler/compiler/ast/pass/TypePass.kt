@@ -4,7 +4,9 @@ import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.ast.Function
 import xyz.jadonfowler.compiler.ast.visitor.Visitor
 
-class TypePass : Visitor() {
+class TypePass(module: Module) : Visitor(module) {
+
+    var currentFunction: Function? = null
 
     /**
      * Get an Expression's Type
@@ -27,17 +29,44 @@ class TypePass : Visitor() {
             is StringLiteral -> {
                 T_STRING
             }
+            is FunctionCallExpression -> {
+                val functionName = expression.functionReference.name
+                val function = module.globalFunctions.filter { it.name.equals(functionName) }.first()
+                function.returnType
+            }
+            is ReferenceExpression -> {
+                val name = expression.reference.name
+                val thingsWithName: MutableList<Node> = mutableListOf()
+                thingsWithName.addAll(module.globalClasses.filter { it.name.equals(name) })
+                thingsWithName.addAll(module.globalFunctions.filter { it.name.equals(name) })
+                thingsWithName.addAll(module.globalVariables.filter { it.name.equals(name) })
+                if (currentFunction != null) {
+                    thingsWithName.addAll(currentFunction?.formals!!)
+                }
+                if (thingsWithName.isNotEmpty()) {
+                    val firstThingWithName = thingsWithName.first()
+                    when (firstThingWithName) {
+                        is Clazz -> firstThingWithName
+                        is Function -> firstThingWithName
+                        is Variable -> firstThingWithName.type
+                        is Formal -> firstThingWithName.type
+                        else -> T_UNDEF
+                    }
+                } else
+                    T_UNDEF
+            }
             else -> T_UNDEF
         }
     }
 
-    override fun visit(module: Module) {
-        module.globalVariables.forEach { it.accept(this) }
+    init {
         module.globalFunctions.forEach { it.accept(this) }
+        module.globalVariables.forEach { it.accept(this) }
         module.globalClasses.forEach { it.accept(this) }
     }
 
     override fun visit(function: Function) {
+        currentFunction = function
         function.statements.forEach { it.accept(this) }
         if (function.expression != null) {
             // Function should return the type of the return expression.
@@ -55,6 +84,7 @@ class TypePass : Visitor() {
                         "that type.")
             function.returnType = T_VOID
         }
+        currentFunction = null
     }
 
     override fun visit(formal: Formal) {
@@ -104,7 +134,10 @@ class TypePass : Visitor() {
     override fun visit(stringLiteral: StringLiteral) {
     }
 
-    override fun visit(identifierExpression: IdentifierExpression) {
+    override fun visit(referenceExpression: ReferenceExpression) {
+    }
+
+    override fun visit(functionCallExpression: FunctionCallExpression) {
     }
 
     override fun visit(binaryOperator: BinaryOperator) {

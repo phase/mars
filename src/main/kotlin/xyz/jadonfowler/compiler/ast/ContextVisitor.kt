@@ -4,29 +4,29 @@ import xyz.jadonfowler.compiler.globalModules
 import xyz.jadonfowler.compiler.parser.LangBaseVisitor
 import xyz.jadonfowler.compiler.parser.LangParser
 
-var globalVariables: MutableList<Variable> = mutableListOf()
-var globalFunctions: MutableList<Function> = mutableListOf()
-var globalClasses: MutableList<Clazz> = mutableListOf()
-
 /**
  * ContextVisitor transforms a ContextTree into an AST
  */
 class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
+
+    var globalVariables: MutableList<Variable> = mutableListOf()
+    var globalFunctions: MutableList<Function> = mutableListOf()
+    var globalClasses: MutableList<Clazz> = mutableListOf()
 
     override fun visitProgram(ctx: LangParser.ProgramContext?): Module {
         val externalDeclarations = ctx?.externalDeclaration()
 
         globalVariables.addAll(externalDeclarations?.filter { it.variableDeclaration() != null }?.map {
             visitVariableDeclaration(it.variableDeclaration())
-        }?.filterIsInstance<Variable>().orEmpty())
+        }.orEmpty())
 
         globalFunctions.addAll(externalDeclarations?.filter { it.functionDeclaration() != null }?.map {
             visitFunctionDeclaration(it.functionDeclaration())
-        }?.filterIsInstance<Function>().orEmpty())
+        }.orEmpty())
 
         globalClasses.addAll(externalDeclarations?.filter { it.classDeclaration() != null }?.map {
             visitClassDeclaration(it.classDeclaration())
-        }?.filterIsInstance<Clazz>().orEmpty())
+        }.orEmpty())
 
         val module = Module(moduleName, globalVariables.orEmpty(), globalFunctions.orEmpty(), globalClasses.orEmpty())
         globalModules.add(module)
@@ -109,12 +109,9 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
     }
 
     override fun visitFunctionCall(ctx: LangParser.FunctionCallContext?): FunctionCallStatement {
-        val functionName = ctx?.ID()?.symbol?.text
-        val functions = globalFunctions.filter { it.name.equals(functionName) }
+        val functionName = ctx?.ID()?.symbol?.text.orEmpty()
         val expressions = expressionListFromContext(ctx?.expressionList())
-        if (functions.size < 1)
-            throw IllegalArgumentException("$functionName is not a valid function.")
-        return FunctionCallStatement(functions[0], expressions)
+        return FunctionCallStatement(Reference(functionName), expressions)
     }
 
     fun expressionListFromContext(expressionListContext: LangParser.ExpressionListContext?): List<Expression> {
@@ -177,13 +174,15 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
             if (operator != null) {
                 return BinaryOperator(expressionA, operator, expressionB)
             }
+        } else if (ctx?.functionCall() != null) {
+            val functionName = ctx?.functionCall()?.ID()?.symbol?.text.orEmpty()
+            val expressions = expressionListFromContext(ctx?.functionCall()?.expressionList())
+            return FunctionCallExpression(Reference(functionName), expressions)
         } else if (ctx?.INT() != null) {
             return IntegerLiteral(ctx?.INT()?.text?.toInt()!!)
         } else if (ctx?.ID() != null) {
-            val id = ctx?.ID()?.symbol?.text
-            val variables = globalVariables.filter { it.name.equals(id) }
-            if (variables.size > 0)
-                return variables.last().initialExpression!!
+            val id = ctx?.ID()?.symbol?.text.orEmpty()
+            return ReferenceExpression(Reference(id))
         } else if (ctx?.STRING() != null) {
             val value = ctx?.STRING()?.symbol?.text.orEmpty()
             // Remove quotes around string

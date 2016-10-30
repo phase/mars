@@ -3,7 +3,7 @@ package xyz.jadonfowler.compiler.ast.visitor
 import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.ast.Function
 
-class Printer : Visitor() {
+class Printer(module: Module) : Visitor(module) {
 
     val tab = "    "
     var tabIndent = 0
@@ -12,7 +12,7 @@ class Printer : Visitor() {
     fun print(any: Any) = System.out.print(tab.repeat(tabIndent) + any)
     fun println(any: Any) = System.out.println(tab.repeat(tabIndent) + any)
 
-    override fun visit(module: Module) {
+    init {
         module.globalVariables.map { it.accept(this) }
         println()
         module.globalFunctions.map { it.accept(this) }
@@ -104,7 +104,7 @@ class Printer : Visitor() {
     }
 
     override fun visit(functionCallStatement: FunctionCallStatement) {
-        print("${functionCallStatement.function?.name}(")
+        print("${functionCallStatement.functionReference.name}(")
         functionCallStatement.arguments.map { it.accept(this); printI(", ") }
         printI(")\n")
     }
@@ -125,8 +125,14 @@ class Printer : Visitor() {
         printI("\"${stringLiteral.value}\"")
     }
 
-    override fun visit(identifierExpression: IdentifierExpression) {
-        printI(identifierExpression.identifier)
+    override fun visit(referenceExpression: ReferenceExpression) {
+        printI(referenceExpression.reference.name)
+    }
+
+    override fun visit(functionCallExpression: FunctionCallExpression) {
+        printI("${functionCallExpression.functionReference.name}(")
+        functionCallExpression.arguments.forEach { it.accept(this); printI(", ") }
+        printI(")")
     }
 
     override fun visit(binaryOperator: BinaryOperator) {

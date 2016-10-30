@@ -13,8 +13,12 @@ class EmptyNode : Node
  * Modules are compilation units that contain global variables, functions, and classes.
  */
 class Module(val name: String, val globalVariables: List<Variable>, val globalFunctions: List<Function>, val globalClasses: List<Clazz>) : Node {
-    fun accept(visitor: Visitor) = visitor.visit(this)
 }
+
+/**
+ * Declaration that can be accessed outside the Module
+ */
+interface Global : Node
 
 /**
  * Functions have a return type, which is the type of the value that is returned;
@@ -23,9 +27,16 @@ class Module(val name: String, val globalVariables: List<Variable>, val globalFu
  * and an optional last expression. The last expression is used as the return value for the function.
  * If there is no last expression, the function returns "void" (aka nothing).
  */
-class Function(var returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>, val expression: Expression? = null) : Node, Type {
+class Function(var returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>, val expression: Expression? = null) : Global, Type {
     fun accept(visitor: Visitor) = visitor.visit(this)
-    override fun toString(): String = "$name (${formals.forEach { it.type.toString() + ", " }}) -> ${returnType.toString()}"
+
+    /**
+     * XXX: Returns String of Type
+     */
+    override fun toString(): String {
+        val formals = formals.joinToString(separator = " -> ") { it.type.toString() }
+        return "($formals -> ${returnType.toString()})"
+    }
 }
 
 /**
@@ -46,7 +57,7 @@ class Formal(val type: Type, val name: String) : Node {
  *
  * If 'constant' is true, the value of this variable can't be changed.
  */
-class Variable(var type: Type, val name: String, val initialExpression: Expression? = null, val constant: Boolean = false) : Node {
+class Variable(var type: Type, val name: String, val initialExpression: Expression? = null, val constant: Boolean = false) : Global {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
@@ -55,9 +66,14 @@ class Variable(var type: Type, val name: String, val initialExpression: Expressi
  *
  * TODO: Class Constructors
  */
-class Clazz(val name: String, val fields: List<Variable>, val methods: List<Function>) : Node {
+class Clazz(val name: String, val fields: List<Variable>, val methods: List<Function>) : Global, Type {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
+
+/**
+ * A Reference to a Global declaration.
+ */
+class Reference(val name: String, var global: Global? = null)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // STATEMENTS
@@ -160,7 +176,7 @@ class VariableDeclarationStatement(val variable: Variable) : Statement() {
 /**
  * FunctionCallStatements call other Functions with the supplied Expressions.
  */
-class FunctionCallStatement(val function: Function?, val arguments: List<Expression> = listOf()) : Statement() {
+class FunctionCallStatement(val functionReference: Reference, val arguments: List<Expression> = listOf()) : Statement() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
@@ -189,12 +205,12 @@ class FalseExpression : Expression() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-
 /**
  * IntegerLiterals are an Expression wrapper for Ints.
  */
 class IntegerLiteral(val value: Int) : Expression() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
+    override fun toString(): String = value.toString()
 }
 
 /**
@@ -202,15 +218,23 @@ class IntegerLiteral(val value: Int) : Expression() {
  */
 class StringLiteral(val value: String) : Expression() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
+    override fun toString(): String = value
 }
 
 /**
- * IdentifierExpressions contain Identifiers which correspond with a Variable, Function, or Class.
+ * Expression wrapper for References
  */
-class IdentifierExpression(val identifier: String) : Expression() {
+class ReferenceExpression(val reference: Reference) : Expression() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
+    override fun toString(): String = reference.name
 }
 
+/**
+ * FunctionCallStatement as an Expression
+ */
+class FunctionCallExpression(val functionReference: Reference, val arguments: List<Expression> = listOf()) : Expression(arguments) {
+    override fun accept(visitor: Visitor) = visitor.visit(this)
+}
 
 /**
  * Operators are constructs that behave like Functions, but differ syntactically.
@@ -230,7 +254,9 @@ enum class Operator(val string: String) {
     LESS_THAN_EQUAL("<="),
     NOT_EQUAL("!="),
     AND("&&"),
-    OR("||"),
+    OR("||");
+
+    override fun toString(): String = string
 }
 
 /**
@@ -249,4 +275,5 @@ fun getOperator(s: String): Operator? {
  */
 class BinaryOperator(val expA: Expression, val operator: Operator, val expB: Expression) : Expression(listOf(expA, expB)) {
     override fun accept(visitor: Visitor) = visitor.visit(this)
+    override fun toString(): String = "($expA $operator $expB)"
 }
