@@ -1,5 +1,6 @@
 package xyz.jadonfowler.compiler.ast
 
+import xyz.jadonfowler.compiler.globalModules
 import xyz.jadonfowler.compiler.parser.LangBaseVisitor
 import xyz.jadonfowler.compiler.parser.LangParser
 
@@ -10,7 +11,7 @@ var globalClasses: MutableList<Clazz> = mutableListOf()
 /**
  * ContextVisitor transforms a ContextTree into an AST
  */
-class ContextVisitor : LangBaseVisitor<Node>() {
+class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
 
     override fun visitProgram(ctx: LangParser.ProgramContext?): Module {
         val externalDeclarations = ctx?.externalDeclaration()
@@ -27,7 +28,9 @@ class ContextVisitor : LangBaseVisitor<Node>() {
             visitClassDeclaration(it.classDeclaration())
         }?.filterIsInstance<Clazz>().orEmpty())
 
-        return Module(globalVariables.orEmpty(), globalFunctions.orEmpty(), globalClasses.orEmpty())
+        val module = Module(moduleName, globalVariables.orEmpty(), globalFunctions.orEmpty(), globalClasses.orEmpty())
+        globalModules.add(module)
+        return module
     }
 
     override fun visitExternalDeclaration(ctx: LangParser.ExternalDeclarationContext?): Node {
@@ -184,7 +187,7 @@ class ContextVisitor : LangBaseVisitor<Node>() {
         } else if (ctx?.STRING() != null) {
             val value = ctx?.STRING()?.symbol?.text.orEmpty()
             // Remove quotes around string
-            return StringLiteral(value.substring(1..value.length-2))
+            return StringLiteral(value.substring(1..value.length - 2))
         }
         return TrueExpression() // TODO: Remove
     }

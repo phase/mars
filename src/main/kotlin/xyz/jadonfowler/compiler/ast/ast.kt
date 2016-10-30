@@ -12,7 +12,7 @@ class EmptyNode : Node
 /**
  * Modules are compilation units that contain global variables, functions, and classes.
  */
-class Module(val globalVariables: List<Variable>, val globalFunctions: List<Function>, val globalClasses: List<Clazz>) : Node {
+class Module(val name: String, val globalVariables: List<Variable>, val globalFunctions: List<Function>, val globalClasses: List<Clazz>) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 

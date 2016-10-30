@@ -11,13 +11,15 @@ import xyz.jadonfowler.compiler.ast.visitor.Printer
 import xyz.jadonfowler.compiler.parser.LangLexer
 import xyz.jadonfowler.compiler.parser.LangParser
 
+val globalModules = mutableListOf<Module>()
+
 fun main(args: Array<String>) {
     // "other file"
-    compileString("""
+    compileString("other", """
     thing(a : int, b : int) 0
     """)
 
-    val program = compileString("""
+    val program = compileString("main", """
     let c = foo(5, 6)
     let d = 3 + 2 let e = 0 let f : int
     let h = 6 let i : int = 7 let j : int = 8
@@ -60,13 +62,13 @@ fun main(args: Array<String>) {
     Printer().visit(program)
 }
 
-fun compileString(s: String): Module {
-    val stream = ANTLRInputStream(s)
+fun compileString(moduleName: String, code: String): Module {
+    val stream = ANTLRInputStream(code)
     val lexer = LangLexer(stream)
     val tokens = CommonTokenStream(lexer)
     val parser = LangParser(tokens)
     val result = parser.program()
-    val contextVisitor = ContextVisitor()
+    val contextVisitor = ContextVisitor(moduleName)
     explore(result, 0)
     return contextVisitor.visitProgram(result)
 }
