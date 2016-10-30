@@ -13,8 +13,9 @@ class Module(val globalVariables: List<Variable>, val globalFunctions: List<Func
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-class Function(val returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>, val expression: Expression? = null) : Node, Type {
+class Function(var returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>, val expression: Expression? = null) : Node, Type {
     fun accept(visitor: Visitor) = visitor.visit(this)
+    override fun toString(): String = "$name (${formals.forEach { it.type.toString() + ", " }}) -> ${returnType.toString()}"
 }
 
 class Formal(val type: Type, val name: String) : Node {

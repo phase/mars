@@ -32,6 +32,12 @@ class TypePass : Visitor() {
     }
 
     override fun visit(function: Function) {
+        if (function.expression != null) {
+            val lastExpressionType = getType(function.expression)
+            if (function.returnType != lastExpressionType && !function.returnType.equals(T_UNDEF))
+                throw Exception("Function '${function.name}' is marked with the type '${function.returnType.toString()}' but its last expression is of the type '${lastExpressionType.toString()}'.")
+            function.returnType = lastExpressionType
+        }
     }
 
     override fun visit(formal: Formal) {

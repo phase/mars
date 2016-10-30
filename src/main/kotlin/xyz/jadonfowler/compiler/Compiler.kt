@@ -14,7 +14,7 @@ import xyz.jadonfowler.compiler.parser.LangParser
 fun main(args: Array<String>) {
     // "other file"
     compileString("""
-    thing(a : int, b : int) : void 0
+    thing(a : int, b : int) 0
     """)
 
     val program = compileString("""
@@ -24,7 +24,7 @@ fun main(args: Array<String>) {
     #let wrong_type : bool = 7
     let str = "test"
 
-    foo (a : int, b : int) : int
+    foo (a : int, b : int)
         let g : int = 90128,
         if 1 != (2 + 2)
             d = b,
