@@ -12,7 +12,7 @@ var globalClasses: MutableList<Clazz> = mutableListOf()
  */
 class ContextVisitor : LangBaseVisitor<Node>() {
 
-    override fun visitProgram(ctx: LangParser.ProgramContext?): Program {
+    override fun visitProgram(ctx: LangParser.ProgramContext?): Module {
         val externalDeclarations = ctx?.externalDeclaration()
 
         globalVariables.addAll(externalDeclarations?.filter { it.variableDeclaration() != null }?.map {
@@ -27,7 +27,7 @@ class ContextVisitor : LangBaseVisitor<Node>() {
             visitClassDeclaration(it.classDeclaration())
         }?.filterIsInstance<Clazz>().orEmpty())
 
-        return Program(globalVariables.orEmpty(), globalFunctions.orEmpty(), globalClasses.orEmpty())
+        return Module(globalVariables.orEmpty(), globalFunctions.orEmpty(), globalClasses.orEmpty())
     }
 
     override fun visitExternalDeclaration(ctx: LangParser.ExternalDeclarationContext?): Node {

@@ -12,12 +12,12 @@ class Printer : Visitor() {
     fun print(any: Any) = System.out.print(tab.repeat(tabIndent) + any)
     fun println(any: Any) = System.out.println(tab.repeat(tabIndent) + any)
 
-    override fun visit(program: Program) {
-        program.globalVariables.map { it.accept(this) }
+    override fun visit(module: Module) {
+        module.globalVariables.map { it.accept(this) }
         println()
-        program.globalFunctions.map { it.accept(this) }
+        module.globalFunctions.map { it.accept(this) }
         println()
-        program.globalClasses.map { it.accept(this) }
+        module.globalClasses.map { it.accept(this) }
     }
 
     override fun visit(function: Function) {

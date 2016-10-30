@@ -5,7 +5,8 @@ import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.RuleContext
 import xyz.jadonfowler.compiler.ast.ContextVisitor
-import xyz.jadonfowler.compiler.ast.Program
+import xyz.jadonfowler.compiler.ast.Module
+import xyz.jadonfowler.compiler.ast.pass.TypePass
 import xyz.jadonfowler.compiler.ast.visitor.Printer
 import xyz.jadonfowler.compiler.parser.LangLexer
 import xyz.jadonfowler.compiler.parser.LangParser
@@ -17,9 +18,10 @@ fun main(args: Array<String>) {
     """)
 
     val program = compileString("""
-    let c : int = foo(5, 6)
-    let d : int = 3 + 2 let e : int = 0 let f : int
-    let h : int = 6 let i : int = 7 let j : int = 8
+    let c = foo(5, 6)
+    let d = 3 + 2 let e = 0 let f : int
+    let h = 6 let i : int = 7 let j : int = 8
+    #let wrong_type : bool = 7
 
     foo (a : int, b : int) : int
         let g : int = 90128,
@@ -51,11 +53,11 @@ fun main(args: Array<String>) {
 
     let variable_defined_after_class : int = 0
     """)
-    val printer = Printer()
-    printer.visit(program)
+    TypePass().visit(program)
+    Printer().visit(program)
 }
 
-fun compileString(s: String): Program {
+fun compileString(s: String): Module {
     val stream = ANTLRInputStream(s)
     val lexer = LangLexer(stream)
     val tokens = CommonTokenStream(lexer)

@@ -103,7 +103,6 @@ fragment EXP: ('E' | 'e') ('+' | '-')? INT;
 STRING
     : '"' ( ESC | ~[\\"] )*? '"'
     | '\'' ( ESC | ~[\\'] )*? '\''
-    | '`' ( ESC | ~[\\'] )*? '`'
     ;
 
 fragment ESC

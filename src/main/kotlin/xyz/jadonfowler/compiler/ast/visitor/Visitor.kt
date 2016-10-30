@@ -4,8 +4,8 @@ import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.ast.Function
 
 abstract class Visitor {
-    // Program Structure
-    abstract fun visit(program: Program)
+    // Module Structure
+    abstract fun visit(module: Module)
 
     abstract fun visit(function: Function)
     abstract fun visit(formal: Formal)

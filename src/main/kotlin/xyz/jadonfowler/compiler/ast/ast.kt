@@ -9,11 +9,11 @@ interface Node
  */
 class EmptyNode : Node
 
-class Program(val globalVariables: List<Variable>, val globalFunctions: List<Function>, val globalClasses: List<Clazz>) : Node {
+class Module(val globalVariables: List<Variable>, val globalFunctions: List<Function>, val globalClasses: List<Clazz>) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-class Function(val returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>, val expression: Expression? = null) : Node {
+class Function(val returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>, val expression: Expression? = null) : Node, Type {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
@@ -21,28 +21,12 @@ class Formal(val type: Type, val name: String) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
-class Variable(val type: Type, val name: String, val initialExpression: Expression? = null, val constant: Boolean = false) : Node {
+class Variable(var type: Type, val name: String, val initialExpression: Expression? = null, val constant: Boolean = false) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
 class Clazz(val name: String, val fields: List<Variable>, val methods: List<Function>) : Node {
     fun accept(visitor: Visitor) = visitor.visit(this)
-}
-
-open class Type(val name: String) {
-    override fun toString(): String {
-        return name
-    }
-}
-
-class Void : Type("void")
-
-fun getType(name: String): Type {
-    // TODO: Real name lookup
-    when (name) {
-        "void" -> Void()
-    }
-    return Type(name)
 }
 
 // Statements
