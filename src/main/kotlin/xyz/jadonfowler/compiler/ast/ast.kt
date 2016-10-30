@@ -134,6 +134,10 @@ class IntegerLiteral(val value: Int) : Expression() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
+class StringLiteral(val value: String) : Expression() {
+    override fun accept(visitor: Visitor) = visitor.visit(this)
+}
+
 class IdentifierExpression(val identifier: String) : Expression() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }

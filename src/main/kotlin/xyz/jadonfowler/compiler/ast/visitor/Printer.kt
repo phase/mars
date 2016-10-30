@@ -121,6 +121,10 @@ class Printer : Visitor() {
         printI(integerLiteral.value)
     }
 
+    override fun visit(stringLiteral: StringLiteral) {
+        printI("\"${stringLiteral.value}\"")
+    }
+
     override fun visit(identifierExpression: IdentifierExpression) {
         printI(identifierExpression.identifier)
     }

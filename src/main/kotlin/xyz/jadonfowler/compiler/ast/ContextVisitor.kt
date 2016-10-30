@@ -181,6 +181,10 @@ class ContextVisitor : LangBaseVisitor<Node>() {
             val variables = globalVariables.filter { it.name.equals(id) }
             if (variables.size > 0)
                 return variables.last().initialExpression!!
+        } else if (ctx?.STRING() != null) {
+            val value = ctx?.STRING()?.symbol?.text.orEmpty()
+            // Remove quotes around string
+            return StringLiteral(value.substring(1..value.length-2))
         }
         return TrueExpression() // TODO: Remove
     }

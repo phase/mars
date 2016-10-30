@@ -19,6 +19,9 @@ class TypePass : Visitor() {
             is TrueExpression, is FalseExpression -> {
                 T_BOOL
             }
+            is StringLiteral -> {
+                T_STRING
+            }
             else -> T_UNDEF
         }
     }
@@ -72,6 +75,9 @@ class TypePass : Visitor() {
     }
 
     override fun visit(integerLiteral: IntegerLiteral) {
+    }
+
+    override fun visit(stringLiteral: StringLiteral) {
     }
 
     override fun visit(identifierExpression: IdentifierExpression) {

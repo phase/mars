@@ -22,6 +22,7 @@ fun main(args: Array<String>) {
     let d = 3 + 2 let e = 0 let f : int
     let h = 6 let i : int = 7 let j : int = 8
     #let wrong_type : bool = 7
+    let str = "test"
 
     foo (a : int, b : int) : int
         let g : int = 90128,

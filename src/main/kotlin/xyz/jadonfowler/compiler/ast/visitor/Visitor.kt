@@ -35,6 +35,7 @@ abstract class Visitor {
             is TrueExpression -> visit(expression)
             is FalseExpression -> visit(expression)
             is IntegerLiteral -> visit(expression)
+            is StringLiteral -> visit(expression)
             is IdentifierExpression -> visit(expression)
             is BinaryOperator -> visit(expression)
         }
@@ -43,6 +44,7 @@ abstract class Visitor {
     abstract fun visit(trueExpression: TrueExpression)
     abstract fun visit(falseExpression: FalseExpression)
     abstract fun visit(integerLiteral: IntegerLiteral)
+    abstract fun visit(stringLiteral: StringLiteral)
     abstract fun visit(identifierExpression: IdentifierExpression)
     abstract fun visit(binaryOperator: BinaryOperator)
 }
