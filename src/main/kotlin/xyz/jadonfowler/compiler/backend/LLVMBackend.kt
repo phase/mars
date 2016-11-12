@@ -76,12 +76,7 @@ class LLVMBackend(module: Module) : Backend(module) {
         var formalIndex = 0
         function.formals.forEach { localVariables.put(it.name, ValueContainer(ValueType.CONSTANT, LLVMGetParam(llvmFunction, formalIndex))); formalIndex++ }
 
-        var i = 0
-        function.statements.forEach {
-            visit(it, function, builder, llvmFunction, localVariables)
-            localVariables.forEach { println("$i: ${it.key} -> ${it.value}") }
-            i++
-        }
+        function.statements.forEach { visit(it, builder, llvmFunction, localVariables) }
 
         if (function.expression != null) {
             val ret_value = visit(function.expression, builder, localVariables)
@@ -91,7 +86,7 @@ class LLVMBackend(module: Module) : Backend(module) {
         LLVMDisposeBuilder(builder)
     }
 
-    fun visit(statement: Statement, function: Function, builder: LLVMBuilderRef, llvmFunction: LLVMValueRef, localVariables: MutableMap<String, ValueContainer>) {
+    fun visit(statement: Statement, builder: LLVMBuilderRef, llvmFunction: LLVMValueRef, localVariables: MutableMap<String, ValueContainer>) {
         when (statement) {
             is VariableDeclarationStatement -> {
                 val variable = statement.variable
@@ -121,18 +116,10 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val A = visit(expression.expA, builder, localVariables)
                 val B = visit(expression.expB, builder, localVariables)
                 when (expression.operator) {
-                    Operator.PLUS -> {
-                        LLVMBuildAdd(builder, A, B, expression.toString())
-                    }
-                    Operator.MINUS -> {
-                        LLVMBuildSub(builder, A, B, expression.toString())
-                    }
-                    Operator.MULTIPLY -> {
-                        LLVMBuildMul(builder, A, B, expression.toString())
-                    }
-                    Operator.DIVIDE -> {
-                        LLVMBuildSDiv(builder, A, B, expression.toString())
-                    }
+                    Operator.PLUS -> LLVMBuildAdd(builder, A, B, expression.toString())
+                    Operator.MINUS -> LLVMBuildSub(builder, A, B, expression.toString())
+                    Operator.MULTIPLY -> LLVMBuildMul(builder, A, B, expression.toString())
+                    Operator.DIVIDE -> LLVMBuildSDiv(builder, A, B, expression.toString())
                     else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
                 }
             }
@@ -140,8 +127,8 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val ref = expression.reference.name
                 if (localVariables.containsKey(ref)) {
                     val value = localVariables[ref]!!
-                    if(value.valueType == ValueType.ALLOCATION) {
-                        LLVMBuildLoad(builder, value.llvmValueRef, "loading_shit")
+                    if (value.valueType == ValueType.ALLOCATION) {
+                        LLVMBuildLoad(builder, value.llvmValueRef, ref)
                     } else value.llvmValueRef
                 } else LLVMConstInt(LLVMInt32Type(), 0, 0)
             }
