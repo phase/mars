@@ -42,8 +42,8 @@ class Function(var returnType: Type, val name: String, val formals: List<Formal>
 /**
  * Formals are the arguments for Functions.
  */
-class Formal(val type: Type, val name: String) : Node {
-    fun accept(visitor: Visitor) = visitor.visit(this)
+class Formal(type: Type, name: String) : Variable(type, name, null, true) {
+    override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
 /**
@@ -57,8 +57,8 @@ class Formal(val type: Type, val name: String) : Node {
  *
  * If 'constant' is true, the value of this variable can't be changed.
  */
-class Variable(var type: Type, val name: String, val initialExpression: Expression? = null, val constant: Boolean = false) : Global {
-    fun accept(visitor: Visitor) = visitor.visit(this)
+open class Variable(var type: Type, val name: String, val initialExpression: Expression? = null, val constant: Boolean = false) : Global {
+    open fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
 /**

@@ -43,12 +43,12 @@ class TypePass(module: Module) : Pass(module) {
                 localVariables?.forEach { if (it.key == name) thingsWithName.add(it.value) }
 
                 if (thingsWithName.isNotEmpty()) {
-                    val firstThingWithName = thingsWithName.first()
-                    when (firstThingWithName) {
-                        is Clazz -> firstThingWithName
-                        is Function -> firstThingWithName
-                        is Variable -> firstThingWithName.type
-                        is Formal -> firstThingWithName.type
+                    val lastThingWithName = thingsWithName.last()
+                    when (lastThingWithName) {
+                        is Clazz -> lastThingWithName
+                        is Function -> lastThingWithName
+                        is Variable -> lastThingWithName.type
+                        is Formal -> lastThingWithName.type
                         else -> T_UNDEF
                     }
                 } else
@@ -109,6 +109,7 @@ class TypePass(module: Module) : Pass(module) {
     fun visit(statement: Statement, localVariables: MutableMap<String, Variable>?) {
         when (statement) {
             is VariableDeclarationStatement -> visit(statement, localVariables)
+            is VariableReassignmentStatement -> visit(statement, localVariables)
             else -> visit(statement)
         }
     }
@@ -117,4 +118,21 @@ class TypePass(module: Module) : Pass(module) {
         localVariables?.put(variableDeclarationStatement.variable.name, variableDeclarationStatement.variable)
         visit(variableDeclarationStatement.variable, localVariables)
     }
+
+    fun visit(variableReassignmentStatement: VariableReassignmentStatement, localVariables: MutableMap<String, Variable>?) {
+        val name = variableReassignmentStatement.reference.name
+        val thingsWithName: MutableList<Variable> = mutableListOf()
+        thingsWithName.addAll(module.globalVariables.filter { it.name == name })
+        if (currentFunction != null) thingsWithName.addAll(currentFunction?.formals!!)
+        localVariables?.forEach { if (it.key == name) thingsWithName.add(it.value) }
+
+        if(thingsWithName.isNotEmpty()) {
+            val variable = thingsWithName.last()
+            val expressionType = getType(variableReassignmentStatement.exp, localVariables)
+            if(variable.type != expressionType)
+                throw Exception("Variable '${variable.name}' is marked with the type '${variable.type}' but the type" +
+                        " of '${variableReassignmentStatement.exp} is '$expressionType'.")
+        }
+    }
+
 }
