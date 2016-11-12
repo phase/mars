@@ -2,9 +2,8 @@ package xyz.jadonfowler.compiler.pass
 
 import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.ast.Function
-import xyz.jadonfowler.compiler.visitor.Visitor
 
-class TypePass(module: Module) : Visitor(module) {
+class TypePass(module: Module) : Pass(module) {
 
     var currentFunction: Function? = null
 
@@ -87,10 +86,6 @@ class TypePass(module: Module) : Visitor(module) {
         currentFunction = null
     }
 
-    override fun visit(formal: Formal) {
-
-    }
-
     fun visit(variable: Variable, localVariables: MutableMap<String, Variable>?) {
         if (variable.initialExpression != null) {
             // Variable should have the same type as their initial expression.
@@ -111,15 +106,6 @@ class TypePass(module: Module) : Visitor(module) {
         clazz.methods.forEach { it.accept(this) }
     }
 
-    override fun visit(block: Block) {
-    }
-
-    override fun visit(ifStatement: IfStatement) {
-    }
-
-    override fun visit(whileStatement: WhileStatement) {
-    }
-
     fun visit(statement: Statement, localVariables: MutableMap<String, Variable>?) {
         when (statement) {
             is VariableDeclarationStatement -> visit(statement, localVariables)
@@ -130,32 +116,5 @@ class TypePass(module: Module) : Visitor(module) {
     fun visit(variableDeclarationStatement: VariableDeclarationStatement, localVariables: MutableMap<String, Variable>?) {
         localVariables?.put(variableDeclarationStatement.variable.name, variableDeclarationStatement.variable)
         visit(variableDeclarationStatement.variable, localVariables)
-    }
-
-    override fun visit(variableDeclarationStatement: VariableDeclarationStatement) {
-    }
-
-    override fun visit(functionCallStatement: FunctionCallStatement) {
-    }
-
-    override fun visit(trueExpression: TrueExpression) {
-    }
-
-    override fun visit(falseExpression: FalseExpression) {
-    }
-
-    override fun visit(integerLiteral: IntegerLiteral) {
-    }
-
-    override fun visit(stringLiteral: StringLiteral) {
-    }
-
-    override fun visit(referenceExpression: ReferenceExpression) {
-    }
-
-    override fun visit(functionCallExpression: FunctionCallExpression) {
-    }
-
-    override fun visit(binaryOperator: BinaryOperator) {
     }
 }

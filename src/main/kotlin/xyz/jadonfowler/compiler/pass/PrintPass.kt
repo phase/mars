@@ -2,12 +2,11 @@ package xyz.jadonfowler.compiler.pass
 
 import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.ast.Function
-import xyz.jadonfowler.compiler.visitor.Visitor
 
 /**
  * This pass is used for debugging the AST.
  */
-class PrintPass(module: Module) : Visitor(module) {
+class PrintPass(module: Module) : Pass(module) {
 
     val tab = "    "
     var tabIndent = 0
