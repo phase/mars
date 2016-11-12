@@ -28,6 +28,11 @@ fun main(args: Array<String>) {
     #let wrong_type : Bool = 7
     let str = "test"
 
+    llvm (a : Int, b : Int, c : Int, d : Int)
+        let e : Int = 42,
+        let f : Int = 45 * 67 + 124,
+        5
+
     foo (a : Int, b : Int)
         let g : Int = 90128,
         if 1 != (2 + 2)

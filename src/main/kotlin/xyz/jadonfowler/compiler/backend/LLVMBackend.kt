@@ -9,6 +9,7 @@ import java.io.File
 class LLVMBackend(module: Module) : Backend(module) {
 
     val llvmModule: LLVMModuleRef
+    val namedValues: MutableMap<String, LLVMValueRef> = mutableMapOf()
 
     init {
         LLVMLinkInMCJIT()
@@ -33,12 +34,12 @@ class LLVMBackend(module: Module) : Backend(module) {
             System.exit(-1)
         }
 
-        val pass = LLVMCreatePassManager()
+        val pass = LLVMCreatePassManager()/*
         LLVMAddConstantPropagationPass(pass)
         LLVMAddInstructionCombiningPass(pass)
         LLVMAddPromoteMemoryToRegisterPass(pass)
         LLVMAddGVNPass(pass)
-        LLVMAddCFGSimplificationPass(pass)
+        LLVMAddCFGSimplificationPass(pass)*/
         LLVMRunPassManager(pass, llvmModule)
         LLVMDumpModule(llvmModule)
 
@@ -55,6 +56,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                 PointerPointer<LLVMTypeRef>(*argument_types.toTypedArray()), argument_types.size, 0)
         // Add the Function to the Module
         val llvmFunction: LLVMValueRef = LLVMAddFunction(llvmModule, function.name, llvmFunctionType)
+        namedValues.put(function.name, llvmFunction)
 
         LLVMSetFunctionCallConv(llvmFunction, LLVMCCallConv)
         val builder = LLVMCreateBuilder()
@@ -62,12 +64,50 @@ class LLVMBackend(module: Module) : Backend(module) {
         val entryBlock = LLVMAppendBasicBlock(llvmFunction, "entry")
         LLVMPositionBuilderAtEnd(builder, entryBlock)
 
-        function.statements.forEach { it.accept(this) }
+        function.statements.forEach { visit(it, function, builder, llvmFunction) }
 
         val ret_value = LLVMConstInt(LLVMInt32Type(), 0, 0)
         LLVMBuildRet(builder, ret_value)
 
         LLVMDisposeBuilder(builder)
+    }
+
+    fun visit(statement: Statement, function: Function, builder: LLVMBuilderRef, llvmFunction: LLVMValueRef) {
+        when (statement) {
+            is VariableDeclarationStatement -> {
+                if(statement.variable.initialExpression != null) {
+                    val value = visit(statement.variable.initialExpression, builder)
+                    val alloca = LLVMBuildAlloca(builder, getLLVMType(statement.variable.type), statement.variable.name)
+                    LLVMBuildStore(builder, value, alloca)
+                }
+            }
+        }
+    }
+
+    fun visit(expression: Expression, builder: LLVMBuilderRef): LLVMValueRef {
+        return when (expression) {
+            is IntegerLiteral -> LLVMConstInt(LLVMInt32Type(), expression.value.toLong(), 0)
+            is BinaryOperator -> {
+                val A = visit(expression.expA, builder)
+                val B = visit(expression.expB, builder)
+                when(expression.operator) {
+                    Operator.PLUS -> {
+                        LLVMBuildAdd(builder, A, B, "_addop")
+                    }
+                    Operator.MINUS -> {
+                        LLVMBuildSub(builder, A, B, "_subop")
+                    }
+                    Operator.MULTIPLY -> {
+                        LLVMBuildMul(builder, A, B, "_mulop")
+                    }
+                    Operator.DIVIDE -> {
+                        LLVMBuildSDiv(builder, A, B, "_divop")
+                    }
+                    else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
+                }
+            }
+            else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
+        }
     }
 
     companion object {
