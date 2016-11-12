@@ -1,4 +1,4 @@
-package xyz.jadonfowler.compiler.ast.visitor
+package xyz.jadonfowler.compiler.visitor
 
 import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.ast.Function

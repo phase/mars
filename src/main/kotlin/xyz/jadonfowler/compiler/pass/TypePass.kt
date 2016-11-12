@@ -1,8 +1,8 @@
-package xyz.jadonfowler.compiler.ast.pass
+package xyz.jadonfowler.compiler.pass
 
 import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.ast.Function
-import xyz.jadonfowler.compiler.ast.visitor.Visitor
+import xyz.jadonfowler.compiler.visitor.Visitor
 
 class TypePass(module: Module) : Visitor(module) {
 
@@ -88,6 +88,7 @@ class TypePass(module: Module) : Visitor(module) {
     }
 
     override fun visit(formal: Formal) {
+
     }
 
     override fun visit(variable: Variable) {

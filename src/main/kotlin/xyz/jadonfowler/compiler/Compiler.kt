@@ -4,10 +4,10 @@ import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.RuleContext
-import xyz.jadonfowler.compiler.ast.ContextVisitor
+import xyz.jadonfowler.compiler.visitor.ContextVisitor
 import xyz.jadonfowler.compiler.ast.Module
-import xyz.jadonfowler.compiler.ast.pass.TypePass
-import xyz.jadonfowler.compiler.ast.visitor.Printer
+import xyz.jadonfowler.compiler.pass.TypePass
+import xyz.jadonfowler.compiler.pass.PrintPass
 import xyz.jadonfowler.compiler.parser.LangLexer
 import xyz.jadonfowler.compiler.parser.LangParser
 
@@ -62,7 +62,7 @@ fun main(args: Array<String>) {
 
     // Go through passes
     TypePass(program)
-    Printer(program)
+    PrintPass(program)
 }
 
 fun compileString(moduleName: String, code: String): Module {
@@ -72,7 +72,7 @@ fun compileString(moduleName: String, code: String): Module {
     val parser = LangParser(tokens)
     val result = parser.program()
     val contextVisitor = ContextVisitor(moduleName)
-    explore(result, 0)
+    // explore(result, 0)
     return contextVisitor.visitProgram(result)
 }
 

@@ -1,6 +1,6 @@
 package xyz.jadonfowler.compiler.ast
 
-import xyz.jadonfowler.compiler.ast.visitor.Visitor
+import xyz.jadonfowler.compiler.visitor.Visitor
 
 interface Node
 

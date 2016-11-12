@@ -1,9 +1,10 @@
-package xyz.jadonfowler.compiler.ast.visitor
+package xyz.jadonfowler.compiler.pass
 
 import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.ast.Function
+import xyz.jadonfowler.compiler.visitor.Visitor
 
-class Printer(module: Module) : Visitor(module) {
+class PrintPass(module: Module) : Visitor(module) {
 
     val tab = "    "
     var tabIndent = 0

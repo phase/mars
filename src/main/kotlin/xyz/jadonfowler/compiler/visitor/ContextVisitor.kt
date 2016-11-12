@@ -1,5 +1,7 @@
-package xyz.jadonfowler.compiler.ast
+package xyz.jadonfowler.compiler.visitor
 
+import xyz.jadonfowler.compiler.ast.*
+import xyz.jadonfowler.compiler.ast.Function
 import xyz.jadonfowler.compiler.globalModules
 import xyz.jadonfowler.compiler.parser.LangBaseVisitor
 import xyz.jadonfowler.compiler.parser.LangParser
@@ -149,7 +151,7 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
 
                 var elseStatement: IfStatement? = null
                 if (ctx?.getChild(3)?.text.equals("else"))
-                    elseStatement = xyz.jadonfowler.compiler.ast.elseStatement(
+                    elseStatement = elseStatement(
                             statementListFromStatementListContext(ctx?.getChild(4) as LangParser.StatementListContext))
 
                 return IfStatement(expression, statements, elseStatement)
