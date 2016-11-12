@@ -11,13 +11,21 @@ class LLVMBackend(module: Module) : Backend(module) {
     val llvmModule: LLVMModuleRef
     val namedValues: MutableMap<String, LLVMValueRef> = mutableMapOf()
 
+//    val defaultTarget: BytePointer
+
     init {
+//        LLVMInitializeAllTargetInfos()
+//        LLVMInitializeAllTargets()
+//        LLVMInitializeAllTargetMCs()
         LLVMLinkInMCJIT()
         LLVMInitializeNativeAsmPrinter()
         LLVMInitializeNativeAsmParser()
         LLVMInitializeNativeDisassembler()
         LLVMInitializeNativeTarget()
         llvmModule = LLVMModuleCreateWithName(module.name)
+//        defaultTarget = LLVMGetDefaultTargetTriple()
+//        LLVMSetTarget(llvmModule, defaultTarget)
+//        LLVMCreateTargetMachine(LLVMTargetRef(defaultTarget), "", "generic", "", 0, 0, 0)
 
         module.globalFunctions.forEach { it.accept(this) }
     }
@@ -28,23 +36,22 @@ class LLVMBackend(module: Module) : Backend(module) {
         LLVMDisposeMessage(error)
 
         val engine = LLVMExecutionEngineRef()
-        if (LLVMCreateJITCompilerForModule(engine, llvmModule, 2, error) !== 0) {
+        if (LLVMCreateJITCompilerForModule(engine, llvmModule, 0, error) !== 0) {
             System.err.println(error.string)
             LLVMDisposeMessage(error)
             System.exit(-1)
         }
 
-        val pass = LLVMCreatePassManager()/*
+        val pass = LLVMCreatePassManager()
         LLVMAddConstantPropagationPass(pass)
         LLVMAddInstructionCombiningPass(pass)
         LLVMAddPromoteMemoryToRegisterPass(pass)
         LLVMAddGVNPass(pass)
-        LLVMAddCFGSimplificationPass(pass)*/
+        LLVMAddCFGSimplificationPass(pass)
         LLVMRunPassManager(pass, llvmModule)
         LLVMDumpModule(llvmModule)
 
         LLVMDisposePassManager(pass)
-        // LLVMDisposeBuilder(builder)
         LLVMDisposeExecutionEngine(engine)
     }
 
@@ -64,33 +71,47 @@ class LLVMBackend(module: Module) : Backend(module) {
         val entryBlock = LLVMAppendBasicBlock(llvmFunction, "entry")
         LLVMPositionBuilderAtEnd(builder, entryBlock)
 
-        function.statements.forEach { visit(it, function, builder, llvmFunction) }
+        val localVariables: MutableMap<String, LLVMValueRef> = mutableMapOf()
+        var i = 0
+        function.statements.forEach {
+            visit(it, function, builder, llvmFunction, localVariables)
+            localVariables.forEach { println("$i: ${it.key} -> ${it.value}") }
+            i++
+        }
 
-        val ret_value = LLVMConstInt(LLVMInt32Type(), 0, 0)
-        LLVMBuildRet(builder, ret_value)
+        if (function.expression != null) {
+            val ret_value = visit(function.expression, builder, localVariables)
+            LLVMBuildRet(builder, ret_value)
+        }
 
         LLVMDisposeBuilder(builder)
     }
 
-    fun visit(statement: Statement, function: Function, builder: LLVMBuilderRef, llvmFunction: LLVMValueRef) {
+    fun visit(statement: Statement, function: Function, builder: LLVMBuilderRef, llvmFunction: LLVMValueRef, localVariables: MutableMap<String, LLVMValueRef>) {
         when (statement) {
             is VariableDeclarationStatement -> {
-                if(statement.variable.initialExpression != null) {
-                    val value = visit(statement.variable.initialExpression, builder)
-                    val alloca = LLVMBuildAlloca(builder, getLLVMType(statement.variable.type), statement.variable.name)
-                    LLVMBuildStore(builder, value, alloca)
+                val variable = statement.variable
+                if (variable.initialExpression != null) {
+                    if (variable.constant) {
+                        localVariables.put(variable.name, visit(variable.initialExpression, builder, localVariables))
+                    } else {
+                        val alloca = LLVMBuildAlloca(builder, getLLVMType(variable.type), variable.name)
+                        val value = visit(variable.initialExpression, builder, localVariables)
+                        LLVMBuildStore(builder, value, alloca)
+                        localVariables.put(variable.name, alloca)
+                    }
                 }
             }
         }
     }
 
-    fun visit(expression: Expression, builder: LLVMBuilderRef): LLVMValueRef {
+    fun visit(expression: Expression, builder: LLVMBuilderRef, localVariables: MutableMap<String, LLVMValueRef>): LLVMValueRef {
         return when (expression) {
             is IntegerLiteral -> LLVMConstInt(LLVMInt32Type(), expression.value.toLong(), 0)
             is BinaryOperator -> {
-                val A = visit(expression.expA, builder)
-                val B = visit(expression.expB, builder)
-                when(expression.operator) {
+                val A = visit(expression.expA, builder, localVariables)
+                val B = visit(expression.expB, builder, localVariables)
+                when (expression.operator) {
                     Operator.PLUS -> {
                         LLVMBuildAdd(builder, A, B, "_addop")
                     }
@@ -105,6 +126,11 @@ class LLVMBackend(module: Module) : Backend(module) {
                     }
                     else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
                 }
+            }
+            is ReferenceExpression -> {
+                val ref = expression.reference.name
+                if (localVariables.containsKey(ref)) localVariables[ref]!!
+                else LLVMConstInt(LLVMInt32Type(), 0, 0)
             }
             else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
         }

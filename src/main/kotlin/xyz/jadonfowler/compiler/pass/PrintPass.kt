@@ -25,7 +25,7 @@ class PrintPass(module: Module) : Visitor(module) {
     }
 
     override fun visit(function: Function) {
-        println("// ${function.name} has ${function.statements.size} statements.")
+        println("// ${function.name} has ${function.statements.size} statements${if (function.expression != null) " and a return expression" else ""}.")
         print("function ${function.name} (")
         function.formals.map { it.accept(this); if (!function.formals.last().equals(it)) print(", ") }
         printI(") -> ${function.returnType} {\n")

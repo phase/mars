@@ -28,10 +28,10 @@ fun main(args: Array<String>) {
     #let wrong_type : Bool = 7
     let str = "test"
 
-    llvm (a : Int, b : Int, c : Int, d : Int)
-        let e : Int = 42,
-        let f : Int = 45 * 67 + 124,
-        5
+    llvm (z : Int, y : Int, x : Int, w : Int)
+        let v : Int = 42,
+        let u : Int = 45 * 67 + 124 - v,
+        5 + u
 
     foo (a : Int, b : Int)
         let g : Int = 90128,
