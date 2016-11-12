@@ -72,6 +72,10 @@ class LLVMBackend(module: Module) : Backend(module) {
         LLVMPositionBuilderAtEnd(builder, entryBlock)
 
         val localVariables: MutableMap<String, LLVMValueRef> = mutableMapOf()
+
+        var formalIndex = 0
+        function.formals.forEach { localVariables.put(it.name, LLVMGetParam(llvmFunction, formalIndex)); formalIndex++ }
+
         var i = 0
         function.statements.forEach {
             visit(it, function, builder, llvmFunction, localVariables)
@@ -113,16 +117,16 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val B = visit(expression.expB, builder, localVariables)
                 when (expression.operator) {
                     Operator.PLUS -> {
-                        LLVMBuildAdd(builder, A, B, "_addop")
+                        LLVMBuildAdd(builder, A, B, expression.toString())
                     }
                     Operator.MINUS -> {
-                        LLVMBuildSub(builder, A, B, "_subop")
+                        LLVMBuildSub(builder, A, B, expression.toString())
                     }
                     Operator.MULTIPLY -> {
-                        LLVMBuildMul(builder, A, B, "_mulop")
+                        LLVMBuildMul(builder, A, B, expression.toString())
                     }
                     Operator.DIVIDE -> {
-                        LLVMBuildSDiv(builder, A, B, "_divop")
+                        LLVMBuildSDiv(builder, A, B, expression.toString())
                     }
                     else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
                 }
