@@ -9,7 +9,7 @@ import java.io.File
 class LLVMBackend(module: Module) : Backend(module) {
 
     val llvmModule: LLVMModuleRef
-    val namedValues: MutableMap<String, LLVMValueRef> = mutableMapOf()
+    val namedValues: MutableMap<String, ValueContainer> = mutableMapOf()
 
 //    val defaultTarget: BytePointer
 
@@ -63,7 +63,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                 PointerPointer<LLVMTypeRef>(*argument_types.toTypedArray()), argument_types.size, 0)
         // Add the Function to the Module
         val llvmFunction: LLVMValueRef = LLVMAddFunction(llvmModule, function.name, llvmFunctionType)
-        namedValues.put(function.name, llvmFunction)
+        namedValues.put(function.name, ValueContainer(ValueType.FUNCTION, llvmFunction))
 
         LLVMSetFunctionCallConv(llvmFunction, LLVMCCallConv)
         val builder = LLVMCreateBuilder()
@@ -71,10 +71,10 @@ class LLVMBackend(module: Module) : Backend(module) {
         val entryBlock = LLVMAppendBasicBlock(llvmFunction, "entry")
         LLVMPositionBuilderAtEnd(builder, entryBlock)
 
-        val localVariables: MutableMap<String, LLVMValueRef> = mutableMapOf()
+        val localVariables: MutableMap<String, ValueContainer> = mutableMapOf()
 
         var formalIndex = 0
-        function.formals.forEach { localVariables.put(it.name, LLVMGetParam(llvmFunction, formalIndex)); formalIndex++ }
+        function.formals.forEach { localVariables.put(it.name, ValueContainer(ValueType.CONSTANT, LLVMGetParam(llvmFunction, formalIndex))); formalIndex++ }
 
         var i = 0
         function.statements.forEach {
@@ -91,25 +91,30 @@ class LLVMBackend(module: Module) : Backend(module) {
         LLVMDisposeBuilder(builder)
     }
 
-    fun visit(statement: Statement, function: Function, builder: LLVMBuilderRef, llvmFunction: LLVMValueRef, localVariables: MutableMap<String, LLVMValueRef>) {
+    fun visit(statement: Statement, function: Function, builder: LLVMBuilderRef, llvmFunction: LLVMValueRef, localVariables: MutableMap<String, ValueContainer>) {
         when (statement) {
             is VariableDeclarationStatement -> {
                 val variable = statement.variable
                 if (variable.initialExpression != null) {
                     if (variable.constant) {
-                        localVariables.put(variable.name, visit(variable.initialExpression, builder, localVariables))
+                        localVariables.put(variable.name, ValueContainer(ValueType.CONSTANT, visit(variable.initialExpression, builder, localVariables)))
                     } else {
-                        val alloca = LLVMBuildAlloca(builder, getLLVMType(variable.type), variable.name)
+                        val allocation = LLVMBuildAlloca(builder, getLLVMType(variable.type), variable.name)
                         val value = visit(variable.initialExpression, builder, localVariables)
-                        val store = LLVMBuildStore(builder, value, alloca)
-                        localVariables.put(variable.name, store)
+                        LLVMBuildStore(builder, value, allocation)
+                        localVariables.put(variable.name, ValueContainer(ValueType.ALLOCATION, allocation))
                     }
                 }
+            }
+            is VariableReassignmentStatement -> {
+                val variable = localVariables[statement.reference.name]!!
+                val value = visit(statement.exp, builder, localVariables)
+                LLVMBuildStore(builder, value, variable.llvmValueRef)
             }
         }
     }
 
-    fun visit(expression: Expression, builder: LLVMBuilderRef, localVariables: MutableMap<String, LLVMValueRef>): LLVMValueRef {
+    fun visit(expression: Expression, builder: LLVMBuilderRef, localVariables: MutableMap<String, ValueContainer>): LLVMValueRef {
         return when (expression) {
             is IntegerLiteral -> LLVMConstInt(LLVMInt32Type(), expression.value.toLong(), 0)
             is BinaryOperator -> {
@@ -133,8 +138,12 @@ class LLVMBackend(module: Module) : Backend(module) {
             }
             is ReferenceExpression -> {
                 val ref = expression.reference.name
-                if (localVariables.containsKey(ref)) localVariables[ref]!!
-                else LLVMConstInt(LLVMInt32Type(), 0, 0)
+                if (localVariables.containsKey(ref)) {
+                    val value = localVariables[ref]!!
+                    if(value.valueType == ValueType.ALLOCATION) {
+                        LLVMBuildLoad(builder, value.llvmValueRef, "loading_shit")
+                    } else value.llvmValueRef
+                } else LLVMConstInt(LLVMInt32Type(), 0, 0)
             }
             else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
         }
@@ -152,5 +161,13 @@ class LLVMBackend(module: Module) : Backend(module) {
         }
 
     }
+
+    enum class ValueType {
+        FUNCTION,
+        CONSTANT,
+        ALLOCATION,
+    }
+
+    class ValueContainer(val valueType: ValueType, val llvmValueRef: LLVMValueRef)
 
 }
