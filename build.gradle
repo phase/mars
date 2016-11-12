@@ -2,7 +2,7 @@ group 'xyz.jadonfowler'
 version '0.0.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.0.3'
+    ext.kotlin_version = '1.0.5'
 
     repositories {
         mavenCentral()
@@ -23,9 +23,18 @@ repositories {
     mavenCentral()
 }
 
+// https://github.com/bytedeco/javacpp-presets/wiki/Issues-with-Build-Tools#gradle
+configurations {
+    all*.exclude group: 'org.bytedeco', module: 'javacpp-presets'
+}
+
 dependencies {
     antlr "org.antlr:antlr4:4.5" // use ANTLR version 4
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile 'org.bytedeco:javacpp:1.2.4'
+    compile 'org.bytedeco.javacpp-presets:llvm:3.8.0-1.2'
+    compile 'org.bytedeco.javacpp-presets:llvm:3.8.0-1.2:linux-x86_64'
+
     testCompile group: 'junit', name: 'junit', version: '4.11'
 }
 

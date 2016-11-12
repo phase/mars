@@ -6,10 +6,12 @@ import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.RuleContext
 import xyz.jadonfowler.compiler.visitor.ContextVisitor
 import xyz.jadonfowler.compiler.ast.Module
+import xyz.jadonfowler.compiler.backend.LLVMBackend
 import xyz.jadonfowler.compiler.pass.TypePass
 import xyz.jadonfowler.compiler.pass.PrintPass
 import xyz.jadonfowler.compiler.parser.LangLexer
 import xyz.jadonfowler.compiler.parser.LangParser
+import java.io.File
 
 val globalModules = mutableListOf<Module>()
 
@@ -63,6 +65,7 @@ fun main(args: Array<String>) {
     // Go through passes
     TypePass(program)
     PrintPass(program)
+    LLVMBackend(program).output(File("/dev/null"))
 }
 
 fun compileString(moduleName: String, code: String): Module {
