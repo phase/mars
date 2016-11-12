@@ -11,6 +11,9 @@ open class Pass(module: Module) : Visitor(module) {
     override fun visit(variableDeclarationStatement: VariableDeclarationStatement) {
     }
 
+    override fun visit(variableReassignmentStatement: VariableReassignmentStatement) {
+    }
+
     override fun visit(binaryOperator: BinaryOperator) {
     }
 

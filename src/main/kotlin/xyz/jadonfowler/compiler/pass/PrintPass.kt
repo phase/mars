@@ -26,11 +26,11 @@ class PrintPass(module: Module) : Pass(module) {
     override fun visit(function: Function) {
         println("// ${function.name} has ${function.statements.size} statements${if (function.expression != null) " and a return expression" else ""}.")
         print("function ${function.name} (")
-        function.formals.map { it.accept(this); if (!function.formals.last().equals(it)) print(", ") }
+        function.formals.map { it.accept(this); if (function.formals.last() != it) print(", ") }
         printI(") -> ${function.returnType} {\n")
 
         tabIndent++
-        function.statements.map { it.accept(this) }
+        function.statements.map { println("// ${it.javaClass.simpleName}"); it.accept(this) }
         if (function.expression != null) {
             print("return ")
             function.expression.accept(this)
@@ -67,9 +67,14 @@ class PrintPass(module: Module) : Pass(module) {
     override fun visit(block: Block) {
         println("{")
         tabIndent++
-        block.statements.map { it.accept(this) }
+        block.statements.map { println("// ${it.javaClass.simpleName}"); it.accept(this) }
         tabIndent--
         println("}")
+    }
+
+    override fun visit(statement: Statement) {
+        println("// ${statement.javaClass.simpleName}")
+        super.visit(statement)
     }
 
     override fun visit(ifStatement: IfStatement) {
@@ -77,7 +82,7 @@ class PrintPass(module: Module) : Pass(module) {
         ifStatement.exp.accept(this)
         printI(" {\n")
         tabIndent++
-        ifStatement.statements.map { it.accept(this) }
+        ifStatement.statements.map { println("// ${it.javaClass.simpleName}"); it.accept(this) }
         tabIndent--
         println("}")
 
@@ -87,7 +92,7 @@ class PrintPass(module: Module) : Pass(module) {
             child.exp.accept(this)
             printI(") {\n")
             tabIndent++
-            child.statements.map { it.accept(this) }
+            child.statements.map { println("// ${it.javaClass.simpleName}"); it.accept(this) }
             tabIndent--
             println("}")
             child = child.elseStatement
@@ -97,13 +102,19 @@ class PrintPass(module: Module) : Pass(module) {
     override fun visit(whileStatement: WhileStatement) {
         println("while ${whileStatement.exp.accept(this)} {")
         tabIndent++
-        whileStatement.statements.map { it.accept(this) }
+        whileStatement.statements.map { println("// ${it.javaClass.simpleName}"); it.accept(this) }
         tabIndent--
         println("}")
     }
 
     override fun visit(variableDeclarationStatement: VariableDeclarationStatement) {
         variableDeclarationStatement.variable.accept(this)
+    }
+
+    override fun visit(variableReassignmentStatement: VariableReassignmentStatement) {
+        print("${variableReassignmentStatement.reference.name} = ")
+        variableReassignmentStatement.exp.accept(this)
+        printI("\n")
     }
 
     override fun visit(functionCallStatement: FunctionCallStatement) {

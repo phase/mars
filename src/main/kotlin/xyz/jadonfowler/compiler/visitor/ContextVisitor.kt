@@ -129,14 +129,15 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
         return expressions
     }
 
-    override fun visitVariableReassignment(ctx: LangParser.VariableReassignmentContext?): Node {
-        // TODO: Return VariableReassignmentStatement
-        return EmptyNode()
+    override fun visitVariableReassignment(ctx: LangParser.VariableReassignmentContext?): VariableReassignmentStatement {
+        return VariableReassignmentStatement(Reference(ctx?.ID()?.symbol?.text.orEmpty()), visitExpression(ctx?.expression()))
     }
 
     override fun visitStatement(ctx: LangParser.StatementContext?): Node /*TODO: return Statement */ {
         if (ctx?.variableDeclaration() != null)
             return VariableDeclarationStatement(visitVariableDeclaration(ctx?.variableDeclaration()))
+        if (ctx?.variableReassignment() != null)
+            return visitVariableReassignment(ctx?.variableReassignment())
         if (ctx?.functionCall() != null)
             return visitFunctionCall(ctx?.functionCall())
         return EmptyNode()

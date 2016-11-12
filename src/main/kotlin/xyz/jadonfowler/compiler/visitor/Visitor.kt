@@ -12,12 +12,13 @@ abstract class Visitor(val module: Module) {
     abstract fun visit(clazz: Clazz)
 
     // Statements
-    fun visit(statement: Statement) {
+    open fun visit(statement: Statement) {
         when (statement) {
             is Block -> visit(statement)
             is IfStatement -> visit(statement)
             is WhileStatement -> visit(statement)
             is VariableDeclarationStatement -> visit(statement)
+            is VariableReassignmentStatement -> visit(statement)
             is FunctionCallStatement -> visit(statement)
         }
     }
@@ -26,10 +27,11 @@ abstract class Visitor(val module: Module) {
     abstract fun visit(ifStatement: IfStatement)
     abstract fun visit(whileStatement: WhileStatement)
     abstract fun visit(variableDeclarationStatement: VariableDeclarationStatement)
+    abstract fun visit(variableReassignmentStatement: VariableReassignmentStatement)
     abstract fun visit(functionCallStatement: FunctionCallStatement)
 
     // Expressions
-    fun visit(expression: Expression) {
+    open fun visit(expression: Expression) {
         when (expression) {
             is TrueExpression -> visit(expression)
             is FalseExpression -> visit(expression)

@@ -174,6 +174,13 @@ class VariableDeclarationStatement(val variable: Variable) : Statement() {
 }
 
 /**
+ *
+ */
+class VariableReassignmentStatement(val reference: Reference, val exp: Expression) : Statement() {
+    override fun accept(visitor: Visitor) = visitor.visit(this)
+}
+
+/**
  * FunctionCallStatements call other Functions with the supplied Expressions.
  */
 class FunctionCallStatement(val functionReference: Reference, val arguments: List<Expression> = listOf()) : Statement() {

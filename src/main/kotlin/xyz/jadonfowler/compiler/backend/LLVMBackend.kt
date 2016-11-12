@@ -101,8 +101,8 @@ class LLVMBackend(module: Module) : Backend(module) {
                     } else {
                         val alloca = LLVMBuildAlloca(builder, getLLVMType(variable.type), variable.name)
                         val value = visit(variable.initialExpression, builder, localVariables)
-                        LLVMBuildStore(builder, value, alloca)
-                        localVariables.put(variable.name, alloca)
+                        val store = LLVMBuildStore(builder, value, alloca)
+                        localVariables.put(variable.name, store)
                     }
                 }
             }

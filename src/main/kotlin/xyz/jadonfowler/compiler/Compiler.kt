@@ -29,8 +29,9 @@ fun main(args: Array<String>) {
     let str = "test"
 
     llvm (z : Int, y : Int, x : Int, w : Int)
-        let v = 42 + x,
+        var v = 42 + x,
         let u = 45 + v * 67 + 124 - (w * 4) / 5,
+        v = v * 2,
         5 + u * z * v
 
     foo (a : Int, b : Int)
