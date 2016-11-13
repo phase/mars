@@ -198,17 +198,19 @@ abstract class Expression(val child: List<Expression> = listOf()) : Node {
     open fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
+open class BooleanExpression(val value: Boolean) : Expression()
+
 /**
  * TrueExpressions are booleans that are only "true".
  */
-class TrueExpression : Expression() {
+class TrueExpression : BooleanExpression(true) {
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
 /**
  * FalseExpressions are booleans that are only "false".
  */
-class FalseExpression : Expression() {
+class FalseExpression : BooleanExpression(false) {
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 

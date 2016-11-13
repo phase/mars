@@ -106,12 +106,38 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val value = visit(statement.exp, builder, localVariables)
                 LLVMBuildStore(builder, value, variable.llvmValueRef)
             }
+            is IfStatement -> {
+                val condition = visit(statement.exp, builder, localVariables)
+
+                // Add blocks for True & False, and another one where they merge
+                val trueBlock = LLVMAppendBasicBlock(llvmFunction, "true ${statement.exp}")
+                val falseBlock = LLVMAppendBasicBlock(llvmFunction, "false ${statement.exp}")
+                val mergeBlock = LLVMAppendBasicBlock(llvmFunction, "merge ${statement.exp}")
+
+                LLVMBuildCondBr(builder, condition, trueBlock, falseBlock)
+
+                // Visit each branch and tell them to merge afterwards
+                LLVMPositionBuilderAtEnd(builder, trueBlock)
+                statement.statements.forEach { visit(it, builder, llvmFunction, localVariables) }
+                LLVMBuildBr(builder, mergeBlock)
+
+                LLVMPositionBuilderAtEnd(builder, falseBlock)
+                if (statement.elseStatement != null)
+                    visit(statement.elseStatement, builder, llvmFunction, localVariables)
+                LLVMBuildBr(builder, mergeBlock)
+
+                LLVMPositionBuilderAtEnd(builder, mergeBlock)
+            }
         }
     }
 
     fun visit(expression: Expression, builder: LLVMBuilderRef, localVariables: MutableMap<String, ValueContainer>): LLVMValueRef {
         return when (expression) {
             is IntegerLiteral -> LLVMConstInt(LLVMInt32Type(), expression.value.toLong(), 0)
+            is BooleanExpression -> {
+                if (expression.value) LLVMConstInt(LLVMInt1Type(), 1, 0)
+                else LLVMConstInt(LLVMInt1Type(), 0, 1)
+            }
             is BinaryOperator -> {
                 val A = visit(expression.expA, builder, localVariables)
                 val B = visit(expression.expB, builder, localVariables)
@@ -120,6 +146,12 @@ class LLVMBackend(module: Module) : Backend(module) {
                     Operator.MINUS -> LLVMBuildSub(builder, A, B, expression.toString())
                     Operator.MULTIPLY -> LLVMBuildMul(builder, A, B, expression.toString())
                     Operator.DIVIDE -> LLVMBuildSDiv(builder, A, B, expression.toString())
+                    Operator.EQUALS -> LLVMBuildICmp(builder, LLVMIntEQ, A, B, expression.toString())
+                    Operator.NOT_EQUAL -> LLVMBuildICmp(builder, LLVMIntNE, A, B, expression.toString())
+                    Operator.GREATER_THAN -> LLVMBuildICmp(builder, LLVMIntSGT, A, B, expression.toString())
+                    Operator.GREATER_THAN_EQUAL -> LLVMBuildICmp(builder, LLVMIntSGE, A, B, expression.toString())
+                    Operator.LESS_THAN -> LLVMBuildICmp(builder, LLVMIntSLT, A, B, expression.toString())
+                    Operator.LESS_THAN_EQUAL -> LLVMBuildICmp(builder, LLVMIntSLE, A, B, expression.toString())
                     else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
                 }
             }

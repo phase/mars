@@ -21,6 +21,20 @@ fun main(args: Array<String>) {
     thing(a : Int, b : Int) 0
     """)
 
+    val llvmTest = compileString("llvmTest", """
+test (z : Int, y : Int, x : Int, w : Int)
+    var v = 42 + x,
+    let u = 45 + v * 67 + 124 - (w * 4) / 5,
+    v = v * 2 - z,
+    var t = 1,
+    if z < 10
+        t = v * z
+    else
+        t = v - z
+    ;
+    5 + u * z * v + t
+    """)
+
     val program = compileString("main", """
     let c = foo(5, 6)
     let d = 3 + 2 let e = 0 let f : Int
@@ -34,17 +48,17 @@ fun main(args: Array<String>) {
         v = v * 2 - z,
         5 + u * z * v
 
-    foo (a : Int, b : Int)
-        let g : Int = 90128,
+    foo (t : Int, s : Int)
+        let r : Int = 90128,
         if 1 != (2 + 2)
-            d = b,
+            var q = s,
             if 2 != 14 * 7 - 5
-                c = b
+                q = t
             else
                 if 4 >= 2
-                    c = 7,
-                    if h >= i || h <= j:
-                        print(i, j)
+                    q = 7,
+                    if s >= t || s <= 8:
+                        print(t, s)
                     ;
                 ;
             ;
@@ -70,8 +84,9 @@ fun main(args: Array<String>) {
 
     // Go through passes
     TypePass(program)
-    PrintPass(program)
-    LLVMBackend(program).output(File("/dev/null"))
+    TypePass(llvmTest)
+    PrintPass(llvmTest)
+    LLVMBackend(llvmTest).output(File("/dev/null"))
 }
 
 fun compileString(moduleName: String, code: String): Module {
