@@ -35,7 +35,7 @@ class Function(var returnType: Type, val name: String, val formals: List<Formal>
      */
     override fun toString(): String {
         val formals = formals.joinToString(separator = " -> ") { it.type.toString() }
-        return "($formals -> ${returnType.toString()})"
+        return "($formals -> $returnType)"
     }
 }
 

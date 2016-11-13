@@ -102,7 +102,7 @@ testRegNames(a : Int, b : Int)
     // Go through passes
     TypePass(program)
     TypePass(llvmTest)
-    PrintPass(llvmTest)
+    println(PrintPass(llvmTest).output)
     LLVMBackend(llvmTest).output(File("/dev/null"))
 }
 

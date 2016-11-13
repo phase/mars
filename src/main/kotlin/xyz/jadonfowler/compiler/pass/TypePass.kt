@@ -131,7 +131,7 @@ class TypePass(module: Module) : Pass(module) {
             val expressionType = getType(variableReassignmentStatement.exp, localVariables)
             if(variable.type != expressionType)
                 throw Exception("Variable '${variable.name}' is marked with the type '${variable.type}' but the type" +
-                        " of '${variableReassignmentStatement.exp} is '$expressionType'.")
+                        " of '${variableReassignmentStatement.exp}' is '$expressionType'.")
         }
     }
 

@@ -2,6 +2,7 @@ package xyz.jadonfowler.compiler
 
 import org.junit.Test
 import xyz.jadonfowler.compiler.ast.*
+import xyz.jadonfowler.compiler.pass.PrintPass
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -10,7 +11,7 @@ class ASTTest {
 
     @Test fun functionDeclarationParsing() {
         val code = """
-        testFunction0(argument0 : Int, argument1 : String, argument2 : Bool) : Int
+        testFunction0 (argument0 : Int, argument1 : String, argument2 : Bool) : Int
             0
         """
         val module = compileString("functionDeclarationParsing", code)
@@ -29,11 +30,13 @@ class ASTTest {
 
         assertEquals(T_BOOL, testFunction0.formals[2].type, "The third formal of testFunction0 should have a type of" +
                 " Bool.")
+
+        println(PrintPass(module).output)
     }
 
     @Test fun functionVariableDeclarationStatementParsing() {
         val code = """
-        testFunction1(argument0 : Int) : Int
+        testFunction1 (argument0 : Int) : Int
             let local_variable0 = argument1 * 32,
             local_variable0 - 8
         """
@@ -53,5 +56,70 @@ class ASTTest {
                 " ReferenceExpression.")
         assertTrue(op.expB is IntegerLiteral, "The variable's initial expression's right argument is not an" +
                 " IntegerLiteral.")
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun functionIfStatementParsing() {
+        val code = """
+        testFunction2 (a : Int) : Int
+            var r = 1,
+            if a < (100 + 12)
+                r = a
+            else
+                r = a + 100
+            ;
+            r = r * 2,
+            r
+        """
+        val module = compileString("functionIfStatementParsing", code)
+        val testFunction2 = module.globalFunctions[0]
+
+        assertTrue(testFunction2.statements[1] is IfStatement, "The second statement isn't an IfStatement.")
+        val ifStatement = testFunction2.statements[1] as IfStatement
+        assertNotNull(ifStatement.elseStatement, "There should be an ElseStatement in the IfStatement.")
+        assertEquals(1, ifStatement.statements.size)
+        assertEquals(1, ifStatement.elseStatement?.statements?.size)
+        assertTrue(((ifStatement.exp as BinaryOperator).expB as BinaryOperator).expA is IntegerLiteral)
+        assertTrue(testFunction2.statements[2] is VariableReassignmentStatement)
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun globalVariableParsing() {
+        val code = """
+        let a : Int = 7
+        let b : Int = 8
+        let c : Int = 9
+        let d : String = "test"
+        """
+        val module = compileString("globalVariableParsing", code)
+
+        assertEquals(4, module.globalVariables.size)
+        assertTrue(module.globalVariables[2].initialExpression is IntegerLiteral)
+        assertEquals(T_STRING, module.globalVariables[3].type)
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun classParsing() {
+        val code = """
+        class Test
+            let field : Int = 8
+
+            method (a : Int) : Int
+                field = a,
+                a
+        ;
+        """
+        val module = compileString("classParsing", code)
+
+        assertEquals(1, module.globalClasses.size)
+        val clazz = module.globalClasses[0]
+        assertEquals(1, clazz.fields.size)
+        assertTrue(clazz.fields[0].initialExpression is IntegerLiteral)
+        assertEquals(1, clazz.methods.size)
+
+        println(PrintPass(module).output)
     }
 }

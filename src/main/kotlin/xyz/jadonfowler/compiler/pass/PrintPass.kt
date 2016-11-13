@@ -11,11 +11,15 @@ class PrintPass(module: Module) : Pass(module) {
     val tab = "    "
     var tabIndent = 0
 
-    fun printI(any: Any) = System.out.print(any)
-    fun print(any: Any) = System.out.print(tab.repeat(tabIndent) + any)
-    fun println(any: Any) = System.out.println(tab.repeat(tabIndent) + any)
+    var output = ""
+
+    fun printI(any: Any) { output += any.toString() }
+    fun print(any: Any) { output += tab.repeat(tabIndent) + any.toString() }
+    fun println(any: Any) { output += tab.repeat(tabIndent) + any.toString() + "\n"}
+    fun println() { println("") }
 
     init {
+        println("// Module: ${module.name}")
         module.globalVariables.map { it.accept(this) }
         println()
         module.globalFunctions.map { it.accept(this) }
