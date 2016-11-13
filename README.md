@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/phase/lang-kotlin-antlr-compiler.svg?branch=master)](https://travis-ci.org/phase/lang-kotlin-antlr-compiler)
 
+[![codecov](https://codecov.io/gh/phase/lang-kotlin-antlr-compiler/branch/master/graph/badge.svg)](https://codecov.io/gh/phase/lang-kotlin-antlr-compiler)
+
 This is a compiler written in Kotlin using an ANTLR parser. The planned
 backends are LLVM, JVM, JavaScript, and anything else I can get my hands
 on.

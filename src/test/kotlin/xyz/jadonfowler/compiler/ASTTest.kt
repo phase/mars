@@ -14,7 +14,8 @@ class ASTTest {
         testFunction0 (argument0 : Int, argument1 : String, argument2 : Bool) : Int
             0
         """
-        val module = compileString("functionDeclarationParsing", code)
+        val module = compileString("functionDeclarationParsing", code, true)
+
         assertEquals("functionDeclarationParsing", module.name, "The Module's name is incorrect.")
         assertEquals(1, module.globalFunctions.size, "One Function should exist in the Module.")
 
@@ -31,6 +32,8 @@ class ASTTest {
         assertEquals(T_BOOL, testFunction0.formals[2].type, "The third formal of testFunction0 should have a type of" +
                 " Bool.")
 
+        assertEquals("(Int -> String -> Bool -> Int)", testFunction0.toString())
+
         println(PrintPass(module).output)
     }
 
@@ -40,7 +43,8 @@ class ASTTest {
             let local_variable0 = argument1 * 32,
             local_variable0 - 8
         """
-        val module = compileString("functionVariableDeclarationStatementParsing", code)
+        val module = compileString("functionVariableDeclarationStatementParsing", code, true)
+
         val testFunction1 = module.globalFunctions[0]
         assertEquals(1, testFunction1.statements.size, "testFunction1 should only have 1 statement.")
         assertTrue(testFunction1.statements[0] is VariableDeclarationStatement, "The first statement should be a" +
@@ -72,7 +76,7 @@ class ASTTest {
             r = r * 2,
             r
         """
-        val module = compileString("functionIfStatementParsing", code)
+        val module = compileString("functionIfStatementParsing", code, true)
         val testFunction2 = module.globalFunctions[0]
 
         assertTrue(testFunction2.statements[1] is IfStatement, "The second statement isn't an IfStatement.")
@@ -86,18 +90,76 @@ class ASTTest {
         println(PrintPass(module).output)
     }
 
+    @Test fun functionWhileStatementParsing() {
+        val code = """
+        test (a : Int) : Int
+            var i : Int = 0,
+            var sum : Int = 0,
+            while i < a
+                i = i + 1,
+                sum = sum + a
+            ;,
+            sum
+        """
+        val module = compileString("functionWhileStatementParsing", code, true)
+        val function = module.globalFunctions[0]
+
+        assertEquals(3, function.statements.size)
+        assertTrue(function.statements[2] is WhileStatement)
+
+        val statement = function.statements[2] as WhileStatement
+        assertTrue(statement.exp is BinaryOperator)
+        assertEquals("<", (statement.exp as BinaryOperator).operator.toString())
+        assertEquals(2, statement.statements.size)
+        assertTrue(statement.statements[1] is VariableReassignmentStatement)
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun functionCalling() {
+        val code = """
+        bland () : Int
+            0
+
+        exciting () : Int
+            let b = bland(),
+            bland(),
+            b + 1
+        """
+        val module = compileString("functionCalling", code, true)
+
+        assertEquals(2, module.globalFunctions.size)
+        val excitingFunction = module.globalFunctions[1]
+        assertTrue(excitingFunction.statements[0] is VariableDeclarationStatement)
+        val v = excitingFunction.statements[0] as VariableDeclarationStatement
+        assertTrue(v.variable.initialExpression is FunctionCallExpression)
+        assertTrue(excitingFunction.statements[1] is FunctionCallStatement)
+
+        assertNotNull(excitingFunction.expression)
+        assertTrue(excitingFunction.expression is BinaryOperator)
+        val lastOperator = excitingFunction.expression as BinaryOperator
+        assertEquals("b", (lastOperator.expA as ReferenceExpression).toString(), "ReferenceExpression should" +
+                " reference 'b'.")
+        assertEquals("+", lastOperator.operator.toString(), "Operator should be '+'.")
+        assertEquals("1", (lastOperator.expB as IntegerLiteral).toString(), "IntegerLiteral should be '1'.")
+
+        println(PrintPass(module).output)
+    }
+
     @Test fun globalVariableParsing() {
         val code = """
         let a : Int = 7
         let b : Int = 8
         let c : Int = 9
         let d : String = "test"
+        let e : Bool = false
         """
-        val module = compileString("globalVariableParsing", code)
+        val module = compileString("globalVariableParsing", code, true)
 
-        assertEquals(4, module.globalVariables.size)
+        assertEquals(5, module.globalVariables.size)
         assertTrue(module.globalVariables[2].initialExpression is IntegerLiteral)
         assertEquals(T_STRING, module.globalVariables[3].type)
+        assertTrue(module.globalVariables[4].initialExpression is FalseExpression)
 
         println(PrintPass(module).output)
     }
@@ -112,7 +174,7 @@ class ASTTest {
                 a
         ;
         """
-        val module = compileString("classParsing", code)
+        val module = compileString("classParsing", code, true)
 
         assertEquals(1, module.globalClasses.size)
         val clazz = module.globalClasses[0]

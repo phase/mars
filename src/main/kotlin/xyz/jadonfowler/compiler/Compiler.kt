@@ -106,14 +106,14 @@ testRegNames(a : Int, b : Int)
     LLVMBackend(llvmTest).output(File("/dev/null"))
 }
 
-fun compileString(moduleName: String, code: String): Module {
+fun compileString(moduleName: String, code: String, explore: Boolean = false): Module {
     val stream = ANTLRInputStream(code)
     val lexer = LangLexer(stream)
     val tokens = CommonTokenStream(lexer)
     val parser = LangParser(tokens)
     val result = parser.program()
     val contextVisitor = ContextVisitor(moduleName)
-    // explore(result, 0)
+    if(explore) explore(result, 0)
     return contextVisitor.visitProgram(result)
 }
 

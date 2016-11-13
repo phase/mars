@@ -273,7 +273,7 @@ enum class Operator(val string: String) {
  */
 fun getOperator(s: String): Operator? {
     try {
-        return Operator.values().filter { it.string.equals(s) }[0]
+        return Operator.values().filter { it.string == s }[0]
     } catch (e: IndexOutOfBoundsException) {
         return null
     }

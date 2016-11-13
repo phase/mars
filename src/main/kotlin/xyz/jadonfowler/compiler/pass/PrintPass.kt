@@ -104,7 +104,9 @@ class PrintPass(module: Module) : Pass(module) {
     }
 
     override fun visit(whileStatement: WhileStatement) {
-        println("while ${whileStatement.exp.accept(this)} {")
+        print("while ")
+        whileStatement.exp.accept(this)
+        printI(" {\n")
         tabIndent++
         whileStatement.statements.map { println("// ${it.javaClass.simpleName}"); it.accept(this) }
         tabIndent--

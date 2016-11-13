@@ -145,7 +145,7 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
 
     override fun visitBlockStatement(ctx: LangParser.BlockStatementContext?): Node {
         val id: String = ctx?.getChild(0)?.text.orEmpty()
-        when (id) {
+        return when (id) {
             "if" -> {
                 val expression = visitExpression(ctx?.expression())
                 val statements = statementListFromStatementListContext(ctx?.statementList(0))
@@ -155,9 +155,14 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
                     elseStatement = elseStatement(
                             statementListFromStatementListContext(ctx?.getChild(4) as LangParser.StatementListContext))
 
-                return IfStatement(expression, statements, elseStatement)
+                IfStatement(expression, statements, elseStatement)
             }
-            else -> return EmptyNode()
+            "while" -> {
+                val expression = visitExpression(ctx?.expression())
+                val statements = statementListFromStatementListContext(ctx?.statementList(0))
+                WhileStatement(expression, statements)
+            }
+            else -> EmptyNode()
         }
     }
 
@@ -168,6 +173,8 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
                 // | '(' expression ')'
                 return visitExpression(ctx?.getChild(1) as LangParser.ExpressionContext?)
             }
+            "true" -> return TrueExpression()
+            "false" -> return FalseExpression()
         }
         if (ctx?.getChild(0) is LangParser.ExpressionContext && ctx?.getChild(2) is LangParser.ExpressionContext) {
             val expressionA = visitExpression(ctx?.getChild(0) as LangParser.ExpressionContext?)
