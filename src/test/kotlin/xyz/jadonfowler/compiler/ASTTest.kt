@@ -142,6 +142,7 @@ class ASTTest {
                 " reference 'b'.")
         assertEquals("+", lastOperator.operator.toString(), "Operator should be '+'.")
         assertEquals("1", (lastOperator.expB as IntegerLiteral).toString(), "IntegerLiteral should be '1'.")
+        assertEquals("(b + 1)", lastOperator.toString())
 
         println(PrintPass(module).output)
     }

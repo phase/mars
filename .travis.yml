@@ -1,9 +1,16 @@
 language: java
-sudo: false
+dist: trusty
+sudo: required
+
+addons:
+  apt:
+    packages:
+      - llvm-3.8
+      - clang-3.8
+
+script:
+  - ./gradlew check --stacktrace
+  - ./gradlew jacocoTestReport
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-
-script:
-  - ./gradlew check
-  - ./gradlew jacocoTestReport
