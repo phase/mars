@@ -10,6 +10,7 @@ class LLVMBackend(module: Module) : Backend(module) {
 
     val llvmModule: LLVMModuleRef
     val namedValues: MutableMap<String, ValueContainer> = mutableMapOf()
+    val builder: LLVMBuilderRef
 
 //    val defaultTarget: BytePointer
 
@@ -26,7 +27,9 @@ class LLVMBackend(module: Module) : Backend(module) {
 //        defaultTarget = LLVMGetDefaultTargetTriple()
 //        LLVMSetTarget(llvmModule, defaultTarget)
 //        LLVMCreateTargetMachine(LLVMTargetRef(defaultTarget), "", "generic", "", 0, 0, 0)
+        builder = LLVMCreateBuilder()
 
+        module.globalVariables.forEach { it.accept(this) }
         module.globalFunctions.forEach { it.accept(this) }
     }
 
@@ -51,8 +54,19 @@ class LLVMBackend(module: Module) : Backend(module) {
         LLVMRunPassManager(pass, llvmModule)
         LLVMDumpModule(llvmModule)
 
+        LLVMDisposeBuilder(builder)
         LLVMDisposePassManager(pass)
         LLVMDisposeExecutionEngine(engine)
+    }
+
+    override fun visit(variable: Variable) {
+        val global = LLVMAddGlobal(llvmModule, getLLVMType(variable.type), variable.name)
+        if (variable.initialExpression != null) {
+            val builder = LLVMCreateBuilder()
+            LLVMSetInitializer(global, visit(variable.initialExpression, builder, mutableMapOf()))
+        }
+        if (variable.constant) LLVMSetGlobalConstant(global, 1)
+        namedValues.put(variable.name, ValueContainer(ValueType.GLOBAL, global))
     }
 
     override fun visit(function: Function) {
@@ -66,24 +80,25 @@ class LLVMBackend(module: Module) : Backend(module) {
         namedValues.put(function.name, ValueContainer(ValueType.FUNCTION, llvmFunction))
 
         LLVMSetFunctionCallConv(llvmFunction, LLVMCCallConv)
-        val builder = LLVMCreateBuilder()
 
         val entryBlock = LLVMAppendBasicBlock(llvmFunction, "entry")
         LLVMPositionBuilderAtEnd(builder, entryBlock)
 
-        val localVariables: MutableMap<String, ValueContainer> = mutableMapOf()
+        // This is the LVT that is passed around everywhere
+        val localVariables: MutableMap<String, ValueContainer> = namedValues
 
+        // Add formals to LVT
         var formalIndex = 0
         function.formals.forEach { localVariables.put(it.name, ValueContainer(ValueType.CONSTANT, LLVMGetParam(llvmFunction, formalIndex))); formalIndex++ }
 
+        // Build the statements
         function.statements.forEach { visit(it, builder, llvmFunction, localVariables) }
 
+        // Add a return statement with the last expression
         if (function.expression != null) {
             val ret_value = visit(function.expression, builder, localVariables)
             LLVMBuildRet(builder, ret_value)
         }
-
-        LLVMDisposeBuilder(builder)
     }
 
     fun visit(statement: Statement, builder: LLVMBuilderRef, llvmFunction: LLVMValueRef, localVariables: MutableMap<String, ValueContainer>) {
@@ -94,6 +109,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                     if (variable.constant) {
                         localVariables.put(variable.name, ValueContainer(ValueType.CONSTANT, visit(variable.initialExpression, builder, localVariables)))
                     } else {
+                        // Allocate memory so we can modify the value later
                         val allocation = LLVMBuildAlloca(builder, getLLVMType(variable.type), variable.name)
                         val value = visit(variable.initialExpression, builder, localVariables)
                         LLVMBuildStore(builder, value, allocation)
@@ -161,6 +177,8 @@ class LLVMBackend(module: Module) : Backend(module) {
                     val value = localVariables[ref]!!
                     if (value.valueType == ValueType.ALLOCATION) {
                         LLVMBuildLoad(builder, value.llvmValueRef, ref)
+                    } else if (value.valueType == ValueType.GLOBAL) {
+                        LLVMGetInitializer(value.llvmValueRef)
                     } else value.llvmValueRef
                 } else LLVMConstInt(LLVMInt32Type(), 0, 0)
             }
@@ -185,6 +203,7 @@ class LLVMBackend(module: Module) : Backend(module) {
         FUNCTION,
         CONSTANT,
         ALLOCATION,
+        GLOBAL,
     }
 
     class ValueContainer(val valueType: ValueType, val llvmValueRef: LLVMValueRef)

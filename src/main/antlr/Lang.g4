@@ -75,7 +75,7 @@ expression
     | 'false'
     ;
 
-argumentList: argument (',' argument)*;
+argumentList: argument (',' argument)*|;
 
 argument
     : variableSignature

@@ -22,6 +22,10 @@ fun main(args: Array<String>) {
     """)
 
     val llvmTest = compileString("llvmTest", """
+let G0 = 1234 + 4321
+let G1 = 1 + 2 - 3 * 4 + 6 / 6
+let G2 = 4
+
 test (z : Int, y : Int, x : Int, w : Int)
     var v = 42 + x,
     let u = 45 + v * 67 + 124 - (w * 4) / 5,
@@ -32,11 +36,27 @@ test (z : Int, y : Int, x : Int, w : Int)
     else
         t = v - z
     ;
-    5 + u * z * v + t
+    5 + u * z * v + t * G2 - G0 * G1
+
+testBranching (a : Int, b : Int, c : Int)
+    var r = 0,
+    if a == 10
+        r = b
+    else
+        r = c
+    ;
+    r
+
+returnGlobal ()
+    G0
+
+testRegNames(a : Int, b : Int)
+    let c = a + b,
+    let d = c * 7,
+    d
     """)
 
     val program = compileString("main", """
-    let c = foo(5, 6)
     let d = 3 + 2 let e = 0 let f : Int
     let h = 6 let i : Int = 7 let j : Int = 8
     #let wrong_type : Bool = 7
@@ -65,9 +85,6 @@ test (z : Int, y : Int, x : Int, w : Int)
         ;
         thing(a + b, a - b * g),
         a + b + 1
-
-
-    let functionWrapper = foo
 
     class Object
 
