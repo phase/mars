@@ -1,10 +1,7 @@
 package xyz.jadonfowler.compiler
 
 import org.junit.Test
-import xyz.jadonfowler.compiler.ast.T_BOOL
-import xyz.jadonfowler.compiler.ast.T_INT
-import xyz.jadonfowler.compiler.ast.T_STRING
-import xyz.jadonfowler.compiler.ast.VariableDeclarationStatement
+import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.pass.PrintPass
 import xyz.jadonfowler.compiler.pass.TypePass
 import kotlin.test.assertEquals
@@ -94,6 +91,59 @@ class TypeCheckingTest {
         val module = compileString("incorrectReassignmentType", code)
 
         assertFails { TypePass(module) }
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun correctTypeMarkingAndInference() {
+        val code = """
+        let d = 3 + 2 let e = 0 let f : Int
+        let h = 6 let i : Int = 7 let j : Int = 8
+        let str = "test"
+
+        llvm (z : Int, y : Int, x : Int, w : Int)
+            var v = 42 + x,
+            let u = 45 + v * 67 + 124 - (w * 4) / 5,
+            v = v * 2 - z,
+            5 + u * z * v
+
+        foo (t : Int, s : Int)
+            let r : Int = 90128,
+            if 1 != (2 + 2)
+                var q = s,
+                if 2 != 14 * 7 - 5
+                    q = t
+                else
+                    if 4 >= 2
+                        q = 7,
+                        if s >= t || s <= 8:
+                            print(t, s)
+                        ;
+                    ;
+                ;
+            ;
+            thing(a + b, a - b * g),
+            a + b + 1
+
+        class Object
+
+            let field : Int = 0
+
+            method (arg : Int)
+                let local : Int = arg + 7,
+                let thing : Int = local * 5,
+                local / thing
+        ;
+
+        let variable_defined_after_class : Int = 0
+        """
+        val module = compileString("correctTypeMarkingAndInference", code)
+        TypePass(module)
+
+        assertEquals(T_INT, module.globalClasses[0].methods[0].returnType)
+        assertEquals(T_INT, module.globalFunctions[0].returnType)
+        assertEquals(T_INT, ((module.globalFunctions[1].statements[1] as IfStatement).statements[0]
+                as VariableDeclarationStatement).variable.type)
 
         println(PrintPass(module).output)
     }

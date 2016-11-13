@@ -14,12 +14,18 @@ class TypePass(module: Module) : Pass(module) {
         return when (expression) {
             is IntegerLiteral -> T_INT
             is BinaryOperator -> {
-                // Expressions A & B should have the same type.
-                val typeA = getType(expression.expA, localVariables)
-                val typeB = getType(expression.expB, localVariables)
-                if (typeA != typeB)
-                    throw Exception("$typeA is not the same type as $typeB for expression $expression.")
-                typeA
+                val returnType = expression.operator.returnType
+                if (returnType != T_UNDEF)
+                // Boolean operators return Booleans
+                    returnType
+                else {
+                    // Expressions A & B should have the same type.
+                    val typeA = getType(expression.expA, localVariables)
+                    val typeB = getType(expression.expB, localVariables)
+                    if (typeA != typeB)
+                        throw Exception("$typeA is not the same type as $typeB for expression $expression.")
+                    typeA
+                }
             }
             is TrueExpression, is FalseExpression -> {
                 T_BOOL
@@ -110,6 +116,11 @@ class TypePass(module: Module) : Pass(module) {
         when (statement) {
             is VariableDeclarationStatement -> visit(statement, localVariables)
             is VariableReassignmentStatement -> visit(statement, localVariables)
+            is IfStatement -> {
+                statement.statements.forEach { visit(it, localVariables) }
+                if (statement.elseStatement != null)
+                    visit(statement.elseStatement, localVariables)
+            }
             else -> visit(statement)
         }
     }
@@ -126,10 +137,10 @@ class TypePass(module: Module) : Pass(module) {
         if (currentFunction != null) thingsWithName.addAll(currentFunction?.formals!!)
         localVariables?.forEach { if (it.key == name) thingsWithName.add(it.value) }
 
-        if(thingsWithName.isNotEmpty()) {
+        if (thingsWithName.isNotEmpty()) {
             val variable = thingsWithName.last()
             val expressionType = getType(variableReassignmentStatement.exp, localVariables)
-            if(variable.type != expressionType)
+            if (variable.type != expressionType)
                 throw Exception("Variable '${variable.name}' is marked with the type '${variable.type}' but the type" +
                         " of '${variableReassignmentStatement.exp}' is '$expressionType'.")
         }

@@ -248,7 +248,7 @@ class FunctionCallExpression(val functionReference: Reference, val arguments: Li
 /**
  * Operators are constructs that behave like Functions, but differ syntactically.
  */
-enum class Operator(val string: String) {
+enum class Operator(val string: String, val returnType: Type = T_UNDEF) {
     // Maths
     PLUS("+"),
     MINUS("-"),
@@ -256,14 +256,14 @@ enum class Operator(val string: String) {
     DIVIDE("/"),
 
     // Comparisons
-    GREATER_THAN(">"),
-    LESS_THAN("<"),
-    EQUALS("=="),
-    GREATER_THAN_EQUAL(">="),
-    LESS_THAN_EQUAL("<="),
-    NOT_EQUAL("!="),
-    AND("&&"),
-    OR("||");
+    GREATER_THAN(">", T_BOOL),
+    LESS_THAN("<", T_BOOL),
+    EQUALS("==", T_BOOL),
+    GREATER_THAN_EQUAL(">=", T_BOOL),
+    LESS_THAN_EQUAL("<=", T_BOOL),
+    NOT_EQUAL("!=", T_BOOL),
+    AND("&&", T_BOOL),
+    OR("||", T_BOOL);
 
     override fun toString(): String = string
 }
