@@ -126,9 +126,9 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val condition = visit(statement.exp, builder, localVariables)
 
                 // Add blocks for True & False, and another one where they merge
-                val trueBlock = LLVMAppendBasicBlock(llvmFunction, "true ${statement.exp}")
-                val falseBlock = LLVMAppendBasicBlock(llvmFunction, "false ${statement.exp}")
-                val mergeBlock = LLVMAppendBasicBlock(llvmFunction, "merge ${statement.exp}")
+                val trueBlock = LLVMAppendBasicBlock(llvmFunction, "if.t ${statement.exp}")
+                val falseBlock = LLVMAppendBasicBlock(llvmFunction, "if.f ${statement.exp}")
+                val mergeBlock = LLVMAppendBasicBlock(llvmFunction, "if.o ${statement.exp}")
 
                 LLVMBuildCondBr(builder, condition, trueBlock, falseBlock)
 
@@ -143,6 +143,23 @@ class LLVMBackend(module: Module) : Backend(module) {
                 LLVMBuildBr(builder, mergeBlock)
 
                 LLVMPositionBuilderAtEnd(builder, mergeBlock)
+            }
+            is WhileStatement -> {
+                val whileCondition = LLVMAppendBasicBlock(llvmFunction, "while.c ${statement.exp}")
+                val whileBlock = LLVMAppendBasicBlock(llvmFunction, "while.b ${statement.exp}")
+                val outside = LLVMAppendBasicBlock(llvmFunction, "while.o ${statement.exp}")
+
+                LLVMBuildBr(builder, whileCondition)
+
+                LLVMPositionBuilderAtEnd(builder, whileCondition)
+                val condition = visit(statement.exp, builder, localVariables)
+                LLVMBuildCondBr(builder, condition, whileBlock, outside)
+
+                LLVMPositionBuilderAtEnd(builder, whileBlock)
+                statement.statements.forEach { visit(it, builder, llvmFunction, localVariables) }
+                LLVMBuildBr(builder, whileCondition)
+
+                LLVMPositionBuilderAtEnd(builder, outside)
             }
         }
     }

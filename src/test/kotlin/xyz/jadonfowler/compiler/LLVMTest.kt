@@ -21,7 +21,7 @@ class LLVMTest {
 
     @Test fun genFunction() {
         val code = """
-        test (a : Int, b : Int, c : Int)
+        genFunction (a : Int, b : Int, c : Int)
             0
         """
         val module = compileString("genFunction", code)
@@ -33,7 +33,7 @@ class LLVMTest {
 
     @Test fun genVariableDeclaration() {
         val code = """
-        test ()
+        genVariableDeclaration ()
             let a = 5,
             0
         """
@@ -46,7 +46,7 @@ class LLVMTest {
 
     @Test fun genComplexExpressions() {
         val code = """
-        test (z : Int, y : Int, x : Int, w : Int)
+        genComplexExpressions (z : Int, y : Int, x : Int, w : Int)
             var v = 42 + x,
             let u = 45 + v * 67 + 124 - (w * 4) / 5,
             let d = v * 2 - z,
@@ -61,7 +61,7 @@ class LLVMTest {
 
     @Test fun genVariableReassignment() {
         val code = """
-        test ()
+        genVariableReassignment ()
             var a = 0,
             a = 1,
             a = 2,
@@ -77,7 +77,7 @@ class LLVMTest {
 
     @Test fun genIfStatement() {
         val code = """
-        testBranching (a : Int, b : Int, c : Int)
+        genIfStatement (a : Int, b : Int, c : Int)
             var r = 0,
             if a == 10
                 r = b
@@ -99,7 +99,7 @@ class LLVMTest {
         let G1 = 1 + 2 - 3 * 4 + 6 / 6
         let G2 = 4
 
-        test (z : Int, y : Int, x : Int, w : Int)
+        genGlobalsInFunctions (z : Int, y : Int, x : Int, w : Int)
             var v = 42 + x,
             let u = 45 + v * 67 + 124 - (w * 4) / 5,
             v = v * 2 - z,
@@ -124,7 +124,7 @@ class LLVMTest {
 
     @Test fun genOperators() {
         val code = """
-        test (a : Int, b : Int) : Int
+        genOperators (a : Int, b : Int) : Int
             var r = 0,
             let c : Bool = a != b,
             if c
@@ -148,4 +148,22 @@ class LLVMTest {
         LLVMBackend(module).output(File("/dev/null"))
     }
 
+    @Test fun genWhileLoop() {
+        val code = """
+        genWhileLoop (a : Int)
+            var i = 0,
+            var sum = 0,
+            while i < a
+                i = i + 1,
+                sum = sum + a
+            ;
+            let r = sum * i,
+            r
+        """
+        val module = compileString("genWhileLoop", code)
+
+        TypePass(module)
+        println(PrintPass(module).output)
+        LLVMBackend(module).output(File("/dev/null"))
+    }
 }

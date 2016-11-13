@@ -147,4 +147,38 @@ class TypeCheckingTest {
 
         println(PrintPass(module).output)
     }
+
+    @Test fun incorrectConditionTypeInIfStatement() {
+        val code = """
+        test () : Int
+            let a = 7,
+            if a
+                let b = 7
+            ;
+            let g = 6,
+            6
+        """
+        val module = compileString("incorrectConditionTypeInIfStatement", code)
+
+        assertFails { TypePass(module) }
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun incorrectConditionTypeInWhileStatement() {
+        val code = """
+        test () : Int
+            let a = 7,
+            while a
+                let b = 7
+            ;
+            let g = 6,
+            6
+        """
+        val module = compileString("incorrectConditionTypeInWhileStatement", code)
+
+        assertFails { TypePass(module) }
+
+        println(PrintPass(module).output)
+    }
 }

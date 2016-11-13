@@ -117,9 +117,14 @@ class TypePass(module: Module) : Pass(module) {
             is VariableDeclarationStatement -> visit(statement, localVariables)
             is VariableReassignmentStatement -> visit(statement, localVariables)
             is IfStatement -> {
+                assert(T_BOOL == getType(statement.exp, localVariables))
                 statement.statements.forEach { visit(it, localVariables) }
                 if (statement.elseStatement != null)
                     visit(statement.elseStatement, localVariables)
+            }
+            is WhileStatement -> {
+                assert(T_BOOL == getType(statement.exp, localVariables))
+                statement.statements.forEach { visit(it, localVariables) }
             }
             else -> visit(statement)
         }
