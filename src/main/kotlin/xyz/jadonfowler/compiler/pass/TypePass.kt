@@ -76,7 +76,7 @@ class TypePass(module: Module) : Pass(module) {
         function.statements.forEach { visit(it, localVariables) }
         if (function.expression != null) {
             // Function should return the type of the return expression.
-            val lastExpressionType = getType(function.expression, localVariables)
+            val lastExpressionType = getType(function.expression!!, localVariables)
             if (function.returnType != lastExpressionType && function.returnType != T_UNDEF)
                 throw Exception("Function '${function.name}' is marked with the type " +
                         "'${function.returnType}' but its last expression is of the type '$lastExpressionType'.")
@@ -95,7 +95,7 @@ class TypePass(module: Module) : Pass(module) {
     fun visit(variable: Variable, localVariables: MutableMap<String, Variable>?) {
         if (variable.initialExpression != null) {
             // Variable should have the same type as their initial expression.
-            val expressionType = getType(variable.initialExpression, localVariables)
+            val expressionType = getType(variable.initialExpression!!, localVariables)
             if (variable.type != T_UNDEF && variable.type != expressionType)
                 throw Exception("Variable '${variable.name}' is marked with the type '${variable.type}' " +
                         "but its initial expression is of type '$expressionType'.")

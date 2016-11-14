@@ -27,7 +27,7 @@ interface Global : Node
  * and an optional last expression. The last expression is used as the return value for the function.
  * If there is no last expression, the function returns "void" (aka nothing).
  */
-class Function(var returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>, val expression: Expression? = null) : Global, Type {
+class Function(var returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>, var expression: Expression? = null) : Global, Type {
     fun accept(visitor: Visitor) = visitor.visit(this)
 
     /**
@@ -57,7 +57,7 @@ class Formal(type: Type, name: String) : Variable(type, name, null, true) {
  *
  * If 'constant' is true, the value of this variable can't be changed.
  */
-open class Variable(var type: Type, val name: String, val initialExpression: Expression? = null, val constant: Boolean = false) : Global {
+open class Variable(var type: Type, val name: String, var initialExpression: Expression? = null, val constant: Boolean = false) : Global {
     open fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
@@ -176,7 +176,7 @@ class VariableDeclarationStatement(val variable: Variable) : Statement() {
 /**
  *
  */
-class VariableReassignmentStatement(val reference: Reference, val exp: Expression) : Statement() {
+class VariableReassignmentStatement(val reference: Reference, var exp: Expression) : Statement() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 

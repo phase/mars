@@ -37,7 +37,7 @@ class PrintPass(module: Module) : Pass(module) {
         function.statements.map { println("; ${it.javaClass.simpleName}"); it.accept(this) }
         if (function.expression != null) {
             print("return ")
-            function.expression.accept(this)
+            function.expression!!.accept(this)
             println()
         }
         tabIndent--
@@ -53,7 +53,7 @@ class PrintPass(module: Module) : Pass(module) {
         print("${if (variable.constant) "constant" else "variable"} ${variable.name}: ${variable.type}")
         if (variable.initialExpression != null) {
             printI(" = ")
-            variable.initialExpression.accept(this)
+            variable.initialExpression!!.accept(this)
         }
         printI("\n")
     }

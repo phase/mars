@@ -63,7 +63,7 @@ class LLVMBackend(module: Module) : Backend(module) {
         val global = LLVMAddGlobal(llvmModule, getLLVMType(variable.type), variable.name)
         if (variable.initialExpression != null) {
             val builder = LLVMCreateBuilder()
-            LLVMSetInitializer(global, visit(variable.initialExpression, builder, mutableMapOf()))
+            LLVMSetInitializer(global, visit(variable.initialExpression!!, builder, mutableMapOf()))
         }
         if (variable.constant) LLVMSetGlobalConstant(global, 1)
         namedValues.put(variable.name, ValueContainer(ValueType.GLOBAL, global))
@@ -96,7 +96,7 @@ class LLVMBackend(module: Module) : Backend(module) {
 
         // Add a return statement with the last expression
         if (function.expression != null) {
-            val ret_value = visit(function.expression, builder, localVariables)
+            val ret_value = visit(function.expression!!, builder, localVariables)
             LLVMBuildRet(builder, ret_value)
         }
     }
@@ -107,11 +107,11 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val variable = statement.variable
                 if (variable.initialExpression != null) {
                     if (variable.constant) {
-                        localVariables.put(variable.name, ValueContainer(ValueType.CONSTANT, visit(variable.initialExpression, builder, localVariables)))
+                        localVariables.put(variable.name, ValueContainer(ValueType.CONSTANT, visit(variable.initialExpression!!, builder, localVariables)))
                     } else {
                         // Allocate memory so we can modify the value later
                         val allocation = LLVMBuildAlloca(builder, getLLVMType(variable.type), variable.name)
-                        val value = visit(variable.initialExpression, builder, localVariables)
+                        val value = visit(variable.initialExpression!!, builder, localVariables)
                         LLVMBuildStore(builder, value, allocation)
                         localVariables.put(variable.name, ValueContainer(ValueType.ALLOCATION, allocation))
                     }
