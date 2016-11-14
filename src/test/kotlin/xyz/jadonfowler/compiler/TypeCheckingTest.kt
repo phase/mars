@@ -179,4 +179,41 @@ class TypeCheckingTest {
 
         println(PrintPass(module).output)
     }
+
+    @Test fun inferVoidReturnType() {
+        val code = """
+        test1 ()
+            let a = 7
+
+        test2 (a : Int)
+            if a < 10
+                doWap()
+            else
+                damn()
+            ;
+        """
+        val module = compileString("inferVoidReturnType", code)
+        TypePass(module)
+
+        assertEquals(T_VOID, module.globalFunctions[0].returnType)
+        assertEquals(T_VOID, module.globalFunctions[1].returnType)
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun incorrectTypeSigForVoidFunction() {
+        val code = """
+        test () : Int
+            let a = 7,
+            while a
+                let b = 7
+            ;
+        """
+        val module = compileString("incorrectTypeSigForVoidFunction", code)
+
+        assertFails { TypePass(module) }
+
+        println(PrintPass(module).output)
+    }
+
 }
