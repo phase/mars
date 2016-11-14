@@ -106,7 +106,7 @@ open class Block(val statements: List<Statement>) : Statement() {
  * @param exp Expression to test
  * @param statements Statements to be run
  */
-open class CheckedBlock(val exp: Expression, statements: List<Statement>) : Block(statements)
+open class CheckedBlock(var exp: Expression, statements: List<Statement>) : Block(statements)
 
 /**
  * If Statement
@@ -284,7 +284,7 @@ fun getOperator(s: String): Operator? {
 /**
  * BinaryOperators are Expressions that contain two sub-Expressions and an Operator that operates on them.
  */
-class BinaryOperator(val expA: Expression, val operator: Operator, val expB: Expression) : Expression(listOf(expA, expB)) {
+class BinaryOperator(var expA: Expression, val operator: Operator, var expB: Expression) : Expression(listOf(expA, expB)) {
     override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = "($expA $operator $expB)"
 }
