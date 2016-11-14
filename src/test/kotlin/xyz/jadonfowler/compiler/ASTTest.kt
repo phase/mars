@@ -98,7 +98,7 @@ class ASTTest {
             while i < a
                 i = i + 1,
                 sum = sum + a
-            ;,
+            ;
             sum
         """
         val module = compileString("functionWhileStatementParsing", code, true)

@@ -155,7 +155,6 @@ class TypeCheckingTest {
             if a
                 let b = 7
             ;
-            let g = 6,
             6
         """
         val module = compileString("incorrectConditionTypeInIfStatement", code)
@@ -172,7 +171,6 @@ class TypeCheckingTest {
             while a
                 let b = 7
             ;
-            let g = 6,
             6
         """
         val module = compileString("incorrectConditionTypeInWhileStatement", code)

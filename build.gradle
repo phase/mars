@@ -1,8 +1,8 @@
-group 'xyz.jadonfowler'
-version '0.0.0-SNAPSHOT'
+group "xyz.jadonfowler"
+version "0.0.0-SNAPSHOT"
 
 buildscript {
-    ext.kotlin_version = '1.0.5'
+    ext.kotlin_version = "1.0.5"
 
     repositories {
         mavenCentral()
@@ -12,10 +12,10 @@ buildscript {
     }
 }
 
-apply plugin: 'antlr'
-apply plugin: 'java'
-apply plugin: 'kotlin'
-apply plugin: 'application'
+apply plugin: "antlr"
+apply plugin: "java"
+apply plugin: "kotlin"
+apply plugin: "application"
 apply plugin: "jacoco"
 
 mainClassName = "xyz.jadonfowler.compiler.CompilerKt"
@@ -26,17 +26,17 @@ repositories {
 
 // https://github.com/bytedeco/javacpp-presets/wiki/Issues-with-Build-Tools#gradle
 configurations {
-    all*.exclude group: 'org.bytedeco', module: 'javacpp-presets'
+    all*.exclude group: "org.bytedeco", module: "javacpp-presets"
 }
 
 dependencies {
     antlr "org.antlr:antlr4:4.5" // use ANTLR version 4
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile 'org.bytedeco:javacpp:1.2.4'
-    compile 'org.bytedeco.javacpp-presets:llvm:3.8.0-1.2'
-    compile 'org.bytedeco.javacpp-presets:llvm:3.8.0-1.2:linux-x86_64'
+    compile "org.bytedeco:javacpp:1.2.4"
+    compile "org.bytedeco.javacpp-presets:llvm:3.8.0-1.2"
+    compile "org.bytedeco.javacpp-presets:llvm:3.8.0-1.2:linux-x86_64"
 
-    testCompile 'junit:junit:4.11'
+    testCompile "junit:junit:4.11"
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 }
 
@@ -54,7 +54,7 @@ jacocoTestReport {
 
 generateGrammarSource {
     maxHeapSize = "64m"
-    arguments += ['-visitor', '-package', 'xyz.jadonfowler.compiler.parser']
+    arguments += ["-visitor", "-package", "xyz.jadonfowler.compiler.parser"]
     // Output generated sources from ANTLR into xyz.jadonfowler.compiler.parser
     outputDirectory = new File("src//main/java/xyz/jadonfowler/compiler/parser/".toString())
 }

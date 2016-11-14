@@ -8,7 +8,7 @@ externalDeclaration
     | classDeclaration
     ;
 
-functionDeclaration: ID '(' argumentList ')' typeAnnotation? (statementList ',')? (expression | statement);
+functionDeclaration: ID '(' argumentList ')' typeAnnotation? (statementList ',')? (statement ',' | blockStatement)? (expression | statement | blockStatement);
 variableDeclaration: variableModifier variableSignature ('=' expression)?;
 
 functionCall: ID '(' expressionList? ')';

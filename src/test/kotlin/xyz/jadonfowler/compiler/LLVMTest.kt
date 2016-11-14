@@ -83,7 +83,7 @@ class LLVMTest {
                 r = b
             else
                 r = c
-            ;,
+            ;
             r
         """
         val module = compileString("genIfStatement", code)
@@ -138,8 +138,7 @@ class LLVMTest {
                     ;
                 ;
             ;
-            let g = 21,
-            g + r
+            r
         """
         val module = compileString("genOperators", code)
 
