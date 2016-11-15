@@ -6,193 +6,65 @@ import xyz.jadonfowler.compiler.pass.ConstantFoldPass
 import xyz.jadonfowler.compiler.pass.PrintPass
 import xyz.jadonfowler.compiler.pass.TypePass
 import java.io.File
+import kotlin.test.assertTrue
 
 class LLVMTest {
 
-    @Test fun genGlobalConstant() {
-        val code = """
-        let a = 7
-        """
-        val module = compileString("genGlobalConstant", code)
+    fun testIR(testName: String) {
+        val code = "examples/test/$testName.l"
+        val file = File(code)
+        assertTrue(file.exists())
 
-        TypePass(module)
-        println(PrintPass(module).output)
-        LLVMBackend(module).output(null)
+        val expectedIRFile = File("examples/test/out/$testName.ll")
+        assertTrue(expectedIRFile.exists())
+        val expectedIR = expectedIRFile.readLines().joinToString("\n")
+
+        main(arrayOf(code, "--llvm"))
+
+        val actualIR = File("bin/$testName.ll").readLines().joinToString("\n")
+        // endsWith is used to ignore header information, which is different on every platform
+        assertTrue(actualIR.endsWith(expectedIR), "Wrong IR emitted! \n\nExpected:\n\n$expectedIR\n\nActual:\n" +
+                "\n$actualIR\n\n(Note: Header information is ignored.)\n")
+    }
+
+    @Test fun genGlobalConstant() {
+        testIR("genGlobalConstant")
     }
 
     @Test fun genFunction() {
-        val code = """
-        genFunction (a : Int, b : Int, c : Int)
-            0
-        """
-        val module = compileString("genFunction", code)
-
-        TypePass(module)
-        println(PrintPass(module).output)
-        LLVMBackend(module).output(null)
+        testIR("genFunction")
     }
 
     @Test fun genVariableDeclaration() {
-        val code = """
-        genVariableDeclaration ()
-            let a = 5,
-            0
-        """
-        val module = compileString("genVariableDeclaration", code)
-
-        TypePass(module)
-        println(PrintPass(module).output)
-        LLVMBackend(module).output(null)
+        testIR("genVariableDeclaration")
     }
 
     @Test fun genComplexExpressions() {
-        val code = """
-        genComplexExpressions (z : Int, y : Int, x : Int, w : Int)
-            var v = 42 + x,
-            let u = 45 + v * 67 + 124 - (w * 4) / 5,
-            let d = v * 2 - z,
-            5 + u * z * v + d
-        """
-        val module = compileString("genComplexExpressions", code)
-
-        TypePass(module)
-        println(PrintPass(module).output)
-        LLVMBackend(module).output(null)
+        testIR("genComplexExpressions")
     }
 
     @Test fun genVariableReassignment() {
-        val code = """
-        genVariableReassignment ()
-            var a = 0,
-            a = 1,
-            a = 2,
-            a = 3,
-            a
-        """
-        val module = compileString("genVariableReassignment", code)
-
-        TypePass(module)
-        println(PrintPass(module).output)
-        LLVMBackend(module).output(null)
+        testIR("genVariableReassignment")
     }
 
     @Test fun genIfStatement() {
-        val code = """
-        genIfStatement (a : Int, b : Int, c : Int)
-            var r = 0,
-            if a == 10
-                r = b
-            else
-                r = c
-            ;
-            r
-        """
-        val module = compileString("genIfStatement", code)
-
-        TypePass(module)
-        println(PrintPass(module).output)
-        LLVMBackend(module).output(null)
+        testIR("genIfStatement")
     }
 
     @Test fun genGlobalsInFunctions() {
-        val code = """
-        let G0 = 1234 + 4321
-        let G1 = 1 + 2 - 3 * 4 + 6 / 6
-        let G2 = 4
-
-        genGlobalsInFunctions (z : Int, y : Int, x : Int, w : Int)
-            var v = 42 + x,
-            let u = 45 + v * 67 + 124 - (w * 4) / 5,
-            v = v * 2 - z,
-            var t = 1,
-            if z < 10
-                t = v * z
-            else
-                t = v - z
-            ;
-            let l = 74 * 3 - v + z * x - w,
-            5 + u * z * v + t * G2 - G0 * G1 + 2 * l
-
-        returnGlobal ()
-            G0
-        """
-        val module = compileString("genGlobalsInFunctions", code)
-
-        TypePass(module)
-        println(PrintPass(module).output)
-        LLVMBackend(module).output(null)
+        testIR("genGlobalsInFunctions")
     }
 
     @Test fun genOperators() {
-        val code = """
-        genOperators (a : Int, b : Int) : Int
-            var r = 0,
-            let c : Bool = a != b,
-            if c
-                r = r + 10
-            else
-                if a > b
-                    r = r + 11
-                else
-                    if a <= b
-                        r = r + 12
-                    ;
-                ;
-            ;
-            r
-        """
-        val module = compileString("genOperators", code)
-
-        TypePass(module)
-        println(PrintPass(module).output)
-        LLVMBackend(module).output(null)
+        testIR("genOperators")
     }
 
     @Test fun genWhileLoop() {
-        val code = """
-        genWhileLoop (a : Int)
-            var i = 0,
-            var sum = 0,
-            while i < a
-                i = i + 1,
-                sum = sum + a
-            ;
-            let r = sum * i,
-            r
-        """
-        val module = compileString("genWhileLoop", code)
-
-        TypePass(module)
-        println(PrintPass(module).output)
-        LLVMBackend(module).output(null)
+        testIR("genWhileLoop")
     }
 
     @Test fun genComplexExpressionsInWhileLoop() {
-        val code = """
-        genComplexExpressionsInWhileLoop (a : Int, z : Int, y : Int, x : Int, w : Int)
-            var i = 0,
-            var sum = 0,
-            while i < a
-                var v = 42 + x,
-                let u = 45 * 7 - 16 + 11 + v * 67 + 124 - (w * 4) / 5,
-                v = v * 2 - z,
-                var t = 1,
-                if z < 10
-                    t = v * z + 24 - 15
-                else
-                    t = v - 7 + 8 + 8 - z
-                ;
-                let l = 74 * 3 - v + z * x - w,
-                i = 5 + u * z * v + t * 2 * l
-            ;
-            let r = sum * i,
-            r
-        """
-        val module = compileString("genComplexExpressionsInWhileLoop", code)
-
-        TypePass(module)
-        ConstantFoldPass(module)
-        println(PrintPass(module).output)
-        LLVMBackend(module).output(null)
+        testIR("genComplexExpressionsInWhileLoop")
     }
+
 }

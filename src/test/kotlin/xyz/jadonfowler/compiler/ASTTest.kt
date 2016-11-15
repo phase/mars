@@ -185,4 +185,25 @@ class ASTTest {
 
         println(PrintPass(module).output)
     }
+
+    @Test fun functionCallStatementParsing() {
+        val code = """
+        class Test
+            let field : Int = 8
+
+            method (a : Int) : Int
+                field = a,
+                a
+        ;
+        """
+        val module = compileString("functionCallStatementParsing", code, true)
+
+        assertEquals(1, module.globalClasses.size)
+        val clazz = module.globalClasses[0]
+        assertEquals(1, clazz.fields.size)
+        assertTrue(clazz.fields[0].initialExpression is IntegerLiteral)
+        assertEquals(1, clazz.methods.size)
+
+        println(PrintPass(module).output)
+    }
 }

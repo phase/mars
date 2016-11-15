@@ -56,9 +56,6 @@ class LLVMBackend(module: Module) : Backend(module) {
         LLVMAddGVNPass(pass)
         LLVMAddCFGSimplificationPass(pass)
         LLVMRunPassManager(pass, llvmModule)
-        LLVMDumpModule(llvmModule)
-
-//        LLVMSetDataLayout(llvmModule, LLVMCreate)
 
         if (file != null) {
             // Print out Assembly
