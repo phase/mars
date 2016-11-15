@@ -12,21 +12,34 @@ class LLVMBackend(module: Module) : Backend(module) {
     val namedValues: MutableMap<String, ValueContainer> = mutableMapOf()
     val builder: LLVMBuilderRef
 
-//    val defaultTarget: BytePointer
+    private val targetMachine: LLVMTargetMachineRef
 
     init {
-//        LLVMInitializeAllTargetInfos()
-//        LLVMInitializeAllTargets()
-//        LLVMInitializeAllTargetMCs()
+        LLVMInitializeAllTargetInfos()
+        LLVMInitializeAllTargets()
+        LLVMInitializeAllTargetMCs()
         LLVMLinkInMCJIT()
         LLVMInitializeNativeAsmPrinter()
         LLVMInitializeNativeAsmParser()
         LLVMInitializeNativeDisassembler()
         LLVMInitializeNativeTarget()
+
         llvmModule = LLVMModuleCreateWithName(module.name)
-//        defaultTarget = LLVMGetDefaultTargetTriple()
-//        LLVMSetTarget(llvmModule, defaultTarget)
-//        LLVMCreateTargetMachine(LLVMTargetRef(defaultTarget), "", "generic", "", 0, 0, 0)
+
+        val targetTriple = LLVMGetDefaultTargetTriple()
+        println(targetTriple.string)
+        LLVMSetTarget(llvmModule, targetTriple)
+
+        val target = LLVMTargetRef(null as BytePointer?)
+        val error = BytePointer(null as Pointer?)
+        LLVMGetTargetFromTriple(targetTriple, target, error)
+
+        LLVMDisposeMessage(error)
+        LLVMDisposeMessage(targetTriple)
+
+        println("target address:" + target.address())
+        targetMachine = LLVMCreateTargetMachine(target, "x86_64-unknown-linux-gnu", "", "", 0, 0, 0)
+
         builder = LLVMCreateBuilder()
 
         module.globalVariables.forEach { it.accept(this) }
@@ -34,16 +47,9 @@ class LLVMBackend(module: Module) : Backend(module) {
     }
 
     override fun output(file: File) {
-        val error = BytePointer(null as Pointer?) // Used to retrieve messages from functions
+        var error = BytePointer(null as Pointer?)
         LLVMVerifyModule(llvmModule, LLVMAbortProcessAction, error)
         LLVMDisposeMessage(error)
-
-        val engine = LLVMExecutionEngineRef()
-        if (LLVMCreateJITCompilerForModule(engine, llvmModule, 0, error) !== 0) {
-            System.err.println(error.string)
-            LLVMDisposeMessage(error)
-            System.exit(-1)
-        }
 
         val pass = LLVMCreatePassManager()
         LLVMAddConstantPropagationPass(pass)
@@ -54,9 +60,25 @@ class LLVMBackend(module: Module) : Backend(module) {
         LLVMRunPassManager(pass, llvmModule)
         LLVMDumpModule(llvmModule)
 
+//        LLVMSetDataLayout(llvmModule, LLVMCreate)
+
+        // Print out Assembly
+        error = BytePointer(null as Pointer?)
+        LLVMTargetMachineEmitToFile(targetMachine, llvmModule, BytePointer(file.path + ".s"), LLVMAssemblyFile, error)
+        LLVMDisposeMessage(error)
+
+        // Print out Object code
+        error = BytePointer(null as Pointer?)
+        LLVMTargetMachineEmitToFile(targetMachine, llvmModule, BytePointer(file.path + ".o"), LLVMObjectFile, error)
+        LLVMDisposeMessage(error)
+
+        // Print out LLVM IR
+        error = BytePointer(null as Pointer?)
+        LLVMPrintModuleToFile(llvmModule, file.path + ".ll", error)
+        LLVMDisposeMessage(error)
+
         LLVMDisposeBuilder(builder)
         LLVMDisposePassManager(pass)
-        LLVMDisposeExecutionEngine(engine)
     }
 
     override fun visit(variable: Variable) {

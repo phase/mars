@@ -4,68 +4,69 @@ import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.RuleContext
-import xyz.jadonfowler.compiler.visitor.ContextVisitor
 import xyz.jadonfowler.compiler.ast.Module
 import xyz.jadonfowler.compiler.backend.LLVMBackend
-import xyz.jadonfowler.compiler.pass.TypePass
-import xyz.jadonfowler.compiler.pass.PrintPass
 import xyz.jadonfowler.compiler.parser.LangLexer
 import xyz.jadonfowler.compiler.parser.LangParser
+import xyz.jadonfowler.compiler.pass.ConstantFoldPass
+import xyz.jadonfowler.compiler.pass.PrintPass
+import xyz.jadonfowler.compiler.pass.TypePass
+import xyz.jadonfowler.compiler.visitor.ContextVisitor
 import java.io.File
 
 val globalModules = mutableListOf<Module>()
 
 fun main(args: Array<String>) {
-    // "other file"
-    compileString("other", """
-    thing(a : Int, b : Int) 0
-    """)
+    val files: MutableList<String> = mutableListOf()
+    val options: MutableList<String> = mutableListOf()
 
-    val program = compileString("main", """
-    let d = 3 + 2 let e = 0 let f : Int
-    let h = 6 let i : Int = 7 let j : Int = 8
-    #let wrong_type : Bool = 7
-    let str = "test"
+    args.forEach {
+        if (it.startsWith("--")) // This argument is an option
+            options.add(it.substring(2, it.length))
+        else // This argument is a file
+            files.add(it)
+    }
 
-    llvm (z : Int, y : Int, x : Int, w : Int)
-        var v = 42 + x,
-        let u = 45 + v * 67 + 124 - (w * 4) / 5,
-        v = v * 2 - z,
-        5 + u * z * v
+    // <Name, Code>
+    val modulesToCompile: MutableMap<String, String> = mutableMapOf()
 
-    foo (t : Int, s : Int)
-        let r : Int = 90128,
-        if 1 != (2 + 2)
-            var q = s,
-            if 2 != 14 * 7 - 5
-                q = t
-            else
-                if 4 >= 2
-                    q = 7,
-                    if s >= t || s <= 8:
-                        print(t, s)
-                    ;
-                ;
-            ;
-        ;
-        thing(a + b, a - b * g),
-        a + b + 1
+    // Read files that we need to compile
+    files.forEach {
+        val file = File(it)
+        if (file.exists() && !file.isDirectory) {
+            modulesToCompile.put(file.nameWithoutExtension, file.readLines().joinToString("\n"))
+        } else {
+            println("Can't find file '$it'.")
+            System.exit(1)
+        }
+    }
 
-    class Object
+    // Go over every module and parse it
+    val modules: List<Module> = modulesToCompile.map { compileString(it.key, it.value) }
 
-        let field : Int = 0
+    // Default passes
+    modules.forEach {
+        TypePass(it)
+        ConstantFoldPass(it)
+    }
 
-        method (arg : Int) 0
-            #let local : int = arg + 7,
-            #let thing : int = local * 5,
-            #local / thing
-    ;
-
-    let variable_defined_after_class : Int = 0
-    """)
-
-    // Go through passes
-    TypePass(program)
+    options.forEach {
+        when (it.toLowerCase()) {
+            "ast" -> {
+                // Print the AST for each module
+                modules.forEach { println(PrintPass(it).output) }
+            }
+            "llvm" -> {
+                // Output native code through LLVM Backend
+                val bin = File("bin")
+                if (!bin.exists())
+                    bin.mkdirs()
+                modules.forEach {
+                    LLVMBackend(it).output(File("bin/${it.name}"))
+                }
+            }
+        }
+    }
 }
 
 fun compileString(moduleName: String, code: String, explore: Boolean = false): Module {
@@ -75,7 +76,7 @@ fun compileString(moduleName: String, code: String, explore: Boolean = false): M
     val parser = LangParser(tokens)
     val result = parser.program()
     val contextVisitor = ContextVisitor(moduleName)
-    if(explore) explore(result, 0)
+    if (explore) explore(result, 0)
     return contextVisitor.visitProgram(result)
 }
 
@@ -91,10 +92,9 @@ fun explore(ctx: RuleContext, indentation: Int = 0) {
                 + "\n")
     }
 
-    for (i in 0..ctx.childCount - 1) {
-        val element = ctx.getChild(i)
-        if (element is RuleContext) {
+    (0..ctx.childCount - 1).forEach {
+        val element = ctx.getChild(it)
+        if (element is RuleContext)
             explore(element, indentation + (if (ignore) 0 else 1))
-        }
     }
 }

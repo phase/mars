@@ -9,3 +9,7 @@ src/main/java/xyz/jadonfowler/compiler/parser/
 # Gradle
 .gradle/
 build/
+
+# Output from LLVMBackend
+bin/
+
