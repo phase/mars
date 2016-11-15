@@ -17,7 +17,7 @@ class LLVMTest {
 
         TypePass(module)
         println(PrintPass(module).output)
-        LLVMBackend(module).output(File("/dev/null"))
+        LLVMBackend(module).output(null)
     }
 
     @Test fun genFunction() {
@@ -29,7 +29,7 @@ class LLVMTest {
 
         TypePass(module)
         println(PrintPass(module).output)
-        LLVMBackend(module).output(File("/dev/null"))
+        LLVMBackend(module).output(null)
     }
 
     @Test fun genVariableDeclaration() {
@@ -42,7 +42,7 @@ class LLVMTest {
 
         TypePass(module)
         println(PrintPass(module).output)
-        LLVMBackend(module).output(File("/dev/null"))
+        LLVMBackend(module).output(null)
     }
 
     @Test fun genComplexExpressions() {
@@ -57,7 +57,7 @@ class LLVMTest {
 
         TypePass(module)
         println(PrintPass(module).output)
-        LLVMBackend(module).output(File("/dev/null"))
+        LLVMBackend(module).output(null)
     }
 
     @Test fun genVariableReassignment() {
@@ -73,7 +73,7 @@ class LLVMTest {
 
         TypePass(module)
         println(PrintPass(module).output)
-        LLVMBackend(module).output(File("/dev/null"))
+        LLVMBackend(module).output(null)
     }
 
     @Test fun genIfStatement() {
@@ -91,7 +91,7 @@ class LLVMTest {
 
         TypePass(module)
         println(PrintPass(module).output)
-        LLVMBackend(module).output(File("/dev/null"))
+        LLVMBackend(module).output(null)
     }
 
     @Test fun genGlobalsInFunctions() {
@@ -120,7 +120,7 @@ class LLVMTest {
 
         TypePass(module)
         println(PrintPass(module).output)
-        LLVMBackend(module).output(File("/dev/null"))
+        LLVMBackend(module).output(null)
     }
 
     @Test fun genOperators() {
@@ -145,7 +145,7 @@ class LLVMTest {
 
         TypePass(module)
         println(PrintPass(module).output)
-        LLVMBackend(module).output(File("/dev/null"))
+        LLVMBackend(module).output(null)
     }
 
     @Test fun genWhileLoop() {
@@ -164,7 +164,7 @@ class LLVMTest {
 
         TypePass(module)
         println(PrintPass(module).output)
-        LLVMBackend(module).output(File("/dev/null"))
+        LLVMBackend(module).output(null)
     }
 
     @Test fun genComplexExpressionsInWhileLoop() {
@@ -193,6 +193,6 @@ class LLVMTest {
         TypePass(module)
         ConstantFoldPass(module)
         println(PrintPass(module).output)
-        LLVMBackend(module).output(File("/dev/null"))
+        LLVMBackend(module).output(null)
     }
 }

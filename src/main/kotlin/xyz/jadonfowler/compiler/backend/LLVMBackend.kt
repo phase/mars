@@ -27,7 +27,6 @@ class LLVMBackend(module: Module) : Backend(module) {
         llvmModule = LLVMModuleCreateWithName(module.name)
 
         val targetTriple = LLVMGetDefaultTargetTriple()
-        println(targetTriple.string)
         LLVMSetTarget(llvmModule, targetTriple)
 
         val target = LLVMTargetRef(null as BytePointer?)
@@ -37,7 +36,6 @@ class LLVMBackend(module: Module) : Backend(module) {
         LLVMDisposeMessage(error)
         LLVMDisposeMessage(targetTriple)
 
-        println("target address:" + target.address())
         targetMachine = LLVMCreateTargetMachine(target, "x86_64-unknown-linux-gnu", "", "", 0, 0, 0)
 
         builder = LLVMCreateBuilder()
@@ -46,7 +44,7 @@ class LLVMBackend(module: Module) : Backend(module) {
         module.globalFunctions.forEach { it.accept(this) }
     }
 
-    override fun output(file: File) {
+    override fun output(file: File?) {
         var error = BytePointer(null as Pointer?)
         LLVMVerifyModule(llvmModule, LLVMAbortProcessAction, error)
         LLVMDisposeMessage(error)
@@ -62,20 +60,22 @@ class LLVMBackend(module: Module) : Backend(module) {
 
 //        LLVMSetDataLayout(llvmModule, LLVMCreate)
 
-        // Print out Assembly
-        error = BytePointer(null as Pointer?)
-        LLVMTargetMachineEmitToFile(targetMachine, llvmModule, BytePointer(file.path + ".s"), LLVMAssemblyFile, error)
-        LLVMDisposeMessage(error)
+        if (file != null) {
+            // Print out Assembly
+            error = BytePointer(null as Pointer?)
+            LLVMTargetMachineEmitToFile(targetMachine, llvmModule, BytePointer(file.path + ".s"), LLVMAssemblyFile, error)
+            LLVMDisposeMessage(error)
 
-        // Print out Object code
-        error = BytePointer(null as Pointer?)
-        LLVMTargetMachineEmitToFile(targetMachine, llvmModule, BytePointer(file.path + ".o"), LLVMObjectFile, error)
-        LLVMDisposeMessage(error)
+            // Print out Object code
+            error = BytePointer(null as Pointer?)
+            LLVMTargetMachineEmitToFile(targetMachine, llvmModule, BytePointer(file.path + ".o"), LLVMObjectFile, error)
+            LLVMDisposeMessage(error)
 
-        // Print out LLVM IR
-        error = BytePointer(null as Pointer?)
-        LLVMPrintModuleToFile(llvmModule, file.path + ".ll", error)
-        LLVMDisposeMessage(error)
+            // Print out LLVM IR
+            error = BytePointer(null as Pointer?)
+            LLVMPrintModuleToFile(llvmModule, file.path + ".ll", error)
+            LLVMDisposeMessage(error)
+        }
 
         LLVMDisposeBuilder(builder)
         LLVMDisposePassManager(pass)

@@ -5,5 +5,5 @@ import xyz.jadonfowler.compiler.pass.Pass
 import java.io.File
 
 abstract class Backend(module: Module) : Pass(module) {
-    abstract fun output(file: File)
+    abstract fun output(file: File?)
 }
