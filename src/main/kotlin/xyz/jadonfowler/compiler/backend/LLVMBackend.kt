@@ -34,9 +34,9 @@ class LLVMBackend(module: Module) : Backend(module) {
         LLVMGetTargetFromTriple(targetTriple, target, error)
 
         LLVMDisposeMessage(error)
-        LLVMDisposeMessage(targetTriple)
 
-        targetMachine = LLVMCreateTargetMachine(target, "x86_64-unknown-linux-gnu", "", "", 0, 0, 0)
+        targetMachine = LLVMCreateTargetMachine(target, targetTriple.string, "", "", 0, 0, 0)
+        LLVMDisposeMessage(targetTriple)
 
         builder = LLVMCreateBuilder()
 
