@@ -35,7 +35,7 @@ class TypePass(module: Module) : Pass(module) {
             }
             is FunctionCallExpression -> {
                 val functionName = expression.functionReference.name
-                val function = module.globalFunctions.filter { it.name == functionName }.first()
+                val function = module.globalFunctions.filter { it.name == functionName }.last()
                 function.returnType
             }
             is ReferenceExpression -> {
@@ -94,6 +94,7 @@ class TypePass(module: Module) : Pass(module) {
 
     fun visit(variable: Variable, localVariables: MutableMap<String, Variable>?) {
         if (variable.initialExpression != null) {
+            visit(variable.initialExpression!!, localVariables)
             // Variable should have the same type as their initial expression.
             val expressionType = getType(variable.initialExpression!!, localVariables)
             if (variable.type != T_UNDEF && variable.type != expressionType)
@@ -112,17 +113,34 @@ class TypePass(module: Module) : Pass(module) {
         clazz.methods.forEach { it.accept(this) }
     }
 
+    fun visit(expression: Expression, localVariables: MutableMap<String, Variable>?) {
+        when (expression) {
+            is FunctionCallExpression -> visit(expression, localVariables)
+        }
+    }
+
+    fun visit(functionCallExpression: FunctionCallExpression, localVariables: MutableMap<String, Variable>?) {
+        val function = module.globalFunctions.filter { it.name == functionCallExpression.functionReference.name }.last()
+        val formalTypes = function.formals.map { it.type }
+        val argTypes = functionCallExpression.arguments.map { getType(it, localVariables) }
+        if (formalTypes != argTypes)
+            throw Exception("Function call to '${functionCallExpression.functionReference.name} expected" +
+                    " $formalTypes but was given $argTypes!")
+    }
+
     fun visit(statement: Statement, localVariables: MutableMap<String, Variable>?) {
         when (statement) {
             is VariableDeclarationStatement -> visit(statement, localVariables)
             is VariableReassignmentStatement -> visit(statement, localVariables)
             is IfStatement -> {
+                visit(statement.exp, localVariables)
                 assert(T_BOOL == getType(statement.exp, localVariables))
                 statement.statements.forEach { visit(it, localVariables) }
                 if (statement.elseStatement != null)
                     visit(statement.elseStatement, localVariables)
             }
             is WhileStatement -> {
+                visit(statement.exp, localVariables)
                 assert(T_BOOL == getType(statement.exp, localVariables))
                 statement.statements.forEach { visit(it, localVariables) }
             }
@@ -144,6 +162,7 @@ class TypePass(module: Module) : Pass(module) {
 
         if (thingsWithName.isNotEmpty()) {
             val variable = thingsWithName.last()
+            visit(variableReassignmentStatement.exp, localVariables)
             val expressionType = getType(variableReassignmentStatement.exp, localVariables)
             if (variable.type != expressionType)
                 throw Exception("Variable '${variable.name}' is marked with the type '${variable.type}' but the type" +

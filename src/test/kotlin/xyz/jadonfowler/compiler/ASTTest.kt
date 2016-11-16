@@ -188,21 +188,27 @@ class ASTTest {
 
     @Test fun functionCallStatementParsing() {
         val code = """
-        class Test
-            let field : Int = 8
+        funA (a : Int) : Int
+            a + 1
 
-            method (a : Int) : Int
-                field = a,
-                a
-        ;
+        funB (a : Int) : Int
+            let b = funA(a),
+            b * 2
         """
         val module = compileString("functionCallStatementParsing", code, true)
 
-        assertEquals(1, module.globalClasses.size)
-        val clazz = module.globalClasses[0]
-        assertEquals(1, clazz.fields.size)
-        assertTrue(clazz.fields[0].initialExpression is IntegerLiteral)
-        assertEquals(1, clazz.methods.size)
+        assertEquals(2, module.globalFunctions.size, "There should be two functions")
+        assertTrue(module.globalFunctions[1].statements[0] is VariableDeclarationStatement)
+        val dec = module.globalFunctions[1].statements[0] as VariableDeclarationStatement
+
+        assertTrue(dec.variable.initialExpression is FunctionCallExpression)
+        val functionCall = dec.variable.initialExpression as FunctionCallExpression
+        assertEquals("funA", functionCall.functionReference.name)
+        assertEquals(1, functionCall.arguments.size)
+
+        assertTrue(functionCall.arguments[0] is ReferenceExpression)
+        val argRef = functionCall.arguments[0] as ReferenceExpression
+        assertEquals("a", argRef.reference.name)
 
         println(PrintPass(module).output)
     }

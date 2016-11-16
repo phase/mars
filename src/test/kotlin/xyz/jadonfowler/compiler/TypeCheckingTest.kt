@@ -216,4 +216,37 @@ class TypeCheckingTest {
         println(PrintPass(module).output)
     }
 
+    @Test fun inferReturnTypeForFunctions() {
+        val code = """
+        funA (a : Int) : Int
+            a + 1
+
+        funB (a : Int) : Int
+            let b = funA(a),
+            b * 2
+        """
+        val module = compileString("inferReturnTypeForFunctions", code)
+        TypePass(module)
+
+        assertEquals(T_INT, (module.globalFunctions[1].statements[0] as VariableDeclarationStatement).variable.type)
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun incorrectFunctionCallArguments() {
+        val code = """
+        funA (a : Int) : Int
+            a + 1
+
+        funB (a : Int) : Int
+            let b = funA(true),
+            b * 2
+        """
+        val module = compileString("inferReturnTypeForFunctions", code)
+
+        assertFails { TypePass(module) }
+
+        println(PrintPass(module).output)
+    }
+
 }
