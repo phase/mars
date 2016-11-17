@@ -75,6 +75,16 @@ class Clazz(val name: String, val fields: List<Variable>, val methods: List<Func
  */
 class Reference(val name: String, var global: Global? = null)
 
+/**
+ * Stores the references and arguments for calling a Function.
+ */
+class FunctionCall(val functionReference: Reference, val arguments: List<Expression> = listOf()) : Node
+
+/**
+ * Stores the references and arguments for a calling a Method.
+ */
+class MethodCall(val variableReference: Reference, val methodReference: Reference, val arguments: List<Expression> = listOf()) : Node
+
 // ---------------------------------------------------------------------------------------------------------------------
 // STATEMENTS
 // ---------------------------------------------------------------------------------------------------------------------
@@ -181,9 +191,16 @@ class VariableReassignmentStatement(val reference: Reference, var exp: Expressio
 }
 
 /**
- * FunctionCallStatements call other Functions with the supplied Expressions.
+ * Statement wrapper for FunctionCalls
  */
-class FunctionCallStatement(val functionReference: Reference, val arguments: List<Expression> = listOf()) : Statement() {
+class FunctionCallStatement(val functionCall: FunctionCall) : Statement() {
+    override fun accept(visitor: Visitor) = visitor.visit(this)
+}
+
+/**
+ * Statement wrapper for MethodCalls
+ */
+class MethodCallStatement(val methodCall: MethodCall) : Statement() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
@@ -241,9 +258,16 @@ class ReferenceExpression(val reference: Reference) : Expression() {
 }
 
 /**
- * FunctionCallStatement as an Expression
+ * Expression wrapper for FunctionCalls
  */
-class FunctionCallExpression(val functionReference: Reference, val arguments: List<Expression> = listOf()) : Expression(arguments) {
+class FunctionCallExpression(val functionCall: FunctionCall) : Expression(functionCall.arguments) {
+    override fun accept(visitor: Visitor) = visitor.visit(this)
+}
+
+/**
+ * Expression wrapper for MethodCalls
+ */
+class MethodCallExpression(val methodCall: MethodCall) : Expression(methodCall.arguments) {
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 

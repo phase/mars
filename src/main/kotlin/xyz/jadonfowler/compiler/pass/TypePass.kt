@@ -34,7 +34,7 @@ class TypePass(module: Module) : Pass(module) {
                 T_STRING
             }
             is FunctionCallExpression -> {
-                val functionName = expression.functionReference.name
+                val functionName = expression.functionCall.functionReference.name
                 val function = module.globalFunctions.filter { it.name == functionName }.last()
                 function.returnType
             }
@@ -120,11 +120,11 @@ class TypePass(module: Module) : Pass(module) {
     }
 
     fun visit(functionCallExpression: FunctionCallExpression, localVariables: MutableMap<String, Variable>?) {
-        val function = module.globalFunctions.filter { it.name == functionCallExpression.functionReference.name }.last()
+        val function = module.globalFunctions.filter { it.name == functionCallExpression.functionCall.functionReference.name }.last()
         val formalTypes = function.formals.map { it.type }
-        val argTypes = functionCallExpression.arguments.map { getType(it, localVariables) }
+        val argTypes = functionCallExpression.functionCall.arguments.map { getType(it, localVariables) }
         if (formalTypes != argTypes)
-            throw Exception("Function call to '${functionCallExpression.functionReference.name} expected" +
+            throw Exception("Function call to '${functionCallExpression.functionCall.functionReference.name} expected" +
                     " $formalTypes but was given $argTypes!")
     }
 

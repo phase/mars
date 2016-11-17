@@ -124,8 +124,8 @@ class PrintPass(module: Module) : Pass(module) {
     }
 
     override fun visit(functionCallStatement: FunctionCallStatement) {
-        print("${functionCallStatement.functionReference.name}(")
-        functionCallStatement.arguments.map { it.accept(this); printI(", ") }
+        print("${functionCallStatement.functionCall.functionReference.name}(")
+        functionCallStatement.functionCall.arguments.map { it.accept(this); printI(", ") }
         printI(")\n")
     }
 
@@ -150,8 +150,8 @@ class PrintPass(module: Module) : Pass(module) {
     }
 
     override fun visit(functionCallExpression: FunctionCallExpression) {
-        printI("${functionCallExpression.functionReference.name}(")
-        functionCallExpression.arguments.forEach { it.accept(this); printI(", ") }
+        printI("${functionCallExpression.functionCall.functionReference.name}(")
+        functionCallExpression.functionCall.arguments.forEach { it.accept(this); printI(", ") }
         printI(")")
     }
 

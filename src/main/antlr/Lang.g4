@@ -12,6 +12,7 @@ functionDeclaration: ID '(' argumentList ')' typeAnnotation? (statementList ',')
 variableDeclaration: variableModifier variableSignature ('=' expression)?;
 
 functionCall: ID '(' expressionList? ')';
+methodCall: ID '.' ID '(' expressionList? ')';
 
 variableModifier
     : 'let'
@@ -23,6 +24,7 @@ variableReassignment: ID '=' expression;
 statement
     : variableDeclaration
     | variableReassignment
+    | methodCall
     | functionCall
     | 'continue'
     | 'break'
@@ -65,6 +67,7 @@ expression
     | '~' expression
     | expression '%' ID '%' expression // call function as operator
     | '(' expression ')'
+    | methodCall
     | functionCall
     | ID
     | STRING

@@ -125,10 +125,17 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
         return Clazz(identifier, fields, methods)
     }
 
-    override fun visitFunctionCall(ctx: LangParser.FunctionCallContext?): FunctionCallStatement {
+    override fun visitFunctionCall(ctx: LangParser.FunctionCallContext?): FunctionCall {
         val functionName = ctx?.ID()?.symbol?.text.orEmpty()
         val expressions = expressionListFromContext(ctx?.expressionList())
-        return FunctionCallStatement(Reference(functionName), expressions)
+        return FunctionCall(Reference(functionName), expressions)
+    }
+
+    override fun visitMethodCall(ctx: LangParser.MethodCallContext?): MethodCall {
+        val variableName = ctx?.ID(0)?.symbol?.text.orEmpty()
+        val methodName = ctx?.ID(1)?.symbol?.text.orEmpty()
+        val expressions = expressionListFromContext(ctx?.expressionList())
+        return MethodCall(Reference(variableName), Reference(methodName), expressions)
     }
 
     fun expressionListFromContext(expressionListContext: LangParser.ExpressionListContext?): List<Expression> {
@@ -153,8 +160,10 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
             return VariableDeclarationStatement(visitVariableDeclaration(ctx?.variableDeclaration()))
         if (ctx?.variableReassignment() != null)
             return visitVariableReassignment(ctx?.variableReassignment())
+        if (ctx?.methodCall() != null)
+            return MethodCallStatement(visitMethodCall(ctx?.methodCall()))
         if (ctx?.functionCall() != null)
-            return visitFunctionCall(ctx?.functionCall())
+            return FunctionCallStatement(visitFunctionCall(ctx?.functionCall()))
         return EmptyNode()
     }
 
@@ -199,10 +208,10 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
             if (operator != null) {
                 return BinaryOperator(expressionA, operator, expressionB)
             }
+        } else if (ctx?.methodCall() != null) {
+            return MethodCallExpression(visitMethodCall(ctx?.methodCall()))
         } else if (ctx?.functionCall() != null) {
-            val functionName = ctx?.functionCall()?.ID()?.symbol?.text.orEmpty()
-            val expressions = expressionListFromContext(ctx?.functionCall()?.expressionList())
-            return FunctionCallExpression(Reference(functionName), expressions)
+            return FunctionCallExpression(visitFunctionCall(ctx?.functionCall()))
         } else if (ctx?.INT() != null) {
             return IntegerLiteral(ctx?.INT()?.text?.toInt()!!)
         } else if (ctx?.ID() != null) {

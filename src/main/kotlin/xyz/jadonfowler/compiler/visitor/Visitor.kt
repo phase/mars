@@ -20,6 +20,7 @@ abstract class Visitor(val module: Module) {
             is VariableDeclarationStatement -> visit(statement)
             is VariableReassignmentStatement -> visit(statement)
             is FunctionCallStatement -> visit(statement)
+            is MethodCallStatement -> visit(statement)
         }
     }
 
@@ -29,6 +30,7 @@ abstract class Visitor(val module: Module) {
     abstract fun visit(variableDeclarationStatement: VariableDeclarationStatement)
     abstract fun visit(variableReassignmentStatement: VariableReassignmentStatement)
     abstract fun visit(functionCallStatement: FunctionCallStatement)
+    abstract fun visit(methodCallStatement: MethodCallStatement)
 
     // Expressions
     open fun visit(expression: Expression) {
@@ -39,6 +41,7 @@ abstract class Visitor(val module: Module) {
             is StringLiteral -> visit(expression)
             is ReferenceExpression -> visit(expression)
             is FunctionCallExpression -> visit(expression)
+            is MethodCallExpression -> visit(expression)
             is BinaryOperator -> visit(expression)
         }
     }
@@ -49,5 +52,7 @@ abstract class Visitor(val module: Module) {
     abstract fun visit(stringLiteral: StringLiteral)
     abstract fun visit(referenceExpression: ReferenceExpression)
     abstract fun visit(functionCallExpression: FunctionCallExpression)
+    abstract fun visit(methodCallExpression: MethodCallExpression)
     abstract fun visit(binaryOperator: BinaryOperator)
+
 }

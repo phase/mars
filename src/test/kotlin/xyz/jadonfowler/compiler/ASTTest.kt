@@ -202,13 +202,35 @@ class ASTTest {
         val dec = module.globalFunctions[1].statements[0] as VariableDeclarationStatement
 
         assertTrue(dec.variable.initialExpression is FunctionCallExpression)
-        val functionCall = dec.variable.initialExpression as FunctionCallExpression
-        assertEquals("funA", functionCall.functionReference.name)
-        assertEquals(1, functionCall.arguments.size)
+        val functionCallExpression = dec.variable.initialExpression as FunctionCallExpression
+        assertEquals("funA", functionCallExpression.functionCall.functionReference.name)
+        assertEquals(1, functionCallExpression.functionCall.arguments.size)
 
-        assertTrue(functionCall.arguments[0] is ReferenceExpression)
-        val argRef = functionCall.arguments[0] as ReferenceExpression
+        assertTrue(functionCallExpression.functionCall.arguments[0] is ReferenceExpression)
+        val argRef = functionCallExpression.functionCall.arguments[0] as ReferenceExpression
         assertEquals("a", argRef.reference.name)
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun methodCallParsing() {
+        val code = """
+        funA (a : SomeClass)
+            let a = a.method(1, 2),
+            a.statement(2),
+            a.expression(1)
+        """
+        val module = compileString("methodCallExpressionParsing", code, true)
+
+        assertTrue((module.globalFunctions[0].statements[0] as VariableDeclarationStatement).variable.initialExpression is MethodCallExpression)
+        val methodExpression = (module.globalFunctions[0].statements[0] as VariableDeclarationStatement).variable.initialExpression as MethodCallExpression
+        assertTrue(methodExpression.methodCall.arguments[0] is IntegerLiteral)
+
+        assertTrue(module.globalFunctions[0].statements[1] is MethodCallStatement)
+        assertTrue((module.globalFunctions[0].statements[1] as MethodCallStatement).methodCall.arguments[0] is IntegerLiteral)
+
+        assertTrue(module.globalFunctions[0].expression is MethodCallExpression)
+        assertTrue((module.globalFunctions[0].expression as MethodCallExpression).methodCall.arguments[0] is IntegerLiteral)
 
         println(PrintPass(module).output)
     }

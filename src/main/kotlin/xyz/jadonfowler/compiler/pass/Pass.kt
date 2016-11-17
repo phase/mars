@@ -38,6 +38,12 @@ open class Pass(module: Module) : Visitor(module) {
     override fun visit(functionCallStatement: FunctionCallStatement) {
     }
 
+    override fun visit(methodCallStatement: MethodCallStatement) {
+    }
+
+    override fun visit(methodCallExpression: MethodCallExpression) {
+    }
+
     override fun visit(ifStatement: IfStatement) {
     }
 
