@@ -68,6 +68,7 @@ expression
     | expression '%' ID '%' expression // call function as operator
     | '(' expression ')'
     | methodCall
+    | field
     | functionCall
     | ID
     | STRING
@@ -77,6 +78,8 @@ expression
     | 'true'
     | 'false'
     ;
+
+field: ID '.' ID;
 
 argumentList: argument (',' argument)*|;
 

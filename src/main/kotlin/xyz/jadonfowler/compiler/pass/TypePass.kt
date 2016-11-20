@@ -5,6 +5,7 @@ import xyz.jadonfowler.compiler.ast.Function
 
 class TypePass(module: Module) : Pass(module) {
 
+    val clazzes: MutableMap<String, Clazz> = mutableMapOf()
     var currentFunction: Function? = null
 
     /**
@@ -60,19 +61,28 @@ class TypePass(module: Module) : Pass(module) {
                 } else
                     T_UNDEF
             }
+            is FieldExpression -> {
+                val clazz = localVariables?.get(expression.variableReference.name)?.type as Clazz
+                val field = clazz.fields.filter { it.name == expression.fieldReference.name }
+                field.first().type
+            }
             else -> T_UNDEF
         }
     }
 
     init {
         module.globalVariables.forEach { it.accept(this) }
-        module.globalFunctions.forEach { it.accept(this) }
         module.globalClasses.forEach { it.accept(this) }
+        module.globalFunctions.forEach { it.accept(this) }
     }
 
     override fun visit(function: Function) {
         currentFunction = function
         val localVariables: MutableMap<String, Variable> = mutableMapOf()
+        function.formals.forEach {
+            if (it.type == T_UNDEF) it.type = clazzes[it.typeString]!!
+            localVariables.put(it.name, it)
+        }
         function.statements.forEach { visit(it, localVariables) }
         if (function.expression != null) {
             // Function should return the type of the return expression.
@@ -109,6 +119,7 @@ class TypePass(module: Module) : Pass(module) {
     }
 
     override fun visit(clazz: Clazz) {
+        clazzes.put(clazz.name, clazz)
         clazz.fields.forEach { it.accept(this) }
         clazz.methods.forEach { it.accept(this) }
     }

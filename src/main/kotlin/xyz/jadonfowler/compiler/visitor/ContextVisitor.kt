@@ -47,8 +47,8 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
         val identifier = ctx?.ID()?.symbol?.text.orEmpty()
         val returnType = getType(ctx?.typeAnnotation()?.ID()?.symbol?.text.orEmpty())
         val formals = ctx?.argumentList()?.argument()?.map {
-            Formal(getType(it.variableSignature().typeAnnotation().ID().symbol.text),
-                    it.variableSignature().ID().symbol.text)
+            val formalType = it.variableSignature().typeAnnotation().ID().symbol.text
+            Formal(getType(formalType), formalType, it.variableSignature().ID().symbol.text)
         }.orEmpty()
 
         val statements = statementListFromStatementListContext(ctx?.statementList()).toMutableList()
@@ -129,6 +129,11 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
         val functionName = ctx?.ID()?.symbol?.text.orEmpty()
         val expressions = expressionListFromContext(ctx?.expressionList())
         return FunctionCall(Reference(functionName), expressions)
+    }
+
+    override fun visitField(ctx: LangParser.FieldContext?): FieldExpression {
+        return FieldExpression(Reference(ctx?.ID(0)?.symbol?.text.orEmpty()),
+                Reference(ctx?.ID(1)?.symbol?.text.orEmpty()))
     }
 
     override fun visitMethodCall(ctx: LangParser.MethodCallContext?): MethodCall {
@@ -212,6 +217,8 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
             return MethodCallExpression(visitMethodCall(ctx?.methodCall()))
         } else if (ctx?.functionCall() != null) {
             return FunctionCallExpression(visitFunctionCall(ctx?.functionCall()))
+        } else if (ctx?.field() != null) {
+            return visitField(ctx?.field())
         } else if (ctx?.INT() != null) {
             return IntegerLiteral(ctx?.INT()?.text?.toInt()!!)
         } else if (ctx?.ID() != null) {

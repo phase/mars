@@ -44,6 +44,9 @@ open class Pass(module: Module) : Visitor(module) {
     override fun visit(methodCallExpression: MethodCallExpression) {
     }
 
+    override fun visit(expression: FieldExpression) {
+    }
+
     override fun visit(ifStatement: IfStatement) {
     }
 

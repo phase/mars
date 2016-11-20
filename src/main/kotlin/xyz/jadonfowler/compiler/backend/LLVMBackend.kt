@@ -10,6 +10,7 @@ class LLVMBackend(module: Module) : Backend(module) {
 
     val llvmModule: LLVMModuleRef
     val namedValues: MutableMap<String, ValueContainer> = mutableMapOf()
+    val types: MutableMap<String, LLVMTypeRef> = mutableMapOf()
     val builder: LLVMBuilderRef
 
     private val targetMachine: LLVMTargetMachineRef
@@ -41,6 +42,7 @@ class LLVMBackend(module: Module) : Backend(module) {
         builder = LLVMCreateBuilder()
 
         module.globalVariables.forEach { it.accept(this) }
+        module.globalClasses.forEach { it.accept(this) }
         module.globalFunctions.forEach { it.accept(this) }
     }
 
@@ -78,6 +80,21 @@ class LLVMBackend(module: Module) : Backend(module) {
         LLVMDisposePassManager(pass)
     }
 
+    fun methodToFunction(clazz: Clazz, method: Function): Function {
+        val function = method
+        val formals = function.formals.toMutableList()
+        formals.add(0, Formal(clazz, clazz.name, "_" + clazz.name))
+        function.formals = formals
+        return function
+    }
+
+    override fun visit(clazz: Clazz) {
+        val localVariables: MutableMap<String, ValueContainer> = mutableMapOf()
+        types.put(clazz.name, getLLVMType(clazz)!!)
+
+        clazz.methods.map { methodToFunction(clazz, it) }.forEach { it.accept(this) }
+    }
+
     override fun visit(variable: Variable) {
         val global = LLVMAddGlobal(llvmModule, getLLVMType(variable.type), variable.name)
         if (variable.initialExpression != null) {
@@ -85,10 +102,14 @@ class LLVMBackend(module: Module) : Backend(module) {
             LLVMSetInitializer(global, visit(variable.initialExpression!!, builder, mutableMapOf()))
         }
         if (variable.constant) LLVMSetGlobalConstant(global, 1)
-        namedValues.put(variable.name, ValueContainer(ValueType.GLOBAL, global))
+        namedValues.put(variable.name, ValueContainer(ValueType.GLOBAL, global, variable.type))
     }
 
     override fun visit(function: Function) {
+       visit(function, mutableMapOf())
+    }
+
+    fun visit(function: Function, localVariables: MutableMap<String, ValueContainer>) {
         // Get LLVM Types of Arguments
         val argument_types: List<LLVMTypeRef> = function.formals.map { getLLVMType(it.type)!! }
         // Get the FunctionType of the Function
@@ -96,19 +117,18 @@ class LLVMBackend(module: Module) : Backend(module) {
                 PointerPointer<LLVMTypeRef>(*argument_types.toTypedArray()), argument_types.size, 0)
         // Add the Function to the Module
         val llvmFunction: LLVMValueRef = LLVMAddFunction(llvmModule, function.name, llvmFunctionType)
-        namedValues.put(function.name, ValueContainer(ValueType.FUNCTION, llvmFunction))
+        namedValues.put(function.name, ValueContainer(ValueType.FUNCTION, llvmFunction, function))
 
         LLVMSetFunctionCallConv(llvmFunction, LLVMCCallConv)
 
         val entryBlock = LLVMAppendBasicBlock(llvmFunction, "entry")
         LLVMPositionBuilderAtEnd(builder, entryBlock)
 
-        // This is the LVT that is passed around everywhere
-        val localVariables: MutableMap<String, ValueContainer> = namedValues
+        localVariables.putAll(namedValues)
 
         // Add formals to LVT
         var formalIndex = 0
-        function.formals.forEach { localVariables.put(it.name, ValueContainer(ValueType.CONSTANT, LLVMGetParam(llvmFunction, formalIndex))); formalIndex++ }
+        function.formals.forEach { localVariables.put(it.name, ValueContainer(ValueType.CONSTANT, LLVMGetParam(llvmFunction, formalIndex), it.type)); formalIndex++ }
 
         // Build the statements
         function.statements.forEach { visit(it, builder, llvmFunction, localVariables) }
@@ -126,13 +146,13 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val variable = statement.variable
                 if (variable.initialExpression != null) {
                     if (variable.constant) {
-                        localVariables.put(variable.name, ValueContainer(ValueType.CONSTANT, visit(variable.initialExpression!!, builder, localVariables)))
+                        localVariables.put(variable.name, ValueContainer(ValueType.CONSTANT, visit(variable.initialExpression!!, builder, localVariables), variable.type))
                     } else {
                         // Allocate memory so we can modify the value later
                         val allocation = LLVMBuildAlloca(builder, getLLVMType(variable.type), variable.name)
                         val value = visit(variable.initialExpression!!, builder, localVariables)
                         LLVMBuildStore(builder, value, allocation)
-                        localVariables.put(variable.name, ValueContainer(ValueType.ALLOCATION, allocation))
+                        localVariables.put(variable.name, ValueContainer(ValueType.ALLOCATION, allocation, variable.type))
                     }
                 }
             }
@@ -218,6 +238,11 @@ class LLVMBackend(module: Module) : Backend(module) {
                     } else value.llvmValueRef
                 } else LLVMConstInt(LLVMInt32Type(), 0, 0)
             }
+            is FieldExpression -> {
+                val variable = visit(ReferenceExpression(expression.variableReference), builder, localVariables)
+                val indexInClass = (localVariables[expression.variableReference.name]?.type as Clazz).fields.map { it.name }.indexOf(expression.fieldReference.name)
+                LLVMBuildStructGEP(builder, variable, indexInClass, expression.toString())
+            }
             else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
         }
     }
@@ -229,6 +254,13 @@ class LLVMBackend(module: Module) : Backend(module) {
                 T_BOOL -> LLVMInt1Type()
                 T_INT -> LLVMInt32Type()
                 T_VOID -> LLVMVoidType()
+                is Clazz -> {
+                    val fieldTypes = type.fields.map { getLLVMType(it.type) }
+                    LLVMStructType(PointerPointer(*fieldTypes.toTypedArray()), type.fields.size, 0)
+                }
+                T_UNDEF -> {
+                    throw Exception("Can't find LLVM type for Undefined!")
+                }
                 else -> null
             }
         }
@@ -242,6 +274,6 @@ class LLVMBackend(module: Module) : Backend(module) {
         GLOBAL,
     }
 
-    class ValueContainer(val valueType: ValueType, val llvmValueRef: LLVMValueRef)
+    class ValueContainer(val valueType: ValueType, val llvmValueRef: LLVMValueRef, val type: Type)
 
 }
