@@ -220,7 +220,7 @@ class ASTTest {
             a.statement(2),
             a.expression(1)
         """
-        val module = compileString("methodCallExpressionParsing", code, true)
+        val module = compileString("methodCallParsing", code, true)
 
         assertTrue((module.globalFunctions[0].statements[0] as VariableDeclarationStatement).variable.initialExpression is MethodCallExpression)
         val methodExpression = (module.globalFunctions[0].statements[0] as VariableDeclarationStatement).variable.initialExpression as MethodCallExpression
@@ -234,4 +234,21 @@ class ASTTest {
 
         println(PrintPass(module).output)
     }
+
+    @Test fun fieldParsing() {
+        val code = """
+        test (a : SomeClass)
+            a.thing
+        """
+        val module = compileString("fieldParsing", code, true)
+
+        val returnExpression = module.globalFunctions[0].expression
+        assertTrue(returnExpression is FieldExpression)
+        val field = returnExpression as FieldExpression
+        assertEquals("a", field.variableReference.name)
+        assertEquals("thing", field.fieldReference.name)
+
+        println(PrintPass(module).output)
+    }
+
 }

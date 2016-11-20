@@ -1,10 +1,6 @@
 package xyz.jadonfowler.compiler
 
 import org.junit.Test
-import xyz.jadonfowler.compiler.backend.LLVMBackend
-import xyz.jadonfowler.compiler.pass.ConstantFoldPass
-import xyz.jadonfowler.compiler.pass.PrintPass
-import xyz.jadonfowler.compiler.pass.TypePass
 import java.io.File
 import kotlin.test.assertTrue
 
@@ -22,6 +18,7 @@ class LLVMTest {
         main(arrayOf(code, "--llvm"))
 
         val actualIR = File("bin/$testName.ll").readLines().joinToString("\n")
+        println(actualIR)
         // endsWith is used to ignore header information, which is different on every platform
         assertTrue(actualIR.endsWith(expectedIR), "Wrong IR emitted! \n\nExpected:\n\n$expectedIR\n\nActual:\n" +
                 "\n$actualIR\n\n(Note: Header information is ignored.)\n")
@@ -65,6 +62,10 @@ class LLVMTest {
 
     @Test fun genComplexExpressionsInWhileLoop() {
         testIR("genComplexExpressionsInWhileLoop")
+    }
+
+    @Test fun genClassMethods() {
+        testIR("genClassMethods")
     }
 
 }
