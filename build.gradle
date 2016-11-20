@@ -35,6 +35,7 @@ dependencies {
     compile "org.bytedeco:javacpp:1.2.4"
     compile "org.bytedeco.javacpp-presets:llvm:3.8.0-1.2"
     compile "org.bytedeco.javacpp-presets:llvm:3.8.0-1.2:linux-x86_64"
+    compile "org.ow2.asm:asm:5.0.3"
 
     testCompile "junit:junit:4.11"
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
