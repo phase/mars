@@ -22,12 +22,12 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
             visitVariableDeclaration(it.variableDeclaration())
         }.orEmpty())
 
-        globalFunctions.addAll(externalDeclarations?.filter { it.functionDeclaration() != null }?.map {
-            visitFunctionDeclaration(it.functionDeclaration())
-        }.orEmpty())
-
         globalClasses.addAll(externalDeclarations?.filter { it.classDeclaration() != null }?.map {
             visitClassDeclaration(it.classDeclaration())
+        }.orEmpty())
+
+        globalFunctions.addAll(externalDeclarations?.filter { it.functionDeclaration() != null }?.map {
+            visitFunctionDeclaration(it.functionDeclaration())
         }.orEmpty())
 
         val module = Module(moduleName, globalVariables.orEmpty(), globalFunctions.orEmpty(), globalClasses.orEmpty())
@@ -45,9 +45,9 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
 
     override fun visitFunctionDeclaration(ctx: LangParser.FunctionDeclarationContext?): Function {
         val identifier = ctx?.ID()?.symbol?.text.orEmpty()
-        val returnType = getType(ctx?.typeAnnotation()?.ID()?.symbol?.text.orEmpty())
+        val returnType = getType(ctx?.typeAnnotation()?.ID()?.symbol?.text.orEmpty(), globalClasses)
         val formals = ctx?.argumentList()?.argument()?.map {
-            Formal(getType(it.variableSignature().typeAnnotation().ID().symbol.text),
+            Formal(getType(it.variableSignature().typeAnnotation().ID().symbol.text, globalClasses),
                     it.variableSignature().ID().symbol.text)
         }.orEmpty()
 
@@ -109,7 +109,7 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
     override fun visitVariableDeclaration(ctx: LangParser.VariableDeclarationContext?): Variable {
         val constant: Boolean = ctx?.variableModifier()?.text.equals("let")
         val identifier = ctx?.variableSignature()?.ID()?.symbol?.text.orEmpty()
-        val type = getType(ctx?.variableSignature()?.typeAnnotation()?.ID()?.symbol?.text.orEmpty())
+        val type = getType(ctx?.variableSignature()?.typeAnnotation()?.ID()?.symbol?.text.orEmpty(), globalClasses)
         var expression: Expression? = null
         val expressionContext: LangParser.ExpressionContext? = ctx?.expression()
         if (expressionContext != null)

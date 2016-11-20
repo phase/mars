@@ -6,6 +6,7 @@ import xyz.jadonfowler.compiler.pass.PrintPass
 import xyz.jadonfowler.compiler.pass.TypePass
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
+import kotlin.test.assertTrue
 
 class TypeCheckingTest {
 
@@ -245,6 +246,25 @@ class TypeCheckingTest {
         val module = compileString("inferReturnTypeForFunctions", code)
 
         assertFails { TypePass(module) }
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun inferClassTypes() {
+        val code = """
+        class Test
+            let a : Int = 7
+            let b : Bool = true
+        ;
+
+        test (a : Test) : Test
+            a
+        """
+        val module = compileString("inferReturnTypeForFunctions", code)
+        TypePass(module)
+
+        assertTrue(module.globalFunctions[0].returnType is Clazz, "${module.globalFunctions[0].returnType} is not a Class!")
+        assertEquals("Test", (module.globalFunctions[0].returnType as Clazz).name)
 
         println(PrintPass(module).output)
     }

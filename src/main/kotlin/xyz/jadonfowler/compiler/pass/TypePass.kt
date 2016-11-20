@@ -66,8 +66,8 @@ class TypePass(module: Module) : Pass(module) {
 
     init {
         module.globalVariables.forEach { it.accept(this) }
-        module.globalFunctions.forEach { it.accept(this) }
         module.globalClasses.forEach { it.accept(this) }
+        module.globalFunctions.forEach { it.accept(this) }
     }
 
     override fun visit(function: Function) {

@@ -30,9 +30,6 @@ interface Global : Node
 class Function(var returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>, var expression: Expression? = null) : Global, Type {
     fun accept(visitor: Visitor) = visitor.visit(this)
 
-    /**
-     * XXX: Returns String of Type
-     */
     override fun toString(): String {
         val formals = formals.joinToString(separator = " -> ") { it.type.toString() }
         return "($formals -> $returnType)"
@@ -68,6 +65,7 @@ open class Variable(var type: Type, val name: String, var initialExpression: Exp
  */
 class Clazz(val name: String, val fields: List<Variable>, val methods: List<Function>) : Global, Type {
     fun accept(visitor: Visitor) = visitor.visit(this)
+    override fun toString(): String = "$name(${fields.map { it.type }.joinToString()})"
 }
 
 /**

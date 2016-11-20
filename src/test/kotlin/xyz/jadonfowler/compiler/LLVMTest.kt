@@ -1,21 +1,17 @@
 package xyz.jadonfowler.compiler
 
 import org.junit.Test
-import xyz.jadonfowler.compiler.backend.LLVMBackend
-import xyz.jadonfowler.compiler.pass.ConstantFoldPass
-import xyz.jadonfowler.compiler.pass.PrintPass
-import xyz.jadonfowler.compiler.pass.TypePass
 import java.io.File
 import kotlin.test.assertTrue
 
 class LLVMTest {
 
     fun testIR(testName: String) {
-        val code = "examples/test/$testName.l"
+        val code = "test/$testName.l"
         val file = File(code)
         assertTrue(file.exists())
 
-        val expectedIRFile = File("examples/test/out/$testName.ll")
+        val expectedIRFile = File("test/out/$testName.ll")
         assertTrue(expectedIRFile.exists())
         val expectedIR = expectedIRFile.readLines().joinToString("\n")
 
