@@ -138,6 +138,12 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
         return MethodCall(Reference(variableName), Reference(methodName), expressions)
     }
 
+    override fun visitField(ctx: LangParser.FieldContext?): FieldExpression {
+        val variableReference = Reference(ctx?.ID(0)?.symbol?.text.orEmpty())
+        val fieldReference = Reference(ctx?.ID(1)?.symbol?.text.orEmpty())
+        return FieldExpression(variableReference, fieldReference)
+    }
+
     fun expressionListFromContext(expressionListContext: LangParser.ExpressionListContext?): List<Expression> {
         val expressions: MutableList<Expression> = mutableListOf(visitExpression(expressionListContext?.expression()))
 
@@ -210,6 +216,8 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
             }
         } else if (ctx?.methodCall() != null) {
             return MethodCallExpression(visitMethodCall(ctx?.methodCall()))
+        } else if (ctx?.field() != null) {
+            return visitField(ctx?.field())
         } else if (ctx?.functionCall() != null) {
             return FunctionCallExpression(visitFunctionCall(ctx?.functionCall()))
         } else if (ctx?.INT() != null) {

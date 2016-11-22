@@ -243,7 +243,7 @@ class TypeCheckingTest {
             let b = funA(true),
             b * 2
         """
-        val module = compileString("inferReturnTypeForFunctions", code)
+        val module = compileString("incorrectFunctionCallArguments", code)
 
         assertFails { TypePass(module) }
 
@@ -260,7 +260,26 @@ class TypeCheckingTest {
         test (a : Test) : Test
             a
         """
-        val module = compileString("inferReturnTypeForFunctions", code)
+        val module = compileString("inferClassTypes", code)
+        TypePass(module)
+
+        assertTrue(module.globalFunctions[0].returnType is Clazz, "${module.globalFunctions[0].returnType} is not a Class!")
+        assertEquals("Test", (module.globalFunctions[0].returnType as Clazz).name)
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun inferFieldTypes() {
+        val code = """
+        class Test
+            let a : Int = 7
+            let b : Bool = true
+        ;
+
+        test (a : Test) : Test
+            a
+        """
+        val module = compileString("inferFieldTypes", code)
         TypePass(module)
 
         assertTrue(module.globalFunctions[0].returnType is Clazz, "${module.globalFunctions[0].returnType} is not a Class!")

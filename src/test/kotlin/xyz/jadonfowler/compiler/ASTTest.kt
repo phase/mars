@@ -186,16 +186,17 @@ class ASTTest {
         println(PrintPass(module).output)
     }
 
-    @Test fun functionCallStatementParsing() {
+    @Test fun functionCallParsing() {
         val code = """
         funA (a : Int) : Int
             a + 1
 
         funB (a : Int) : Int
             let b = funA(a),
+            funA(b),
             b * 2
         """
-        val module = compileString("functionCallStatementParsing", code, true)
+        val module = compileString("functionCallParsing", code, true)
 
         assertEquals(2, module.globalFunctions.size, "There should be two functions")
         assertTrue(module.globalFunctions[1].statements[0] is VariableDeclarationStatement)
@@ -205,6 +206,10 @@ class ASTTest {
         val functionCallExpression = dec.variable.initialExpression as FunctionCallExpression
         assertEquals("funA", functionCallExpression.functionCall.functionReference.name)
         assertEquals(1, functionCallExpression.functionCall.arguments.size)
+
+        assertTrue(module.globalFunctions[1].statements[1] is FunctionCallStatement)
+        val fcs = module.globalFunctions[1].statements[1] as FunctionCallStatement
+        assertEquals("funA", fcs.functionCall.functionReference.name)
 
         assertTrue(functionCallExpression.functionCall.arguments[0] is ReferenceExpression)
         val argRef = functionCallExpression.functionCall.arguments[0] as ReferenceExpression
@@ -220,7 +225,7 @@ class ASTTest {
             a.statement(2),
             a.expression(1)
         """
-        val module = compileString("methodCallExpressionParsing", code, true)
+        val module = compileString("methodCallParsing", code, true)
 
         assertTrue((module.globalFunctions[0].statements[0] as VariableDeclarationStatement).variable.initialExpression is MethodCallExpression)
         val methodExpression = (module.globalFunctions[0].statements[0] as VariableDeclarationStatement).variable.initialExpression as MethodCallExpression
@@ -234,4 +239,21 @@ class ASTTest {
 
         println(PrintPass(module).output)
     }
+
+    @Test fun fieldParsing() {
+        val code = """
+          test (a : SomeClass)
+              a.thing
+          """
+        val module = compileString("fieldParsing", code, true)
+
+        val returnExpression = module.globalFunctions[0].expression
+        assertTrue(returnExpression is FieldExpression)
+        val field = returnExpression as FieldExpression
+        assertEquals("a", field.variableReference.name)
+        assertEquals("thing", field.fieldReference.name)
+
+        println(PrintPass(module).output)
+    }
+
 }

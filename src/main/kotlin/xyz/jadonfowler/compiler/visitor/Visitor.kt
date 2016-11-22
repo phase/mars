@@ -42,6 +42,7 @@ abstract class Visitor(val module: Module) {
             is ReferenceExpression -> visit(expression)
             is FunctionCallExpression -> visit(expression)
             is MethodCallExpression -> visit(expression)
+            is FieldExpression -> visit(expression)
             is BinaryOperator -> visit(expression)
         }
     }
@@ -53,6 +54,7 @@ abstract class Visitor(val module: Module) {
     abstract fun visit(referenceExpression: ReferenceExpression)
     abstract fun visit(functionCallExpression: FunctionCallExpression)
     abstract fun visit(methodCallExpression: MethodCallExpression)
+    abstract fun visit(fieldExpression: FieldExpression)
     abstract fun visit(binaryOperator: BinaryOperator)
 
 }

@@ -270,6 +270,14 @@ class MethodCallExpression(val methodCall: MethodCall) : Expression(methodCall.a
 }
 
 /**
+ * Get field of a Class
+ */
+class FieldExpression(val variableReference: Reference, val fieldReference: Reference) : Expression() {
+    override fun accept(visitor: Visitor) = visitor.visit(this)
+    override fun toString(): String = "${variableReference.name}.${fieldReference.name}"
+}
+
+/**
  * Operators are constructs that behave like Functions, but differ syntactically.
  */
 enum class Operator(val string: String, val returnType: Type = T_UNDEF) {

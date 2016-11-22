@@ -13,10 +13,21 @@ class PrintPass(module: Module) : Pass(module) {
 
     var output = ""
 
-    fun printI(any: Any) { output += any.toString() }
-    fun print(any: Any) { output += tab.repeat(tabIndent) + any.toString() }
-    fun println(any: Any) { output += tab.repeat(tabIndent) + any.toString() + "\n"}
-    fun println() { println("") }
+    fun printI(any: Any) {
+        output += any.toString()
+    }
+
+    fun print(any: Any) {
+        output += tab.repeat(tabIndent) + any.toString()
+    }
+
+    fun println(any: Any) {
+        output += tab.repeat(tabIndent) + any.toString() + "\n"
+    }
+
+    fun println() {
+        println("")
+    }
 
     init {
         println("; Module: ${module.name}")
@@ -137,6 +148,24 @@ class PrintPass(module: Module) : Pass(module) {
         printI("false")
     }
 
+    override fun visit(fieldExpression: FieldExpression) {
+        printI(fieldExpression.variableReference.name + "." + fieldExpression.variableReference.name)
+    }
+
+    override fun visit(methodCallExpression: MethodCallExpression) {
+        printI(methodCallExpression.methodCall.variableReference.name + "."
+                + methodCallExpression.methodCall.methodReference.name + "(")
+        methodCallExpression.methodCall.arguments.forEach { it.accept(this); printI(", ") }
+        printI(")")
+    }
+
+    override fun visit(methodCallStatement: MethodCallStatement) {
+        print(methodCallStatement.methodCall.variableReference.name + "."
+                + methodCallStatement.methodCall.methodReference.name + "(")
+        methodCallStatement.methodCall.arguments.forEach { it.accept(this); printI(", ") }
+        println(")")
+    }
+
     override fun visit(integerLiteral: IntegerLiteral) {
         printI(integerLiteral.value)
     }
@@ -162,4 +191,5 @@ class PrintPass(module: Module) : Pass(module) {
         binaryOperator.expB.accept(this)
         printI(")")
     }
+
 }
