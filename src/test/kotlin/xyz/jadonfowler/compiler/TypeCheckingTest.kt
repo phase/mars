@@ -98,8 +98,12 @@ class TypeCheckingTest {
 
     @Test fun correctTypeMarkingAndInference() {
         val code = """
-        let d = 3 + 2 let e = 0 let f : Int
-        let h = 6 let i : Int = 7 let j : Int = 8
+        let d = 3 + 2
+        let e = 0
+        let f : Int
+        let h = 6
+        let i : Int = 7
+        let j : Int = 8
         let str = "test"
 
         llvm (z : Int, y : Int, x : Int, w : Int)
@@ -109,6 +113,8 @@ class TypeCheckingTest {
             5 + u * z * v
 
         foo (t : Int, s : Int)
+            let a = 7,
+            let b = 9,
             let r : Int = 90128,
             if 1 != (2 + 2)
                 var q = s,
@@ -143,7 +149,7 @@ class TypeCheckingTest {
 
         assertEquals(T_INT, module.globalClasses[0].methods[0].returnType)
         assertEquals(T_INT, module.globalFunctions[0].returnType)
-        assertEquals(T_INT, ((module.globalFunctions[1].statements[1] as IfStatement).statements[0]
+        assertEquals(T_INT, ((module.globalFunctions[1].statements[3] as IfStatement).statements[0]
                 as VariableDeclarationStatement).variable.type)
 
         println(PrintPass(module).output)
@@ -276,14 +282,13 @@ class TypeCheckingTest {
             let b : Bool = true
         ;
 
-        test (a : Test) : Test
-            a
+        test (thing : Test)
+            thing.a
         """
         val module = compileString("inferFieldTypes", code)
         TypePass(module)
 
-        assertTrue(module.globalFunctions[0].returnType is Clazz, "${module.globalFunctions[0].returnType} is not a Class!")
-        assertEquals("Test", (module.globalFunctions[0].returnType as Clazz).name)
+        assertEquals(T_INT, module.globalFunctions[0].returnType, "${module.globalFunctions[0].returnType} is not an Int!")
 
         println(PrintPass(module).output)
     }

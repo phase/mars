@@ -5,8 +5,6 @@ import xyz.jadonfowler.compiler.ast.Function
 
 class TypePass(module: Module) : Pass(module) {
 
-    var currentFunction: Function? = null
-
     /**
      * Get an Expression's Type
      */
@@ -38,6 +36,15 @@ class TypePass(module: Module) : Pass(module) {
                 val function = module.globalFunctions.filter { it.name == functionName }.last()
                 function.returnType
             }
+            is FieldExpression -> {
+                val varType = localVariables?.get(expression.variableReference.name)?.type
+                if (varType is Clazz) {
+                    val fieldName = expression.fieldReference.name
+                    val possibleFields = varType.fields.filter { it.name == fieldName }
+                    val field = possibleFields.last()
+                    field.type
+                } else T_UNDEF
+            }
             is ReferenceExpression -> {
                 val name = expression.reference.name
                 val thingsWithName: MutableList<Node> = mutableListOf()
@@ -45,7 +52,6 @@ class TypePass(module: Module) : Pass(module) {
                 thingsWithName.addAll(module.globalClasses.filter { it.name == name })
                 thingsWithName.addAll(module.globalFunctions.filter { it.name == name })
                 thingsWithName.addAll(module.globalVariables.filter { it.name == name })
-                if (currentFunction != null) thingsWithName.addAll(currentFunction?.formals!!)
                 localVariables?.forEach { if (it.key == name) thingsWithName.add(it.value) }
 
                 if (thingsWithName.isNotEmpty()) {
@@ -71,8 +77,9 @@ class TypePass(module: Module) : Pass(module) {
     }
 
     override fun visit(function: Function) {
-        currentFunction = function
         val localVariables: MutableMap<String, Variable> = mutableMapOf()
+        function.formals.forEach { localVariables.put(it.name, it) }
+
         function.statements.forEach { visit(it, localVariables) }
         if (function.expression != null) {
             // Function should return the type of the return expression.
@@ -89,7 +96,6 @@ class TypePass(module: Module) : Pass(module) {
                         "that type.")
             function.returnType = T_VOID
         }
-        currentFunction = null
     }
 
     fun visit(variable: Variable, localVariables: MutableMap<String, Variable>?) {
@@ -157,7 +163,6 @@ class TypePass(module: Module) : Pass(module) {
         val name = variableReassignmentStatement.reference.name
         val thingsWithName: MutableList<Variable> = mutableListOf()
         thingsWithName.addAll(module.globalVariables.filter { it.name == name })
-        if (currentFunction != null) thingsWithName.addAll(currentFunction?.formals!!)
         localVariables?.forEach { if (it.key == name) thingsWithName.add(it.value) }
 
         if (thingsWithName.isNotEmpty()) {
