@@ -310,4 +310,17 @@ class TypeCheckingTest {
         println(PrintPass(module).output)
     }
 
+    @Test fun inferFormalTypes() {
+        val code = """
+        add (a, b : Int)
+            a + b
+        """
+        val module = compileString("inferFormalTypes", code)
+        TypePass(module)
+
+        assertEquals(T_INT, module.globalFunctions[0].returnType, "${module.globalFunctions[0].returnType} is not an Int!")
+
+        println(PrintPass(module).output)
+    }
+
 }

@@ -78,7 +78,20 @@ class TypePass(module: Module) : Pass(module) {
 
     override fun visit(function: Function) {
         val localVariables: MutableMap<String, Variable> = mutableMapOf()
-        function.formals.forEach { localVariables.put(it.name, it) }
+
+        /*
+         * add types to untyped formals, such as
+         *     add (a, b : Int) a + b
+         * a's type is set to b's type
+         */
+        var previousFormalType = T_UNDEF
+        function.formals.reversed().forEach {
+            if (it.type == T_UNDEF)
+                it.type = previousFormalType
+            else
+                previousFormalType = it.type
+            localVariables.put(it.name, it)
+        }
 
         function.statements.forEach { visit(it, localVariables) }
         if (function.expression != null) {

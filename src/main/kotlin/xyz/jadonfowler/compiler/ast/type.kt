@@ -36,9 +36,9 @@ fun getType(name: String, classes: List<Clazz>): Type {
         "String" -> T_STRING
         "Void" -> T_VOID
         else -> {
-            val classes = classes.filter { it.name == name }
-            if (classes.isNotEmpty())
-                classes.last()
+            val possibleClasses = classes.filter { it.name == name }
+            if (possibleClasses.isNotEmpty())
+                possibleClasses.last()
             else
                 T_UNDEF
         }

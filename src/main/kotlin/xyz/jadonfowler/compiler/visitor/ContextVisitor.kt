@@ -47,8 +47,8 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
         val identifier = ctx?.ID()?.symbol?.text.orEmpty()
         val returnType = getType(ctx?.typeAnnotation()?.ID()?.symbol?.text.orEmpty(), globalClasses)
         val formals = ctx?.argumentList()?.argument()?.map {
-            Formal(getType(it.variableSignature().typeAnnotation().ID().symbol.text, globalClasses),
-                    it.variableSignature().ID().symbol.text)
+            Formal(getType(it.variableSignature()?.typeAnnotation()?.ID()?.symbol?.text.orEmpty(), globalClasses),
+                    it.variableSignature()?.ID()?.symbol?.text.orEmpty())
         }.orEmpty()
 
         val statements = statementListFromStatementListContext(ctx?.statementList()).toMutableList()
