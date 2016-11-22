@@ -36,7 +36,7 @@ class TypePass(module: Module) : Pass(module) {
                 val function = module.globalFunctions.filter { it.name == functionName }.last()
                 function.returnType
             }
-            is FieldExpression -> {
+            is FieldGetterExpression -> {
                 val varType = localVariables?.get(expression.variableReference.name)?.type
                 if (varType is Clazz) {
                     val fieldName = expression.fieldReference.name
@@ -138,6 +138,7 @@ class TypePass(module: Module) : Pass(module) {
         when (statement) {
             is VariableDeclarationStatement -> visit(statement, localVariables)
             is VariableReassignmentStatement -> visit(statement, localVariables)
+            is FieldSetterStatement -> visit(statement, localVariables)
             is IfStatement -> {
                 visit(statement.exp, localVariables)
                 assert(T_BOOL == getType(statement.exp, localVariables))
@@ -152,6 +153,19 @@ class TypePass(module: Module) : Pass(module) {
             }
             else -> visit(statement)
         }
+    }
+
+    fun visit(fieldSetterStatement: FieldSetterStatement, localVariables: MutableMap<String, Variable>?) {
+        val varType = localVariables?.get(fieldSetterStatement.variableReference.name)?.type
+        val fieldName = fieldSetterStatement.fieldReference.name
+        if (varType is Clazz) {
+            val possibleFields = varType.fields.filter { it.name == fieldName }
+            val fieldType = possibleFields.last().type
+            val expressionType = getType(fieldSetterStatement.expression, localVariables)
+            if (fieldType != expressionType)
+                throw Exception("Can't set $fieldName to ${fieldSetterStatement.expression} because it is of type" +
+                        " $expressionType and it needs to be of type $fieldType.")
+        } else throw Exception("Can't set field of $fieldName because it is of type $varType.")
     }
 
     fun visit(variableDeclarationStatement: VariableDeclarationStatement, localVariables: MutableMap<String, Variable>?) {

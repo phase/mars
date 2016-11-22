@@ -240,18 +240,35 @@ class ASTTest {
         println(PrintPass(module).output)
     }
 
-    @Test fun fieldParsing() {
+    @Test fun fieldGetterParsing() {
         val code = """
           test (a : SomeClass)
               a.thing
           """
-        val module = compileString("fieldParsing", code, true)
+        val module = compileString("fieldGetterParsing", code, true)
 
         val returnExpression = module.globalFunctions[0].expression
-        assertTrue(returnExpression is FieldExpression)
-        val field = returnExpression as FieldExpression
+        assertTrue(returnExpression is FieldGetterExpression)
+        val field = returnExpression as FieldGetterExpression
         assertEquals("a", field.variableReference.name)
         assertEquals("thing", field.fieldReference.name)
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun fieldSetterParsing() {
+        val code = """
+          test (a : SomeClass)
+              a.thing = 8
+          """
+        val module = compileString("fieldSetterParsing", code, true)
+
+        val statement = module.globalFunctions[0].statements[0]
+        assertTrue(statement is FieldSetterStatement)
+        val field = statement as FieldSetterStatement
+        assertEquals("a", field.variableReference.name)
+        assertEquals("thing", field.fieldReference.name)
+        assertEquals(8, (field.expression as IntegerLiteral).value)
 
         println(PrintPass(module).output)
     }

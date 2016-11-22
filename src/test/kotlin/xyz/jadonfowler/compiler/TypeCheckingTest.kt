@@ -293,4 +293,21 @@ class TypeCheckingTest {
         println(PrintPass(module).output)
     }
 
+    @Test fun incorrectFieldSetterType() {
+        val code = """
+        class Test
+            let a : Int = 7
+            let b : Bool = true
+        ;
+
+        test (thing : Test)
+            thing.a = thing
+        """
+        val module = compileString("inferFieldTypes", code)
+
+        assertFails { TypePass(module) }
+
+        println(PrintPass(module).output)
+    }
+
 }

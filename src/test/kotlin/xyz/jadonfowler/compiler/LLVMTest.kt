@@ -11,16 +11,18 @@ class LLVMTest {
         val file = File(code)
         assertTrue(file.exists())
 
-        val expectedIRFile = File("test/out/$testName.ll")
+        val expectedIRFile = File("test/out/llvm/$testName.ll")
         assertTrue(expectedIRFile.exists())
         val expectedIR = expectedIRFile.readLines().joinToString("\n")
 
         main(arrayOf(code, "--llvm"))
 
         val actualIR = File("bin/$testName.ll").readLines().joinToString("\n")
+        println(actualIR)
+
         // endsWith is used to ignore header information, which is different on every platform
-        assertTrue(actualIR.endsWith(expectedIR), "Wrong IR emitted! \n\nExpected:\n\n$expectedIR\n\nActual:\n" +
-                "\n$actualIR\n\n(Note: Header information is ignored.)\n")
+        assertTrue(actualIR.endsWith(expectedIR), "Wrong IR emitted!\n\nExpected:\n\n$expectedIR" +
+                "\n\n(Note: Header information is ignored.)\n")
     }
 
     @Test fun genGlobalConstant() {

@@ -148,8 +148,14 @@ class PrintPass(module: Module) : Pass(module) {
         printI("false")
     }
 
-    override fun visit(fieldExpression: FieldExpression) {
-        printI(fieldExpression.variableReference.name + "." + fieldExpression.variableReference.name)
+    override fun visit(fieldGetterExpression: FieldGetterExpression) {
+        printI(fieldGetterExpression.variableReference.name + "." + fieldGetterExpression.variableReference.name)
+    }
+
+    override fun visit(fieldSetterStatement: FieldSetterStatement) {
+        print(fieldSetterStatement.variableReference.name + "." + fieldSetterStatement.variableReference.name + " = ")
+        fieldSetterStatement.expression.accept(this)
+        println()
     }
 
     override fun visit(methodCallExpression: MethodCallExpression) {

@@ -202,6 +202,13 @@ class MethodCallStatement(val methodCall: MethodCall) : Statement() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 
+/**
+ * Set field of a Class
+ */
+class FieldSetterStatement(val variableReference: Reference, val fieldReference: Reference, val expression: Expression) : Statement() {
+    override fun accept(visitor: Visitor) = visitor.visit(this)
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // EXPRESSIONS
 // ---------------------------------------------------------------------------------------------------------------------
@@ -272,7 +279,7 @@ class MethodCallExpression(val methodCall: MethodCall) : Expression(methodCall.a
 /**
  * Get field of a Class
  */
-class FieldExpression(val variableReference: Reference, val fieldReference: Reference) : Expression() {
+class FieldGetterExpression(val variableReference: Reference, val fieldReference: Reference) : Expression() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = "${variableReference.name}.${fieldReference.name}"
 }

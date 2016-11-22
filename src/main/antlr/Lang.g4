@@ -22,7 +22,8 @@ variableModifier
 variableReassignment: ID '=' expression;
 
 statement
-    : variableDeclaration
+    : fieldSetter
+    | variableDeclaration
     | variableReassignment
     | methodCall
     | functionCall
@@ -68,7 +69,7 @@ expression
     | expression '%' ID '%' expression // call function as operator
     | '(' expression ')'
     | methodCall
-    | field
+    | fieldGetter
     | functionCall
     | ID
     | STRING
@@ -79,7 +80,8 @@ expression
     | 'false'
     ;
 
-field: ID '.' ID;
+fieldGetter: ID '.' ID;
+fieldSetter: ID '.' ID '=' expression;
 
 argumentList: argument (',' argument)*|;
 

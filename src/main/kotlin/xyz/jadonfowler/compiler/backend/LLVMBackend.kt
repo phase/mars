@@ -229,6 +229,13 @@ class LLVMBackend(module: Module) : Backend(module) {
                 T_BOOL -> LLVMInt1Type()
                 T_INT -> LLVMInt32Type()
                 T_VOID -> LLVMVoidType()
+                is Clazz -> {
+                    val fieldTypes = type.fields.map { getLLVMType(it.type) }
+                    LLVMStructType(PointerPointer(*fieldTypes.toTypedArray()), type.fields.size, 0)
+                }
+                T_UNDEF -> {
+                    throw Exception("Can't find LLVM type for Undefined!")
+                }
                 else -> null
             }
         }
