@@ -207,6 +207,7 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
 
     override fun visitExpression(ctx: LangParser.ExpressionContext?): Expression {
         val firstSymbol = ctx?.getChild(0)?.text.orEmpty()
+        val secondSymbol = ctx?.getChild(1)?.text.orEmpty()
         when (firstSymbol) {
             "(" -> {
                 // | '(' expression ')'
@@ -214,6 +215,14 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
             }
             "true" -> return TrueExpression()
             "false" -> return FalseExpression()
+        }
+        when (secondSymbol) {
+            "`" -> {
+                val firstExpression = visitExpression(ctx?.getChild(0) as LangParser.ExpressionContext?)
+                val secondExpression = visitExpression(ctx?.getChild(4) as LangParser.ExpressionContext?)
+                val functionName = ctx?.getChild(2)?.text.orEmpty()
+                return FunctionCallExpression(FunctionCall(Reference(functionName), listOf(firstExpression, secondExpression)))
+            }
         }
         if (ctx?.getChild(0) is LangParser.ExpressionContext && ctx?.getChild(2) is LangParser.ExpressionContext) {
             val expressionA = visitExpression(ctx?.getChild(0) as LangParser.ExpressionContext?)

@@ -273,4 +273,22 @@ class ASTTest {
         println(PrintPass(module).output)
     }
 
+    @Test fun infixFunction() {
+        val code = """
+        add (a : Int, b : Int) : Int
+            a + b
+
+        thing () : Int
+            1 `add` 1
+        """
+        val module = compileString("infixFunction", code, true)
+
+        val thing = module.globalFunctions[1].expression
+        assertTrue(thing is FunctionCallExpression)
+        val fce = thing as FunctionCallExpression
+        assertEquals("add", fce.functionCall.functionReference.name)
+
+        println(PrintPass(module).output)
+    }
+
 }

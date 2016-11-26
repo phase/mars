@@ -66,8 +66,8 @@ expression
     | expression ('&'|'&&') expression
     | expression ('|'|'||') expression
     | '~' expression
-    | expression '%' ID '%' expression // call function as operator
     | '(' expression ')'
+    | expression '`' ID '`' expression // infix function
     | methodCall
     | fieldGetter
     | functionCall
