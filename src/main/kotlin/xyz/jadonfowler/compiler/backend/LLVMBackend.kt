@@ -218,6 +218,14 @@ class LLVMBackend(module: Module) : Backend(module) {
                     } else value.llvmValueRef
                 } else LLVMConstInt(LLVMInt32Type(), 0, 0)
             }
+            is FunctionCallExpression -> {
+                val functionCall = expression.functionCall
+                val function = namedValues.filter { it.key == functionCall.functionReference.name }
+                        .values.filter { it.valueType == ValueType.FUNCTION }.last()
+                val expressions = expression.functionCall.arguments.map { visit(it, builder, localVariables) }
+                LLVMBuildCall(builder, function.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
+                        functionCall.arguments.size, expression.toString())
+            }
             else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
         }
     }

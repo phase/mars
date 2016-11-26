@@ -267,6 +267,8 @@ class ReferenceExpression(val reference: Reference) : Expression() {
  */
 class FunctionCallExpression(val functionCall: FunctionCall) : Expression(functionCall.arguments) {
     override fun accept(visitor: Visitor) = visitor.visit(this)
+    override fun toString(): String =
+            functionCall.functionReference.name + "(" + functionCall.arguments.map { it.toString() }.joinToString() + ")"
 }
 
 /**

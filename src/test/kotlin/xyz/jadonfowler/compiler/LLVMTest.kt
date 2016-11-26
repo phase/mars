@@ -12,7 +12,7 @@ class LLVMTest {
         assertTrue(file.exists())
 
         val expectedIRFile = File("test/out/llvm/$testName.ll")
-        assertTrue(expectedIRFile.exists())
+        assertTrue(expectedIRFile.exists(), "Output file doesn't exist!")
         val expectedIR = expectedIRFile.readLines().joinToString("\n")
 
         main(arrayOf(code, "--llvm"))
@@ -63,6 +63,10 @@ class LLVMTest {
 
     @Test fun genComplexExpressionsInWhileLoop() {
         testIR("genComplexExpressionsInWhileLoop")
+    }
+
+    @Test fun genInfixFunctionCall() {
+        testIR("genInfixFunctionCall")
     }
 
 }
