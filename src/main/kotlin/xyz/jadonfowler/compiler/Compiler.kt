@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.RuleContext
 import xyz.jadonfowler.compiler.ast.Module
+import xyz.jadonfowler.compiler.backend.JVMBackend
 import xyz.jadonfowler.compiler.backend.LLVMBackend
 import xyz.jadonfowler.compiler.parser.LangLexer
 import xyz.jadonfowler.compiler.parser.LangParser
@@ -63,6 +64,14 @@ fun main(args: Array<String>) {
                     bin.mkdirs()
                 modules.forEach {
                     LLVMBackend(it).output(File("bin/${it.name}"))
+                }
+            }
+            "jvm" -> {
+                val bin = File("bin")
+                if (!bin.exists())
+                    bin.mkdirs()
+                modules.forEach {
+                    JVMBackend(it).output(File("bin/${it.name}.class"))
                 }
             }
         }
