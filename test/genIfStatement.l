@@ -1,4 +1,4 @@
-genIfStatement (a : Int, b : Int, c : Int)
+genIfStatement (a, b, c : Int)
     var r = 0,
     if a == 10
         r = b

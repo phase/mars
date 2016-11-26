@@ -1,2 +1,2 @@
-genFunction (a : Int, b : Int, c : Int)
+genFunction (a, b, c : Int)
     0

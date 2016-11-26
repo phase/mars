@@ -1,4 +1,4 @@
-genComplexExpressionsInWhileLoop (a : Int, z : Int, y : Int, x : Int, w : Int)
+genComplexExpressionsInWhileLoop (a, z, y, x, w : Int)
     var i = 0,
     var sum = 0,
     while i < a

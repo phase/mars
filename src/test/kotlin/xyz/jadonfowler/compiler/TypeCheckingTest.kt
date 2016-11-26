@@ -24,7 +24,7 @@ class TypeCheckingTest {
 
     @Test fun inferLocalVariableTypes() {
         val code = """
-        test (a : Int, b : Int, c : Int) : Int
+        test (a, b, c : Int) : Int
             let d = a + b,
             let e = "test",
             let f = true,
@@ -44,7 +44,7 @@ class TypeCheckingTest {
 
     @Test fun inferFunctionReturnType() {
         val code = """
-        test (a : Int, b : Int, c : Int)
+        test (a, b, c : Int)
             let d = a + b,
             let e = b * d - a + b,
             let f = e / b * d - a + b + c * c,
@@ -106,13 +106,13 @@ class TypeCheckingTest {
         let j : Int = 8
         let str = "test"
 
-        llvm (z : Int, y : Int, x : Int, w : Int)
+        llvm (z, y, x, w : Int)
             var v = 42 + x,
             let u = 45 + v * 67 + 124 - (w * 4) / 5,
             v = v * 2 - z,
             5 + u * z * v
 
-        foo (t : Int, s : Int)
+        foo (t, s : Int)
             let a = 7,
             let b = 9,
             let r : Int = 90128,

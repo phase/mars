@@ -1,4 +1,4 @@
-genOperators (a : Int, b : Int) : Int
+genOperators (a, b : Int) : Int
     var r = 0,
     let c : Bool = a != b,
     if c

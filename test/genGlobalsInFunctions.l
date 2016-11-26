@@ -2,7 +2,7 @@ let G0 = 1234 + 4321
 let G1 = 1 + 2 - 3 * 4 + 6 / 6
 let G2 = 4
 
-genGlobalsInFunctions (z : Int, y : Int, x : Int, w : Int)
+genGlobalsInFunctions (z, y, x, w : Int)
     var v = 42 + x,
     let u = 45 + v * 67 + 124 - (w * 4) / 5,
     v = v * 2 - z,
