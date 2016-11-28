@@ -69,4 +69,8 @@ class LLVMTest {
         testIR("genInfixFunctionCall")
     }
 
+    @Test fun genRecursiveCall() {
+        testIR("genRecursiveCall")
+    }
+
 }

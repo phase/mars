@@ -20,9 +20,16 @@ class TypePass(module: Module) : Pass(module) {
                     // Expressions A & B should have the same type.
                     val typeA = getType(expression.expA, localVariables)
                     val typeB = getType(expression.expB, localVariables)
-                    if (typeA != typeB)
-                        throw Exception("$typeA is not the same type as $typeB for expression $expression.")
-                    typeA
+                    if (typeA != typeB) {
+                        // XXX: Hack for recursive calls
+                        if (typeA == T_UNDEF && typeB != T_UNDEF) {
+                            typeB
+                        } else if (typeB == T_UNDEF && typeA != T_UNDEF) {
+                            typeA
+                        } else
+                            throw Exception("$typeA is not the same type as $typeB for expression $expression.")
+                    } else
+                        typeA
                 }
             }
             is TrueExpression, is FalseExpression -> {
@@ -64,7 +71,7 @@ class TypePass(module: Module) : Pass(module) {
                         else -> T_UNDEF
                     }
                 } else
-                    T_UNDEF
+                    throw Exception("Can't find type for $expression.")
             }
             else -> T_UNDEF
         }

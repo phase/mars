@@ -7,7 +7,6 @@ import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.ast.Function
 import java.io.File
 
-
 class JVMBackend(module: Module) : Backend(module) {
 
     val cw = ClassWriter(ClassWriter.COMPUTE_MAXS or ClassWriter.COMPUTE_FRAMES)
