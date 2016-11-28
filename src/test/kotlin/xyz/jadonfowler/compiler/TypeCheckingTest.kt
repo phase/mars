@@ -64,7 +64,9 @@ class TypeCheckingTest {
         """
         val module = compileString("incorrectTypeSigOnGlobalVariable", code)
 
-        assertFails { TypePass(module) }
+        TypePass(module)
+        assertTrue(module.errors.size > 0)
+        module.errors.forEach(::println)
 
         println(PrintPass(module).output)
     }
@@ -77,7 +79,9 @@ class TypeCheckingTest {
         """
         val module = compileString("incorrectTypeSigOnLocalVariable", code)
 
-        assertFails { TypePass(module) }
+        TypePass(module)
+        assertTrue(module.errors.size > 0)
+        module.errors.forEach(::println)
 
         println(PrintPass(module).output)
     }
@@ -91,7 +95,9 @@ class TypeCheckingTest {
         """
         val module = compileString("incorrectReassignmentType", code)
 
-        assertFails { TypePass(module) }
+        TypePass(module)
+        assertTrue(module.errors.size > 0)
+        module.errors.forEach(::println)
 
         println(PrintPass(module).output)
     }
@@ -251,7 +257,9 @@ class TypeCheckingTest {
         """
         val module = compileString("incorrectFunctionCallArguments", code)
 
-        assertFails { TypePass(module) }
+        TypePass(module)
+        assertTrue(module.errors.size > 0)
+        module.errors.forEach(::println)
 
         println(PrintPass(module).output)
     }
@@ -305,7 +313,9 @@ class TypeCheckingTest {
         """
         val module = compileString("inferFieldTypes", code)
 
-        assertFails { TypePass(module) }
+        TypePass(module)
+        assertTrue(module.errors.size > 0)
+        module.errors.forEach(::println)
 
         println(PrintPass(module).output)
     }

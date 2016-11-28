@@ -13,6 +13,7 @@ class EmptyNode : Node
  * Modules are compilation units that contain global variables, functions, and classes.
  */
 class Module(val name: String, val globalVariables: List<Variable>, val globalFunctions: List<Function>, val globalClasses: List<Clazz>) : Node {
+    val errors: MutableList<String> = mutableListOf()
 }
 
 /**

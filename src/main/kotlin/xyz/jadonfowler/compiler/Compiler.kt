@@ -45,11 +45,21 @@ fun main(args: Array<String>) {
     // Go over every module and parse it
     val modules: List<Module> = modulesToCompile.map { compileString(it.key, it.value) }
 
+    var failed = false
+
     // Default passes
     modules.forEach {
         TypePass(it)
         ConstantFoldPass(it)
+
+        if (it.errors.size > 0) {
+            println("Found errors in ${it.name}:")
+            it.errors.forEach(::println)
+            failed = true
+        }
     }
+
+    if (failed) System.exit(1)
 
     options.forEach {
         when (it.toLowerCase()) {

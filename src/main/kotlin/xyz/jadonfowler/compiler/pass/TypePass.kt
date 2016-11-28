@@ -26,8 +26,10 @@ class TypePass(module: Module) : Pass(module) {
                             typeB
                         } else if (typeB == T_UNDEF && typeA != T_UNDEF) {
                             typeA
-                        } else
-                            throw Exception("$typeA is not the same type as $typeB for expression $expression.")
+                        } else {
+                            module.errors.add("'$typeA' is not the same type as '$typeB' for expression '$expression'.")
+                            T_UNDEF
+                        }
                     } else
                         typeA
                 }
@@ -70,8 +72,10 @@ class TypePass(module: Module) : Pass(module) {
                         is Formal -> lastThingWithName.type
                         else -> T_UNDEF
                     }
-                } else
-                    throw Exception("Can't find type for $expression.")
+                } else {
+                    module.errors.add("Can't find type for '$expression'.")
+                    T_UNDEF
+                }
             }
             else -> T_UNDEF
         }
@@ -105,13 +109,13 @@ class TypePass(module: Module) : Pass(module) {
             // Function should return the type of the return expression.
             val lastExpressionType = getType(function.expression!!, localVariables)
             if (function.returnType != lastExpressionType && function.returnType != T_UNDEF)
-                throw Exception("Function '${function.name}' is marked with the type " +
+                module.errors.add("Function '${function.name}' is marked with the type " +
                         "'${function.returnType}' but its last expression is of the type '$lastExpressionType'.")
             function.returnType = lastExpressionType
         } else {
             // Function should return void if there is no return expression.
             if (function.returnType != T_UNDEF && function.returnType != T_VOID)
-                throw Exception("Function '${function.name}' is marked with the type " +
+                module.errors.add("Function '${function.name}' is marked with the type " +
                         "'${function.returnType}' but does not contain a final expression that returns " +
                         "that type.")
             function.returnType = T_VOID
@@ -124,7 +128,7 @@ class TypePass(module: Module) : Pass(module) {
             // Variable should have the same type as their initial expression.
             val expressionType = getType(variable.initialExpression!!, localVariables)
             if (variable.type != T_UNDEF && variable.type != expressionType)
-                throw Exception("Variable '${variable.name}' is marked with the type '${variable.type}' " +
+                module.errors.add("Variable '${variable.name}' is marked with the type '${variable.type}' " +
                         "but its initial expression is of type '$expressionType'.")
             variable.type = expressionType
         }
@@ -150,8 +154,8 @@ class TypePass(module: Module) : Pass(module) {
         val formalTypes = function.formals.map { it.type }
         val argTypes = functionCallExpression.functionCall.arguments.map { getType(it, localVariables) }
         if (formalTypes != argTypes)
-            throw Exception("Function call to '${functionCallExpression.functionCall.functionReference.name} expected" +
-                    " $formalTypes but was given $argTypes!")
+            module.errors.add("Function call to '${functionCallExpression.functionCall.functionReference.name}' expected" +
+                    " '$formalTypes' but was given '$argTypes'.")
     }
 
     fun visit(statement: Statement, localVariables: MutableMap<String, Variable>?) {
@@ -183,9 +187,9 @@ class TypePass(module: Module) : Pass(module) {
             val fieldType = possibleFields.last().type
             val expressionType = getType(fieldSetterStatement.expression, localVariables)
             if (fieldType != expressionType)
-                throw Exception("Can't set $fieldName to ${fieldSetterStatement.expression} because it is of type" +
-                        " $expressionType and it needs to be of type $fieldType.")
-        } else throw Exception("Can't set field of $fieldName because it is of type $varType.")
+                module.errors.add("Can't set '$fieldName' to '${fieldSetterStatement.expression}' because it is of type" +
+                        " '$expressionType' and it needs to be of type '$fieldType'.")
+        } else module.errors.add("Can't set field of '$fieldName' because it is of type '$varType'.")
     }
 
     fun visit(variableDeclarationStatement: VariableDeclarationStatement, localVariables: MutableMap<String, Variable>?) {
@@ -204,7 +208,7 @@ class TypePass(module: Module) : Pass(module) {
             visit(variableReassignmentStatement.exp, localVariables)
             val expressionType = getType(variableReassignmentStatement.exp, localVariables)
             if (variable.type != expressionType)
-                throw Exception("Variable '${variable.name}' is marked with the type '${variable.type}' but the type" +
+                module.errors.add("Variable '${variable.name}' is marked with the type '${variable.type}' but the type" +
                         " of '${variableReassignmentStatement.exp}' is '$expressionType'.")
         }
     }
