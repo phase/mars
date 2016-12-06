@@ -1,4 +1,4 @@
-fac (n : Int)
+fac (n)
     var r = 0,
     if n <=1
         r = 1

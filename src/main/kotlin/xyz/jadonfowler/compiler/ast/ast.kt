@@ -13,7 +13,32 @@ class EmptyNode : Node
  * Modules are compilation units that contain global variables, functions, and classes.
  */
 class Module(val name: String, val globalVariables: List<Variable>, val globalFunctions: List<Function>, val globalClasses: List<Clazz>) : Node {
+
     val errors: MutableList<String> = mutableListOf()
+
+    fun getNodeFromReference(reference: Reference, localVariables: MutableMap<String, Variable>?): Node? {
+        val name = reference.name
+        val thingsWithName: MutableList<Node> = mutableListOf()
+
+        thingsWithName.addAll(globalClasses.filter { it.name == name })
+        thingsWithName.addAll(globalFunctions.filter { it.name == name })
+        thingsWithName.addAll(globalVariables.filter { it.name == name })
+        localVariables?.forEach { if (it.key == name) thingsWithName.add(it.value) }
+
+        return if (thingsWithName.isNotEmpty()) {
+            val lastThingWithName = thingsWithName.last()
+            when (lastThingWithName) {
+                is Clazz -> lastThingWithName
+                is Function -> lastThingWithName
+                is Variable -> lastThingWithName
+                is Formal -> lastThingWithName
+                else -> null
+            }
+        } else {
+            null
+        }
+    }
+
 }
 
 /**
@@ -290,22 +315,22 @@ class FieldGetterExpression(val variableReference: Reference, val fieldReference
 /**
  * Operators are constructs that behave like Functions, but differ syntactically.
  */
-enum class Operator(val string: String, val returnType: Type = T_UNDEF) {
+enum class Operator(val string: String, val aType: Type = T_UNDEF, val bType: Type = T_UNDEF, val returnType: Type = T_UNDEF) {
     // Maths
-    PLUS("+"),
-    MINUS("-"),
-    MULTIPLY("*"),
-    DIVIDE("/"),
+    PLUS("+", aType = T_INT, bType = T_INT, returnType = T_INT),
+    MINUS("-", aType = T_INT, bType = T_INT, returnType = T_INT),
+    MULTIPLY("*", aType = T_INT, bType = T_INT, returnType = T_INT),
+    DIVIDE("/", aType = T_INT, bType = T_INT, returnType = T_INT),
 
     // Comparisons
-    GREATER_THAN(">", T_BOOL),
-    LESS_THAN("<", T_BOOL),
-    EQUALS("==", T_BOOL),
-    GREATER_THAN_EQUAL(">=", T_BOOL),
-    LESS_THAN_EQUAL("<=", T_BOOL),
-    NOT_EQUAL("!=", T_BOOL),
-    AND("&&", T_BOOL),
-    OR("||", T_BOOL);
+    GREATER_THAN(">", returnType = T_BOOL),
+    LESS_THAN("<", returnType = T_BOOL),
+    EQUALS("==", returnType = T_BOOL),
+    GREATER_THAN_EQUAL(">=", returnType = T_BOOL),
+    LESS_THAN_EQUAL("<=", returnType = T_BOOL),
+    NOT_EQUAL("!=", returnType = T_BOOL),
+    AND("&&", returnType = T_BOOL),
+    OR("||", returnType = T_BOOL);
 
     override fun toString(): String = string
 }

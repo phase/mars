@@ -13,26 +13,41 @@ class TypePass(module: Module) : Pass(module) {
             is IntegerLiteral -> T_INT
             is BinaryOperator -> {
                 val returnType = expression.operator.returnType
-                if (returnType != T_UNDEF)
-                // Boolean operators return Booleans
-                    returnType
-                else {
-                    // Expressions A & B should have the same type.
-                    val typeA = getType(expression.expA, localVariables)
-                    val typeB = getType(expression.expB, localVariables)
-                    if (typeA != typeB) {
-                        // XXX: Hack for recursive calls
-                        if (typeA == T_UNDEF && typeB != T_UNDEF) {
-                            typeB
-                        } else if (typeB == T_UNDEF && typeA != T_UNDEF) {
-                            typeA
-                        } else {
-                            module.errors.add("'$typeA' is not the same type as '$typeB' for expression '$expression'.")
-                            T_UNDEF
+
+                val expA = expression.expA
+                val expB = expression.expB
+
+                val checkType = { exp: Expression, expectedType: Type ->
+                    if (expectedType != T_UNDEF) {
+                        if (exp is ReferenceExpression) {
+                            val node = module.getNodeFromReference(exp.reference, localVariables)
+                            when (node) {
+                                is Variable -> {
+                                    if (node.type == T_UNDEF)
+                                        node.type = expectedType
+                                    else if (node.type != expectedType)
+                                        module.errors.add("${node.name} has the type ${node.type} but was " +
+                                                "expected to have the type $expectedType.")
+                                }
+                            }
+                        } else if (exp is FunctionCallExpression) {
+                            val node = module.getNodeFromReference(exp.functionCall.functionReference, localVariables)
+                            when (node) {
+                                is Function -> {
+                                    if (node.returnType == T_UNDEF)
+                                        node.returnType = expectedType
+                                    else if (node.returnType != expectedType)
+                                        module.errors.add("${node.name} has the return type ${node.returnType} but was" +
+                                                "expected to have the type $expectedType.")
+                                }
+                            }
                         }
-                    } else
-                        typeA
+                    }
                 }
+                checkType(expA, expression.operator.aType)
+                checkType(expB, expression.operator.bType)
+
+                returnType
             }
             is TrueExpression, is FalseExpression -> {
                 T_BOOL
@@ -55,21 +70,13 @@ class TypePass(module: Module) : Pass(module) {
                 } else T_UNDEF
             }
             is ReferenceExpression -> {
-                val name = expression.reference.name
-                val thingsWithName: MutableList<Node> = mutableListOf()
-
-                thingsWithName.addAll(module.globalClasses.filter { it.name == name })
-                thingsWithName.addAll(module.globalFunctions.filter { it.name == name })
-                thingsWithName.addAll(module.globalVariables.filter { it.name == name })
-                localVariables?.forEach { if (it.key == name) thingsWithName.add(it.value) }
-
-                if (thingsWithName.isNotEmpty()) {
-                    val lastThingWithName = thingsWithName.last()
-                    when (lastThingWithName) {
-                        is Clazz -> lastThingWithName
-                        is Function -> lastThingWithName
-                        is Variable -> lastThingWithName.type
-                        is Formal -> lastThingWithName.type
+                val node = module.getNodeFromReference(expression.reference, localVariables)
+                if (node != null) {
+                    when (node) {
+                        is Clazz -> node
+                        is Function -> node
+                        is Variable -> node.type
+                        is Formal -> node.type
                         else -> T_UNDEF
                     }
                 } else {
