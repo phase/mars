@@ -31,6 +31,9 @@ fun main(args: Array<String>) {
     // <Name, Code>
     val modulesToCompile: MutableMap<String, String> = mutableMapOf()
 
+    // Standard Lib
+    files.add("std/thing.l")
+
     // Read files that we need to compile
     files.forEach {
         val file = File(it)

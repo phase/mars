@@ -4,6 +4,7 @@ import org.bytedeco.javacpp.*
 import org.bytedeco.javacpp.LLVM.*
 import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.ast.Function
+import xyz.jadonfowler.compiler.globalModules
 import java.io.File
 
 class LLVMBackend(module: Module) : Backend(module) {
@@ -40,6 +41,7 @@ class LLVMBackend(module: Module) : Backend(module) {
 
         builder = LLVMCreateBuilder()
 
+        module.imports.forEach { visit(it) }
         module.globalVariables.forEach { it.accept(this) }
         module.globalFunctions.forEach { it.accept(this) }
     }
@@ -78,6 +80,18 @@ class LLVMBackend(module: Module) : Backend(module) {
         LLVMDisposePassManager(pass)
     }
 
+    fun visit(import: Import) {
+        val module = globalModules.filter { it.name == import.reference.name }.last()
+        module.globalFunctions.forEach {
+            // Create the function
+            val argumentTypes: List<LLVMTypeRef> = it.formals.map { getLLVMType(it.type)!! }
+            val llvmFunctionType: LLVMTypeRef = LLVMFunctionType(getLLVMType(it.returnType),
+                    PointerPointer<LLVMTypeRef>(*argumentTypes.toTypedArray()), argumentTypes.size, 0)
+            val llvmFunction: LLVMValueRef = LLVMAddFunction(llvmModule, it.name, llvmFunctionType)
+            namedValues.put(it.name, ValueContainer(ValueType.FUNCTION, llvmFunction))
+        }
+    }
+
     override fun visit(variable: Variable) {
         val global = LLVMAddGlobal(llvmModule, getLLVMType(variable.type), variable.name)
         if (variable.initialExpression != null) {
@@ -90,10 +104,10 @@ class LLVMBackend(module: Module) : Backend(module) {
 
     override fun visit(function: Function) {
         // Get LLVM Types of Arguments
-        val argument_types: List<LLVMTypeRef> = function.formals.map { getLLVMType(it.type)!! }
+        val argumentTypes: List<LLVMTypeRef> = function.formals.map { getLLVMType(it.type)!! }
         // Get the FunctionType of the Function
         val llvmFunctionType: LLVMTypeRef = LLVMFunctionType(getLLVMType(function.returnType),
-                PointerPointer<LLVMTypeRef>(*argument_types.toTypedArray()), argument_types.size, 0)
+                PointerPointer<LLVMTypeRef>(*argumentTypes.toTypedArray()), argumentTypes.size, 0)
         // Add the Function to the Module
         val llvmFunction: LLVMValueRef = LLVMAddFunction(llvmModule, function.name, llvmFunctionType)
         namedValues.put(function.name, ValueContainer(ValueType.FUNCTION, llvmFunction))

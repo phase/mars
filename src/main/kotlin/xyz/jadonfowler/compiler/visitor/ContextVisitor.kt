@@ -11,12 +11,15 @@ import xyz.jadonfowler.compiler.parser.LangParser
  */
 class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
 
-    var globalVariables: MutableList<Variable> = mutableListOf()
-    var globalFunctions: MutableList<Function> = mutableListOf()
-    var globalClasses: MutableList<Clazz> = mutableListOf()
+    val imports: MutableList<Import> = mutableListOf()
+    val globalVariables: MutableList<Variable> = mutableListOf()
+    val globalFunctions: MutableList<Function> = mutableListOf()
+    val globalClasses: MutableList<Clazz> = mutableListOf()
 
     override fun visitProgram(ctx: LangParser.ProgramContext?): Module {
         val externalDeclarations = ctx?.externalDeclaration()
+
+        imports.addAll(ctx?.importDeclaration()?.map { visitImportDeclaration(it) }.orEmpty())
 
         globalVariables.addAll(externalDeclarations?.filter { it.variableDeclaration() != null }?.map {
             visitVariableDeclaration(it.variableDeclaration())
@@ -30,9 +33,13 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
             visitFunctionDeclaration(it.functionDeclaration())
         }.orEmpty())
 
-        val module = Module(moduleName, globalVariables.orEmpty(), globalFunctions.orEmpty(), globalClasses.orEmpty())
+        val module = Module(moduleName, imports, globalVariables, globalFunctions, globalClasses)
         globalModules.add(module)
         return module
+    }
+
+    override fun visitImportDeclaration(ctx: LangParser.ImportDeclarationContext?): Import {
+        return Import(Reference(ctx?.ID()?.symbol?.text.orEmpty()))
     }
 
     override fun visitExternalDeclaration(ctx: LangParser.ExternalDeclarationContext?): Node {

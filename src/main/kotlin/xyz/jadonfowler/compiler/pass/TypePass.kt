@@ -56,9 +56,13 @@ class TypePass(module: Module) : Pass(module) {
                 T_STRING
             }
             is FunctionCallExpression -> {
-                val functionName = expression.functionCall.functionReference.name
-                val function = module.globalFunctions.filter { it.name == functionName }.last()
-                function.returnType
+                val function = module.getNodeFromReference(expression.functionCall.functionReference, null)
+                if (function is Function)
+                    function.returnType
+                else {
+                    module.errors.add("Can't find return type for '$expression'.")
+                    T_UNDEF
+                }
             }
             is FieldGetterExpression -> {
                 val varType = localVariables?.get(expression.variableReference.name)?.type

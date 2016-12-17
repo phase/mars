@@ -73,4 +73,8 @@ class LLVMTest {
         testIR("genRecursiveCall")
     }
 
+    @Test fun genImportedDeclarations() {
+        testIR("genImportedDeclarations")
+    }
+
 }

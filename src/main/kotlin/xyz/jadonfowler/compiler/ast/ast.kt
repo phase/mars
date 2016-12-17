@@ -1,5 +1,6 @@
 package xyz.jadonfowler.compiler.ast
 
+import xyz.jadonfowler.compiler.globalModules
 import xyz.jadonfowler.compiler.visitor.Visitor
 
 interface Node
@@ -12,9 +13,15 @@ class EmptyNode : Node
 /**
  * Modules are compilation units that contain global variables, functions, and classes.
  */
-class Module(val name: String, val globalVariables: List<Variable>, val globalFunctions: List<Function>, val globalClasses: List<Clazz>) : Node {
+class Module(val name: String, val imports: List<Import>, val globalVariables: List<Variable>, val globalFunctions: List<Function>, val globalClasses: List<Clazz>) : Node {
 
     val errors: MutableList<String> = mutableListOf()
+
+    fun containsReference(reference: Reference): Boolean {
+        return globalVariables.map { it.name }.contains(reference.name)
+                || globalFunctions.map { it.name }.contains(reference.name)
+                || globalClasses.map { it.name }.contains(reference.name)
+    }
 
     fun getNodeFromReference(reference: Reference, localVariables: MutableMap<String, Variable>?): Node? {
         val name = reference.name
@@ -25,21 +32,29 @@ class Module(val name: String, val globalVariables: List<Variable>, val globalFu
         thingsWithName.addAll(globalVariables.filter { it.name == name })
         localVariables?.forEach { if (it.key == name) thingsWithName.add(it.value) }
 
-        return if (thingsWithName.isNotEmpty()) {
+        if (thingsWithName.isNotEmpty()) {
             val lastThingWithName = thingsWithName.last()
             when (lastThingWithName) {
-                is Clazz -> lastThingWithName
-                is Function -> lastThingWithName
-                is Variable -> lastThingWithName
-                is Formal -> lastThingWithName
-                else -> null
+                is Clazz -> return lastThingWithName
+                is Function -> return lastThingWithName
+                is Variable -> return lastThingWithName
+                is Formal -> return lastThingWithName
             }
-        } else {
-            null
         }
+
+        // Go through imports
+        val imports = imports.map { it.reference.name }
+        globalModules.filter { imports.contains(it.name) }.forEach {
+            val node = it.getNodeFromReference(reference, null)
+            if (node != null) return node //ImportedNode(node)
+        }
+        return null
     }
 
 }
+
+class Import(val reference: Reference) : Node
+class ImportedNode(val node: Node) : Node
 
 /**
  * Declaration that can be accessed outside the Module

@@ -1,6 +1,10 @@
 grammar Lang;
 
-program: externalDeclaration* EOF;
+program: importDeclaration* externalDeclaration* EOF;
+
+importDeclaration
+    : 'import' ID
+    ;
 
 externalDeclaration
     : functionDeclaration
