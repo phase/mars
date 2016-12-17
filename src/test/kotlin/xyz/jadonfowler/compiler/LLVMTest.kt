@@ -6,23 +6,23 @@ import kotlin.test.assertTrue
 
 class LLVMTest {
 
-    fun testIR(testName: String) {
-        val code = "test/$testName.l"
-        val file = File(code)
-        assertTrue(file.exists())
+    fun testIR(vararg testName: String) {
+        val code = testName.map { "test/$it.l" }
+        val files = code.map(::File)
+        files.forEach { assertTrue(it.exists()) }
 
-        val expectedIRFile = File("test/out/llvm/$testName.ll")
-        assertTrue(expectedIRFile.exists(), "Output file doesn't exist!")
-        val expectedIR = expectedIRFile.readLines().joinToString("\n")
+        val expectedIRFiles = testName.map { File("test/out/llvm/$it.ll") }
+        expectedIRFiles.forEach { assertTrue(it.exists(), "Output file doesn't exist!") }
+        val expectedIR = expectedIRFiles.map { it.readLines().joinToString("\n") }
 
-        main(arrayOf(code, "--llvm"))
+        main(arrayOf("--llvm", *code.toTypedArray()))
 
-        val actualIR = File("bin/$testName.ll").readLines().joinToString("\n")
-        println(actualIR)
+        val actualIR = testName.map { File("bin/$it.ll").readLines().joinToString("\n") }
+        actualIR.forEach(::println)
 
         // endsWith is used to ignore header information, which is different on every platform
-        assertTrue(actualIR.endsWith(expectedIR), "Wrong IR emitted!\n\nExpected:\n\n$expectedIR" +
-                "\n\n(Note: Header information is ignored.)\n")
+        actualIR.forEachIndexed { i, s -> assertTrue(s.endsWith(expectedIR[i]), "Wrong IR emitted!\n\nExpected:\n\n${expectedIR[i]}" +
+                "\n\n(Note: Header information is ignored.)\n") }
     }
 
     @Test fun genGlobalConstant() {
@@ -75,6 +75,10 @@ class LLVMTest {
 
     @Test fun genImportedDeclarations() {
         testIR("genImportedDeclarations")
+    }
+
+    @Test fun genRecursiveImport() {
+        testIR("genRecursiveInput1", "genRecursiveInput2")
     }
 
 }

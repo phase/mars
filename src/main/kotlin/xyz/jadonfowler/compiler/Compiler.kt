@@ -57,12 +57,15 @@ fun main(args: Array<String>) {
 
         if (it.errors.size > 0) {
             println("Found errors in ${it.name}:")
-            it.errors.forEach(::println)
+            it.errors.forEach { println("    $it") }
             failed = true
         }
     }
 
     if (failed) System.exit(1)
+
+    // The output should be the same for no matter the order of arguments
+    options.sort()
 
     options.forEach {
         when (it.toLowerCase()) {

@@ -15,8 +15,8 @@ externalDeclaration
 functionDeclaration: ID '(' argumentList ')' typeAnnotation? (statementList ',')? (statement ',' | blockStatement)? (expression | statement | blockStatement);
 variableDeclaration: variableModifier variableSignature ('=' expression)?;
 
-functionCall: ID '(' expressionList? ')';
-methodCall: ID '.' ID '(' expressionList? ')';
+functionCall: ID '(' expressionList ')';
+methodCall: ID '.' ID '(' expressionList ')';
 
 variableModifier
     : 'let'
@@ -56,7 +56,8 @@ classDeclaration
     ;
 
 expressionList
-    : expression
+    :
+    | expression
     | expression ',' expressionList
     ;
 

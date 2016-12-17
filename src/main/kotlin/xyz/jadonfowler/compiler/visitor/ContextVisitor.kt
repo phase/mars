@@ -159,7 +159,9 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
     }
 
     fun expressionListFromContext(expressionListContext: LangParser.ExpressionListContext?): List<Expression> {
-        val expressions: MutableList<Expression> = mutableListOf(visitExpression(expressionListContext?.expression()))
+        val expressions: MutableList<Expression> = if (expressionListContext?.expression() != null)
+            mutableListOf(visitExpression(expressionListContext?.expression()))
+        else mutableListOf()
 
         var expressionListContextChild: LangParser.ExpressionListContext? = expressionListContext?.expressionList()
         while (expressionListContextChild != null) {
@@ -255,7 +257,7 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
             // Remove quotes around string
             return StringLiteral(value.substring(1..value.length - 2))
         }
-        return TrueExpression() // TODO: Remove
+        throw Exception("${ctx?.text} can't be handled yet")
     }
 
     override fun visitArgumentList(ctx: LangParser.ArgumentListContext?): Node {

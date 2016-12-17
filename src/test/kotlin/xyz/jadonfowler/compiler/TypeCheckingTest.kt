@@ -129,7 +129,7 @@ class TypeCheckingTest {
                 else
                     if 4 >= 2
                         q = 7,
-                        if s >= t || s <= 8:
+                        if s >= t || s <= 8
                             print(t, s)
                         ;
                     ;
