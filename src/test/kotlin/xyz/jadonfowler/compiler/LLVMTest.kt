@@ -93,4 +93,8 @@ class LLVMTest {
         testIR("genExecutable")
     }
 
+    @Test fun outputFactorial() {
+        testIR("outputFactorial")
+    }
+
 }
