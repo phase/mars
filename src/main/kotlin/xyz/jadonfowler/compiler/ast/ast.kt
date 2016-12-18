@@ -75,7 +75,7 @@ interface Global : Node
  * and an optional last expression. The last expression is used as the return value for the function.
  * If there is no last expression, the function returns "void" (aka nothing).
  */
-class Function(val attributes: List<Attribute>, var returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>, var expression: Expression? = null) : Global, Type {
+class Function(val attributes: List<Attribute>, var returnType: Type, val name: String, var formals: List<Formal>, val statements: List<Statement>, var expression: Expression? = null) : Global, Type {
     fun accept(visitor: Visitor) = visitor.visit(this)
 
     override fun toString(): String {
@@ -258,6 +258,7 @@ class MethodCallStatement(val methodCall: MethodCall) : Statement() {
  */
 class FieldSetterStatement(val variableReference: Reference, val fieldReference: Reference, val expression: Expression) : Statement() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
+    override fun toString(): String = variableReference.name + "." + fieldReference.name + " = " + expression.toString()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
