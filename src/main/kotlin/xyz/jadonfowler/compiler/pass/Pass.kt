@@ -67,4 +67,7 @@ open class Pass(module: Module) : Visitor(module) {
 
     override fun visit(whileStatement: WhileStatement) {
     }
+
+    override fun visit(clazzInitializerExpression: ClazzInitializerExpression) {
+    }
 }

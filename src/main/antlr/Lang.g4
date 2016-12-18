@@ -82,6 +82,7 @@ expression
     | expression '`' ID '`' expression // infix function
     | methodCall
     | fieldGetter
+    | classInitializer
     | functionCall
     | ID
     | STRING
@@ -94,6 +95,8 @@ expression
 
 fieldGetter: ID '.' ID;
 fieldSetter: ID '.' ID '=' expression;
+
+classInitializer: 'new' ID '(' expressionList ')';
 
 argumentList: argument (',' argument)*|;
 

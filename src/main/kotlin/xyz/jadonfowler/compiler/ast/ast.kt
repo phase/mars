@@ -336,6 +336,12 @@ class FieldGetterExpression(val variableReference: Reference, val fieldReference
     override fun toString(): String = "${variableReference.name}.${fieldReference.name}"
 }
 
+class ClazzInitializerExpression(val classReference: Reference, val arguments: List<Expression>) : Expression(arguments) {
+    override fun accept(visitor: Visitor) = visitor.visit(this)
+    override fun toString(): String =
+            "new ${classReference.name}(" + arguments.map { it.toString() }.joinToString() + ")"
+}
+
 /**
  * Operators are constructs that behave like Functions, but differ syntactically.
  */

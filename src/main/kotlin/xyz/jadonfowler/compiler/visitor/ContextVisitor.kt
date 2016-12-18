@@ -268,6 +268,8 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
             return visitFieldGetter(ctx?.fieldGetter())
         } else if (ctx?.functionCall() != null) {
             return FunctionCallExpression(visitFunctionCall(ctx?.functionCall()))
+        } else if (ctx?.classInitializer() != null) {
+            return visitClassInitializer(ctx?.classInitializer())
         } else if (ctx?.INT() != null) {
             return IntegerLiteral(ctx?.INT()?.text?.toInt()!!)
         } else if (ctx?.ID() != null) {
@@ -279,6 +281,12 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
             return StringLiteral(value.substring(1..value.length - 2))
         }
         throw Exception("${ctx?.text} can't be handled yet")
+    }
+
+    override fun visitClassInitializer(ctx: LangParser.ClassInitializerContext?): ClazzInitializerExpression {
+        val className = ctx?.ID()?.symbol?.text.orEmpty()
+        val expressions = expressionListFromContext(ctx?.expressionList())
+        return ClazzInitializerExpression(Reference(className), expressions)
     }
 
     override fun visitArgumentList(ctx: LangParser.ArgumentListContext?): Node {

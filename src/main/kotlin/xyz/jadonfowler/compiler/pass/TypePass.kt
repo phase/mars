@@ -64,6 +64,10 @@ class TypePass(module: Module) : Pass(module) {
                     T_UNDEF
                 }
             }
+            is ClazzInitializerExpression -> {
+                val node = module.getNodeFromReference(expression.classReference, null)
+                node as? Clazz ?: T_UNDEF
+            }
             is FieldGetterExpression -> {
                 val varType = localVariables?.get(expression.variableReference.name)?.type
                 if (varType is Clazz) {

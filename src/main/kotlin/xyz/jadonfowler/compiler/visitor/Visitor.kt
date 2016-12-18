@@ -46,6 +46,7 @@ abstract class Visitor(val module: Module) {
             is MethodCallExpression -> visit(expression)
             is FieldGetterExpression -> visit(expression)
             is BinaryOperator -> visit(expression)
+            is ClazzInitializerExpression -> visit(expression)
         }
     }
 
@@ -58,5 +59,6 @@ abstract class Visitor(val module: Module) {
     abstract fun visit(methodCallExpression: MethodCallExpression)
     abstract fun visit(fieldGetterExpression: FieldGetterExpression)
     abstract fun visit(binaryOperator: BinaryOperator)
+    abstract fun visit(clazzInitializerExpression: ClazzInitializerExpression)
 
 }

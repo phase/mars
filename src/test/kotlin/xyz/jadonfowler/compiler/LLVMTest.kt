@@ -97,4 +97,8 @@ class LLVMTest {
         testIR("outputFactorial")
     }
 
+    @Test fun classDeclaration() {
+        testIR("classDeclaration")
+    }
+
 }

@@ -92,6 +92,10 @@ class LLVMBackend(module: Module) : Backend(module) {
         }
     }
 
+    override fun visit(clazz: Clazz) {
+
+    }
+
     override fun visit(variable: Variable) {
         val global = LLVMAddGlobal(llvmModule, getLLVMType(variable.type), variable.name)
         if (variable.initialExpression != null) {
@@ -106,7 +110,12 @@ class LLVMBackend(module: Module) : Backend(module) {
         // Get LLVM Types of Arguments
         val argumentTypes: List<LLVMTypeRef> = function.formals.map { getLLVMType(it.type)!! }
         // Get the FunctionType of the Function
-        val llvmFunctionType: LLVMTypeRef = LLVMFunctionType(getLLVMType(function.returnType),
+        val returnType = if(function.returnType is Clazz) {
+            // Return a pointer if the return type is a class
+            val clazzType = getLLVMType(function.returnType)
+            LLVMPointerType(clazzType, 0)
+        } else getLLVMType(function.returnType)
+        val llvmFunctionType: LLVMTypeRef = LLVMFunctionType(returnType,
                 PointerPointer<LLVMTypeRef>(*argumentTypes.toTypedArray()), argumentTypes.size, 0)
         // Add the Function to the Module
         val llvmFunction: LLVMValueRef = LLVMAddFunction(llvmModule, function.name, llvmFunctionType)
@@ -251,11 +260,20 @@ class LLVMBackend(module: Module) : Backend(module) {
                 LLVMBuildCall(builder, function.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
                         functionCall.arguments.size, functionCall.toString())
             }
+            is ClazzInitializerExpression -> {
+                val clazz = module.getNodeFromReference(expression.classReference, null) as? Clazz
+                println(clazz?.name)
+                if(clazz != null) {
+                    LLVMBuildAlloca(builder, getLLVMType(clazz)!!, expression.toString())
+                } else LLVMConstInt(LLVMInt32Type(), 0, 0)
+            }
             else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
         }
     }
 
     companion object {
+
+        private val clazzTypes: MutableMap<String, LLVMTypeRef> = mutableMapOf()
 
         fun getLLVMType(type: Type): LLVMTypeRef? {
             return when (type) {
@@ -263,8 +281,13 @@ class LLVMBackend(module: Module) : Backend(module) {
                 T_INT -> LLVMInt32Type()
                 T_VOID -> LLVMVoidType()
                 is Clazz -> {
-                    val fieldTypes = type.fields.map { getLLVMType(it.type) }
-                    LLVMStructType(PointerPointer(*fieldTypes.toTypedArray()), type.fields.size, 0)
+                    if(!clazzTypes.containsKey(type.name)) {
+                        val fieldTypes = type.fields.map { getLLVMType(it.type) }
+                        val llvmClazzType = LLVMStructCreateNamed(LLVMGetGlobalContext(), type.name)
+                        LLVMStructSetBody(llvmClazzType, PointerPointer(*fieldTypes.toTypedArray()), type.fields.size, 0)
+                        clazzTypes.put(type.name, llvmClazzType)
+                    }
+                    clazzTypes.get(type.name)
                 }
                 T_UNDEF -> {
                     throw Exception("Can't find LLVM type for Undefined!")

@@ -190,6 +190,12 @@ class PrintPass(module: Module) : Pass(module) {
         printI(")")
     }
 
+    override fun visit(clazzInitializerExpression: ClazzInitializerExpression) {
+        printI("new ${clazzInitializerExpression.classReference.name}(")
+        clazzInitializerExpression.arguments.forEach { it.accept(this); printI(", ") }
+        printI(")")
+    }
+
     override fun visit(binaryOperator: BinaryOperator) {
         printI("(")
         binaryOperator.expA.accept(this)
