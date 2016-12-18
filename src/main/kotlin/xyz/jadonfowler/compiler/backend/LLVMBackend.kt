@@ -112,6 +112,9 @@ class LLVMBackend(module: Module) : Backend(module) {
         val llvmFunction: LLVMValueRef = LLVMAddFunction(llvmModule, function.name, llvmFunctionType)
         namedValues.put(function.name, ValueContainer(ValueType.FUNCTION, llvmFunction))
 
+        // Don't build the function if it is externally defined
+        if (function.attributes.map { it.name }.contains("extern")) return
+
         LLVMSetFunctionCallConv(llvmFunction, LLVMCCallConv)
 
         val entryBlock = LLVMAppendBasicBlock(llvmFunction, "entry")
@@ -194,6 +197,14 @@ class LLVMBackend(module: Module) : Backend(module) {
 
                 LLVMPositionBuilderAtEnd(builder, outside)
             }
+            is FunctionCallStatement -> {
+                val functionCall = statement.functionCall
+                val function = namedValues.filter { it.key == functionCall.functionReference.name }
+                        .values.filter { it.valueType == ValueType.FUNCTION }.last()
+                val expressions = functionCall.arguments.map { visit(it, builder, localVariables) }
+                LLVMBuildCall(builder, function.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
+                        functionCall.arguments.size, statement.functionCall.toString())
+            }
         }
     }
 
@@ -236,9 +247,9 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val functionCall = expression.functionCall
                 val function = namedValues.filter { it.key == functionCall.functionReference.name }
                         .values.filter { it.valueType == ValueType.FUNCTION }.last()
-                val expressions = expression.functionCall.arguments.map { visit(it, builder, localVariables) }
+                val expressions = functionCall.arguments.map { visit(it, builder, localVariables) }
                 LLVMBuildCall(builder, function.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
-                        functionCall.arguments.size, expression.toString())
+                        functionCall.arguments.size, functionCall.toString())
             }
             else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
         }

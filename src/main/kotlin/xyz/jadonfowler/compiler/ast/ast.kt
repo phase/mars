@@ -46,15 +46,22 @@ class Module(val name: String, val imports: List<Import>, val globalVariables: L
         val imports = imports.map { it.reference.name }
         globalModules.filter { imports.contains(it.name) }.forEach {
             val node = it.getNodeFromReference(reference, null)
-            if (node != null) return node //ImportedNode(node)
+            if (node != null) return node
         }
         return null
     }
 
 }
 
+/**
+ * Container for name of module to import
+ */
 class Import(val reference: Reference) : Node
-class ImportedNode(val node: Node) : Node
+
+/**
+ * Attributes can be put on various declarations
+ */
+class Attribute(val name: String) : Node
 
 /**
  * Declaration that can be accessed outside the Module
@@ -68,7 +75,7 @@ interface Global : Node
  * and an optional last expression. The last expression is used as the return value for the function.
  * If there is no last expression, the function returns "void" (aka nothing).
  */
-class Function(var returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>, var expression: Expression? = null) : Global, Type {
+class Function(val attributes: List<Attribute>, var returnType: Type, val name: String, val formals: List<Formal>, val statements: List<Statement>, var expression: Expression? = null) : Global, Type {
     fun accept(visitor: Visitor) = visitor.visit(this)
 
     override fun toString(): String {
@@ -117,7 +124,10 @@ class Reference(val name: String, var global: Global? = null)
 /**
  * Stores the references and arguments for calling a Function.
  */
-class FunctionCall(val functionReference: Reference, val arguments: List<Expression> = listOf()) : Node
+class FunctionCall(val functionReference: Reference, val arguments: List<Expression> = listOf()) : Node {
+    override fun toString(): String =
+            functionReference.name + "(" + arguments.map { it.toString() }.joinToString() + ")"
+}
 
 /**
  * Stores the references and arguments for a calling a Method.
@@ -308,8 +318,7 @@ class ReferenceExpression(val reference: Reference) : Expression() {
  */
 class FunctionCallExpression(val functionCall: FunctionCall) : Expression(functionCall.arguments) {
     override fun accept(visitor: Visitor) = visitor.visit(this)
-    override fun toString(): String =
-            functionCall.functionReference.name + "(" + functionCall.arguments.map { it.toString() }.joinToString() + ")"
+    override fun toString(): String = functionCall.toString()
 }
 
 /**

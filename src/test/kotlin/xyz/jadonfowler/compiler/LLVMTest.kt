@@ -15,7 +15,7 @@ class LLVMTest {
         expectedIRFiles.forEach { assertTrue(it.exists(), "Output file doesn't exist!") }
         val expectedIR = expectedIRFiles.map { it.readLines().joinToString("\n") }
 
-        main(arrayOf("--llvm", *code.toTypedArray()))
+        main(arrayOf("--llvm", "--ast", *code.toTypedArray()))
 
         val actualIR = testName.map { File("bin/$it.ll").readLines().joinToString("\n") }
         actualIR.forEach(::println)
@@ -79,6 +79,14 @@ class LLVMTest {
 
     @Test fun genRecursiveImport() {
         testIR("genRecursiveInput1", "genRecursiveInput2")
+    }
+
+    @Test fun genExternalFunction() {
+        testIR("genExternalFunction")
+    }
+
+    @Test fun genImportExternalFunction() {
+        testIR("genExternalFunction", "genImportExternalFunction")
     }
 
 }

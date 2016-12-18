@@ -12,7 +12,7 @@ externalDeclaration
     | classDeclaration
     ;
 
-functionDeclaration: ID '(' argumentList ')' typeAnnotation? (statementList ',')? (statement ',' | blockStatement)? (expression | statement | blockStatement);
+functionDeclaration: attributeList ID '(' argumentList ')' typeAnnotation? (statementList ',')? (statement ',' | blockStatement)? (expression | statement | blockStatement);
 variableDeclaration: variableModifier variableSignature ('=' expression)?;
 
 functionCall: ID '(' expressionList ')';
@@ -22,6 +22,13 @@ variableModifier
     : 'let'
     | 'var'
     ;
+
+attributeList
+    :
+    | attribute attributeList
+    ;
+
+attribute: '@' ID;
 
 variableReassignment: ID '=' expression;
 

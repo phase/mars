@@ -86,7 +86,23 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
         if (expressionContext != null)
             expression = visitExpression(ctx?.expression())
 
-        return Function(returnType, identifier, formals, statements, expression)
+        val attributes = attributeListFromAttributeListContext(ctx?.attributeList())
+
+        return Function(attributes, returnType, identifier, formals, statements, expression)
+    }
+
+    fun attributeListFromAttributeListContext(attributeListContext: LangParser.AttributeListContext?): List<Attribute> {
+        var context = attributeListContext
+        val attributes: MutableList<Attribute> = mutableListOf()
+        while (context != null && context.attribute() != null) {
+            attributes.add(visitAttribute(context.attribute()))
+            context = context.attributeList()
+        }
+        return attributes
+    }
+
+    override fun visitAttribute(ctx: LangParser.AttributeContext?): Attribute {
+        return Attribute(ctx?.ID()?.symbol?.text.orEmpty())
     }
 
     fun statementListFromStatementListContext(statementListContext: LangParser.StatementListContext?): List<Statement> {
