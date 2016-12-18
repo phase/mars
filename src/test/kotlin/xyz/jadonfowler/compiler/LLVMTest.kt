@@ -89,4 +89,8 @@ class LLVMTest {
         testIR("genExternalFunction", "genImportExternalFunction")
     }
 
+    @Test fun genExecutable() {
+        testIR("genExecutable")
+    }
+
 }

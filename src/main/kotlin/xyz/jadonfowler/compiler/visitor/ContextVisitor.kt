@@ -51,7 +51,12 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
     }
 
     override fun visitFunctionDeclaration(ctx: LangParser.FunctionDeclarationContext?): Function {
-        val identifier = ctx?.ID()?.symbol?.text.orEmpty()
+        var identifier = ctx?.ID()?.symbol?.text.orEmpty()
+
+        // replace `main` with `real_main` for wrapping
+        if (identifier == "main")
+            identifier = "real_main"
+
         val returnType = getType(ctx?.typeAnnotation()?.ID()?.symbol?.text.orEmpty(), globalClasses)
         val formals = ctx?.argumentList()?.argument()?.map {
             Formal(getType(it.variableSignature()?.typeAnnotation()?.ID()?.symbol?.text.orEmpty(), globalClasses),

@@ -32,7 +32,11 @@ fun main(args: Array<String>) {
     val modulesToCompile: MutableMap<String, String> = mutableMapOf()
 
     // Standard Lib
-    files.add("std/thing.l")
+    val stdDirectory = File("std")
+    if (stdDirectory.exists() && stdDirectory.isDirectory) {
+        val stdFiles = stdDirectory.listFiles()
+        stdFiles.forEach { if (it.isFile) files.add(it.canonicalPath) }
+    }
 
     // Read files that we need to compile
     files.forEach {
@@ -81,6 +85,30 @@ fun main(args: Array<String>) {
                 modules.forEach {
                     LLVMBackend(it).output(File("bin/${it.name}"))
                 }
+
+                // Compile LLVM specific Std Modules
+                val runtime = Runtime.getRuntime()
+                val stdLlvmDir = File("std/llvm/")
+                if (!stdLlvmDir.exists() || !stdLlvmDir.isDirectory)
+                    stdLlvmDir.mkdirs()
+                val stdLlvmFiles = stdLlvmDir.listFiles().map { it.canonicalPath }.joinToString(separator = " ")
+                val llcProcess = runtime.exec("llc $stdLlvmFiles -filetype=obj -o bin/std_llvm.o")
+                llcProcess.waitFor()
+
+                // Link object files together
+                val linkCommand = modules.map { "bin/${it.name}.o" }.toMutableList()
+                linkCommand.add("bin/std_llvm.o")
+                linkCommand.add(0, "clang")
+                linkCommand.add("-o")
+                linkCommand.add("bin/exec/${modules[0].name}")
+
+                val execDir = File("bin/exec")
+                if (!execDir.exists())
+                    execDir.mkdirs()
+                val clangProcess = runtime.exec(linkCommand.joinToString(separator = " "))
+                println(clangProcess.waitFor())
+                println("Compiled Executable " + String(clangProcess.inputStream.readBytes()))
+                println(String(clangProcess.errorStream.readBytes()))
             }
             "jvm" -> {
                 val bin = File("bin")
