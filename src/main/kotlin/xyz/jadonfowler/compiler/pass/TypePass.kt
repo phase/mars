@@ -103,7 +103,16 @@ class TypePass(module: Module) : Pass(module) {
     }
 
     override fun visit(function: Function) {
+        visit(function, null)
+    }
+
+    fun visit(function: Function, clazz: Clazz?) {
         val localVariables: MutableMap<String, Variable> = mutableMapOf()
+
+        if (clazz != null) {
+            println()
+            clazz.fields.forEach { localVariables.put(it.name, it) }
+        }
 
         /*
          * add types to untyped formals, such as
@@ -155,7 +164,7 @@ class TypePass(module: Module) : Pass(module) {
 
     override fun visit(clazz: Clazz) {
         clazz.fields.forEach { it.accept(this) }
-        clazz.methods.forEach { it.accept(this) }
+        clazz.methods.forEach { visit(it, clazz) }
     }
 
     fun visit(expression: Expression, localVariables: MutableMap<String, Variable>?) {

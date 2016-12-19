@@ -1,8 +1,9 @@
 class Account
-    let id = 0
+    var id = 0
 
     incrementId() : Int
-        0
+        id = id + 1,
+        id
 ;
 
 newAccount () : Account
