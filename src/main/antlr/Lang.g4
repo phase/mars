@@ -12,7 +12,7 @@ externalDeclaration
     | classDeclaration
     ;
 
-functionDeclaration: attributeList ID '(' argumentList ')' typeAnnotation? (statementList ',')? (statement ',' | blockStatement)? (expression | statement | blockStatement);
+functionDeclaration: attributeList ID '(' argumentList ')' typeAnnotation? statementList (expression | statement | blockStatement);
 variableDeclaration: variableModifier variableSignature ('=' expression)?;
 
 functionCall: ID '(' expressionList ')';

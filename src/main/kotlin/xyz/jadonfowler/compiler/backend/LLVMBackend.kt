@@ -41,6 +41,12 @@ class LLVMBackend(module: Module) : Backend(module) {
 
         builder = LLVMCreateBuilder()
 
+        // Declare Malloc
+        val mallocType: LLVMTypeRef = LLVMFunctionType(LLVMPointerType(LLVMInt8Type(), 0),
+                PointerPointer<LLVMTypeRef>(*arrayOf(LLVMInt64Type())), 1, 0)
+        val malloc = LLVMAddFunction(llvmModule, "malloc", mallocType)
+        namedValues.put("malloc", ValueContainer(ValueType.FUNCTION, malloc, T_UNDEF))
+
         module.imports.forEach { visit(it) }
         module.globalVariables.forEach { it.accept(this) }
         module.globalClasses.forEach { it.accept(this) }
@@ -276,7 +282,7 @@ class LLVMBackend(module: Module) : Backend(module) {
             is IntegerLiteral -> LLVMConstInt(LLVMInt32Type(), expression.value.toLong(), 0)
             is BooleanExpression -> {
                 if (expression.value) LLVMConstInt(LLVMInt1Type(), 1, 0)
-                else LLVMConstInt(LLVMInt1Type(), 0, 1)
+                else LLVMConstInt(LLVMInt1Type(), 0, 0)
             }
             is BinaryOperator -> {
                 val A = visit(expression.expA, builder, localVariables, clazz, function)
@@ -335,7 +341,12 @@ class LLVMBackend(module: Module) : Backend(module) {
             is ClazzInitializerExpression -> {
                 val clazz = module.getNodeFromReference(expression.classReference, null) as? Clazz
                 if (clazz != null) {
-                    LLVMBuildAlloca(builder, getLLVMType(clazz)!!, expression.toString())
+                    val sizeOfClazz = 4L /*TODO: Calculate Class Size*/
+                    // Call malloc
+                    val mallocMemory = LLVMBuildCall(builder, namedValues["malloc"]!!.llvmValueRef,
+                            PointerPointer<LLVMValueRef>(*arrayOf(LLVMConstInt(LLVMInt64Type(), sizeOfClazz, 0))), 1, "malloc($sizeOfClazz)")
+                    // Cast the i8* that malloc returns to a pointer of the Class we want
+                    LLVMBuildBitCast(builder, mallocMemory, LLVMPointerType(getLLVMType(clazz), 0), "castTo${clazz.name}")
                 } else LLVMConstInt(LLVMInt32Type(), 0, 0)
             }
             is FieldGetterExpression -> {

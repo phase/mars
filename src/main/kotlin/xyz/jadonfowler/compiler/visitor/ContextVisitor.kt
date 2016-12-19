@@ -65,25 +65,16 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
 
         val statements = statementListFromStatementListContext(ctx?.statementList()).toMutableList()
 
-        /*
-         * (statement | blockStatement)?
-         * (statement | blockStatement | expression)?
-         */
-
-        if (ctx?.statement() != null && ctx?.statement()!!.size > 0) {
-            ctx?.statement()!!.forEach {
-                val statementNode = visitStatement(it)
-                if (statementNode is Statement)
-                    statements.add(statementNode)
-            }
+        if (ctx?.statement() != null) {
+            val statementNode = visitStatement(ctx?.statement())
+            if (statementNode is Statement)
+                statements.add(statementNode)
         }
 
-        if (ctx?.blockStatement() != null && ctx?.blockStatement()!!.size > 0) {
-            ctx?.blockStatement()!!.forEach {
-                val blockStatementNode = visitBlockStatement(it)
-                if (blockStatementNode is Block)
-                    statements.add(blockStatementNode)
-            }
+        if (ctx?.blockStatement() != null) {
+            val blockStatementNode = visitBlockStatement(ctx?.blockStatement())
+            if (blockStatementNode is Block)
+                statements.add(blockStatementNode)
         }
 
         var expression: Expression? = null

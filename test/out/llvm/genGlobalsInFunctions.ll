@@ -2,6 +2,8 @@
 @G1 = constant i32 -8
 @G2 = constant i32 4
 
+declare i8* @malloc(i64)
+
 define i32 @genGlobalsInFunctions(i32, i32, i32, i32) {
 entry:
   %"(42 + x)" = add i32 %2, 42

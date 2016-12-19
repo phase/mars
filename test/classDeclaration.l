@@ -8,7 +8,7 @@ class Account
         id = id + 1,
         previousId
 
-    isAccount(i)
+    isAccount(i) : Bool
         id == i
 ;
 
@@ -22,8 +22,11 @@ getId (a : Account) : Int
 
 main ()
     let a = newAccount(),
-    let previousId1 = a.incrementId(),
-    printInt(a.incrementId()),
-    printInt(a.incrementId()),
-    printInt(previousId1),
+    let previousId = a.incrementId(),
+    var i = 0,
+    while i < 10
+        printInt(a.incrementId())
+    ;
+    printInt(previousId),
+    printInt(getId(a)),
     0

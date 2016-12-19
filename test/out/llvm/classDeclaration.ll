@@ -1,5 +1,7 @@
 %Account = type { i32 }
 
+declare i8* @malloc(i64)
+
 declare i32 @printInt(i32)
 
 define i32 @Account_incrementId(%Account*) {
@@ -21,10 +23,11 @@ entry:
 
 define %Account* @newAccount() {
 entry:
-  %"new Account()" = alloca %Account, align 8
-  %"a.id = 7" = getelementptr inbounds %Account, %Account* %"new Account()", i64 0, i32 0
-  store i32 7, i32* %"a.id = 7", align 8
-  ret %Account* %"new Account()"
+  %"malloc(4)" = call i8* @malloc(i64 4)
+  %castToAccount = bitcast i8* %"malloc(4)" to %Account*
+  %"a.id = 7" = bitcast i8* %"malloc(4)" to i32*
+  store i32 7, i32* %"a.id = 7", align 4
+  ret %Account* %castToAccount
 }
 
 define i32 @getId(%Account*) {
@@ -38,10 +41,10 @@ define i32 @real_main() {
 entry:
   %"newAccount()" = call %Account* @newAccount()
   %"a.incrementId()" = call i32 @Account_incrementId(%Account* %"newAccount()")
-  %"a.incrementId()1" = call i32 @Account_incrementId(%Account* %"newAccount()")
-  %"printInt(a.incrementId())" = call i32 @printInt(i32 %"a.incrementId()1")
+  br label %"while.b (i < 10)"
+
+"while.b (i < 10)":                               ; preds = %entry, %"while.b (i < 10)"
   %"a.incrementId()2" = call i32 @Account_incrementId(%Account* %"newAccount()")
-  %"printInt(a.incrementId())3" = call i32 @printInt(i32 %"a.incrementId()2")
-  %"printInt(previousId1)" = call i32 @printInt(i32 %"a.incrementId()")
-  ret i32 0
+  %"printInt(a.incrementId())" = call i32 @printInt(i32 %"a.incrementId()2")
+  br label %"while.b (i < 10)"
 }
