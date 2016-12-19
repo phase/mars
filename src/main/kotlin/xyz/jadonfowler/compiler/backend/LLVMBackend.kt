@@ -356,7 +356,16 @@ class LLVMBackend(module: Module) : Backend(module) {
             is ClazzInitializerExpression -> {
                 val clazz = module.getNodeFromReference(expression.classReference, null) as? Clazz
                 if (clazz != null) {
-                    val sizeOfClazz = 4L /*TODO: Calculate Class Size*/
+                    val sizeOfClazz = clazz.fields.map {
+                        when (it.type) {
+                            T_INT8 -> 1L
+                            T_INT16 -> 2L
+                            T_INT32 -> 4L
+                            T_INT64 -> 8L
+                            T_INT128 -> 16L
+                            else -> 4L
+                        }
+                    }.sum()
                     // Call malloc
                     val mallocMemory = LLVMBuildCall(builder, namedValues["malloc"]!!.llvmValueRef,
                             PointerPointer<LLVMValueRef>(*arrayOf(LLVMConstInt(LLVMInt64Type(), sizeOfClazz, 0))), 1, "malloc($sizeOfClazz)")

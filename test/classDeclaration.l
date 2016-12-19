@@ -2,6 +2,7 @@ import io
 
 class Account
     var id : Int32
+    var amountOfCoins : Int128
 
     incrementId() : Int32
         let previousId = id,
@@ -25,7 +26,8 @@ main ()
     let previousId = a.incrementId(),
     var i = 0,
     while i < 10
-        printInt(a.incrementId())
+        printInt(a.incrementId()),
+        i = i + 1
     ;
     printInt(previousId),
     printInt(getId(a)),

@@ -1,4 +1,4 @@
-%Account = type { i32 }
+%Account = type { i32, i128 }
 
 declare i8* @malloc(i64)
 
@@ -23,9 +23,9 @@ entry:
 
 define %Account* @newAccount() {
 entry:
-  %"malloc(4)" = call i8* @malloc(i64 4)
-  %castToAccount = bitcast i8* %"malloc(4)" to %Account*
-  %"a.id = 7" = bitcast i8* %"malloc(4)" to i32*
+  %"malloc(20)" = call i8* @malloc(i64 20)
+  %castToAccount = bitcast i8* %"malloc(20)" to %Account*
+  %"a.id = 7" = bitcast i8* %"malloc(20)" to i32*
   store i32 7, i32* %"a.id = 7", align 4
   ret %Account* %castToAccount
 }
@@ -41,10 +41,22 @@ define i32 @real_main() {
 entry:
   %"newAccount()" = call %Account* @newAccount()
   %"a.incrementId()" = call i32 @Account_incrementId(%Account* %"newAccount()")
-  br label %"while.b (i < 10)"
+  br label %"while.c (i < 10)"
 
-"while.b (i < 10)":                               ; preds = %entry, %"while.b (i < 10)"
+"while.c (i < 10)":                               ; preds = %"while.b (i < 10)", %entry
+  %storemerge = phi i32 [ %"(i + 1)", %"while.b (i < 10)" ], [ 0, %entry ]
+  %"(i < 10)" = icmp slt i32 %storemerge, 10
+  br i1 %"(i < 10)", label %"while.b (i < 10)", label %"while.o (i < 10)"
+
+"while.b (i < 10)":                               ; preds = %"while.c (i < 10)"
   %"a.incrementId()2" = call i32 @Account_incrementId(%Account* %"newAccount()")
   %"printInt(a.incrementId())" = call i32 @printInt(i32 %"a.incrementId()2")
-  br label %"while.b (i < 10)"
+  %"(i + 1)" = add i32 %storemerge, 1
+  br label %"while.c (i < 10)"
+
+"while.o (i < 10)":                               ; preds = %"while.c (i < 10)"
+  %"printInt(previousId)" = call i32 @printInt(i32 %"a.incrementId()")
+  %"getId(a)" = call i32 @getId(%Account* %"newAccount()")
+  %"printInt(getId(a))" = call i32 @printInt(i32 %"getId(a)")
+  ret i32 0
 }
