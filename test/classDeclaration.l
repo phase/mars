@@ -9,3 +9,6 @@ newAccount () : Account
     let a = new Account(),
     a.id = 7,
     a
+
+getId (a : Account) : Int
+    a.id

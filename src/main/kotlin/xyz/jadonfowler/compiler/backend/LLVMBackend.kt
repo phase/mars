@@ -123,7 +123,12 @@ class LLVMBackend(module: Module) : Backend(module) {
 
     fun visit(function: Function, localVariables: MutableMap<String, ValueContainer>) {
         // Get LLVM Types of Arguments
-        val argumentTypes: List<LLVMTypeRef> = function.formals.map { getLLVMType(it.type)!! }
+        val argumentTypes: List<LLVMTypeRef> = function.formals.map {
+            if (it.type is Clazz) {
+                val classType = getLLVMType(it.type)
+                LLVMPointerType(classType, 0)
+            } else getLLVMType(it.type)!!
+        }
         // Get the FunctionType of the Function
         val returnType = if (function.returnType is Clazz) {
             // Return a pointer if the return type is a class
@@ -228,8 +233,11 @@ class LLVMBackend(module: Module) : Backend(module) {
             }
             is FieldSetterStatement -> {
                 val variable = visit(ReferenceExpression(statement.variableReference), builder, localVariables)
-                val indexInClass = (localVariables[statement.variableReference.name]?.type as Clazz).fields.map { it.name }.indexOf(statement.fieldReference.name)
-                LLVMBuildStore(builder, visit(statement.expression, builder, localVariables), LLVMBuildStructGEP(builder, variable, indexInClass, statement.toString()))
+                val indexInClass = (localVariables[statement.variableReference.name]?.type as Clazz).fields
+                        .map { it.name }.indexOf(statement.fieldReference.name)
+                LLVMBuildStore(builder,
+                        visit(statement.expression, builder, localVariables),
+                        LLVMBuildStructGEP(builder, variable, indexInClass, statement.toString()))
             }
         }
     }
@@ -279,10 +287,17 @@ class LLVMBackend(module: Module) : Backend(module) {
             }
             is ClazzInitializerExpression -> {
                 val clazz = module.getNodeFromReference(expression.classReference, null) as? Clazz
-                println(clazz?.name)
                 if (clazz != null) {
                     LLVMBuildAlloca(builder, getLLVMType(clazz)!!, expression.toString())
                 } else LLVMConstInt(LLVMInt32Type(), 0, 0)
+            }
+            is FieldGetterExpression -> {
+                val variable = visit(ReferenceExpression(expression.variableReference), builder, localVariables)
+                val indexInClass = (localVariables[expression.variableReference.name]?.type as Clazz).fields
+                        .map { it.name }.indexOf(expression.fieldReference.name)
+                LLVMBuildLoad(builder,
+                        LLVMBuildStructGEP(builder, variable, indexInClass, expression.variableReference.name),
+                        expression.toString())
             }
             else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
         }
