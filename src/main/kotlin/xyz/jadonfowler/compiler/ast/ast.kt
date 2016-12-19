@@ -132,7 +132,10 @@ class FunctionCall(val functionReference: Reference, val arguments: List<Express
 /**
  * Stores the references and arguments for a calling a Method.
  */
-class MethodCall(val variableReference: Reference, val methodReference: Reference, val arguments: List<Expression> = listOf()) : Node
+class MethodCall(val variableReference: Reference, val methodReference: Reference, val arguments: List<Expression> = listOf()) : Node {
+    override fun toString(): String =
+            variableReference.name + "." + methodReference.name + "(" + arguments.map { it.toString() }.joinToString() + ")"
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // STATEMENTS
@@ -251,6 +254,7 @@ class FunctionCallStatement(val functionCall: FunctionCall) : Statement() {
  */
 class MethodCallStatement(val methodCall: MethodCall) : Statement() {
     override fun accept(visitor: Visitor) = visitor.visit(this)
+    override fun toString(): String = methodCall.toString()
 }
 
 /**
@@ -327,6 +331,7 @@ class FunctionCallExpression(val functionCall: FunctionCall) : Expression(functi
  */
 class MethodCallExpression(val methodCall: MethodCall) : Expression(methodCall.arguments) {
     override fun accept(visitor: Visitor) = visitor.visit(this)
+    override fun toString(): String = methodCall.toString()
 }
 
 /**

@@ -43,8 +43,8 @@ class LLVMBackend(module: Module) : Backend(module) {
 
         module.imports.forEach { visit(it) }
         module.globalVariables.forEach { it.accept(this) }
-        module.globalFunctions.forEach { it.accept(this) }
         module.globalClasses.forEach { it.accept(this) }
+        module.globalFunctions.forEach { it.accept(this) }
     }
 
     override fun output(file: File?) {
@@ -248,6 +248,18 @@ class LLVMBackend(module: Module) : Backend(module) {
                 LLVMBuildCall(builder, function.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
                         functionCall.arguments.size, statement.functionCall.toString())
             }
+            is MethodCallStatement -> {
+                val methodCall = statement.methodCall
+                val variable = visit(ReferenceExpression(methodCall.variableReference), builder, localVariables, clazz, llvmFunction)
+                val clazzName = (localVariables[methodCall.variableReference.name]?.type as? Clazz)?.name ?: "null"
+                val functionName = clazzName + "_" + methodCall.methodReference.name
+                val function = namedValues.filter { it.key == functionName }
+                        .values.filter { it.valueType == ValueType.FUNCTION }.last()
+                val expressions = methodCall.arguments.map { visit(it, builder, localVariables, clazz, llvmFunction) }.toMutableList()
+                expressions.add(0, variable)
+                LLVMBuildCall(builder, function.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
+                        methodCall.arguments.size + 1, methodCall.toString())
+            }
             is FieldSetterStatement -> {
                 val variable = visit(ReferenceExpression(statement.variableReference), builder, localVariables, clazz, llvmFunction)
                 val indexInClass = (localVariables[statement.variableReference.name]?.type as Clazz).fields
@@ -307,6 +319,18 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val expressions = functionCall.arguments.map { visit(it, builder, localVariables, clazz, function) }
                 LLVMBuildCall(builder, llvmFunction.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
                         functionCall.arguments.size, functionCall.toString())
+            }
+            is MethodCallExpression -> {
+                val methodCall = expression.methodCall
+                val variable = visit(ReferenceExpression(methodCall.variableReference), builder, localVariables, clazz, function)
+                val clazzName = (localVariables[methodCall.variableReference.name]?.type as? Clazz)?.name ?: "null"
+                val functionName = clazzName + "_" + methodCall.methodReference.name
+                val method = namedValues.filter { it.key == functionName }
+                        .values.filter { it.valueType == ValueType.FUNCTION }.last()
+                val expressions = methodCall.arguments.map { visit(it, builder, localVariables, clazz, function) }.toMutableList()
+                expressions.add(0, variable)
+                LLVMBuildCall(builder, method.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
+                        methodCall.arguments.size + 1, methodCall.toString())
             }
             is ClazzInitializerExpression -> {
                 val clazz = module.getNodeFromReference(expression.classReference, null) as? Clazz
