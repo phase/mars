@@ -1,5 +1,5 @@
 import io
 
-main () : Int
+main () : Int32
   printInt(7),
   0

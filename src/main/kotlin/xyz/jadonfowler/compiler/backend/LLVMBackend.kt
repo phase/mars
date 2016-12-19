@@ -285,8 +285,23 @@ class LLVMBackend(module: Module) : Backend(module) {
                 else LLVMConstInt(LLVMInt1Type(), 0, 0)
             }
             is BinaryOperator -> {
-                val A = visit(expression.expA, builder, localVariables, clazz, function)
-                val B = visit(expression.expB, builder, localVariables, clazz, function)
+                var A = visit(expression.expA, builder, localVariables, clazz, function)
+                var B = visit(expression.expB, builder, localVariables, clazz, function)
+
+                if (isLLVMType(A, LLVMIntegerTypeKind) && isLLVMType(B, LLVMIntegerTypeKind)) {
+                    // Higher bit integer types are declared after the lower ones,
+                    // so we can compare the addresses of the types
+                    val aType = LLVMTypeOf(A)
+                    val bType = LLVMTypeOf(B)
+                    if (aType.address() > bType.address()) {
+                        // a has more bits
+                        B = LLVMBuildZExt(builder, B, aType, expression.expB.toString() + " extended")
+                    } else {
+                        // b has more bits
+                        A = LLVMBuildZExt(builder, A, bType, expression.expA.toString() + " extended")
+                    }
+                }
+
                 when (expression.operator) {
                     Operator.PLUS -> LLVMBuildAdd(builder, A, B, expression.toString())
                     Operator.MINUS -> LLVMBuildSub(builder, A, B, expression.toString())
@@ -368,7 +383,11 @@ class LLVMBackend(module: Module) : Backend(module) {
         fun getLLVMType(type: Type): LLVMTypeRef? {
             return when (type) {
                 T_BOOL -> LLVMInt1Type()
-                T_INT -> LLVMInt32Type()
+                T_INT8 -> LLVMInt8Type()
+                T_INT16 -> LLVMInt16Type()
+                T_INT32 -> LLVMInt32Type()
+                T_INT64 -> LLVMInt64Type()
+                T_INT128 -> LLVMInt128Type()
                 T_VOID -> LLVMVoidType()
                 is Clazz -> {
                     if (!clazzTypes.containsKey(type.name)) {
@@ -384,6 +403,10 @@ class LLVMBackend(module: Module) : Backend(module) {
                 }
                 else -> null
             }
+        }
+
+        fun isLLVMType(v: LLVMValueRef, t: Int): Boolean {
+            return LLVMGetTypeKind(LLVMTypeOf(v)) == t
         }
 
     }

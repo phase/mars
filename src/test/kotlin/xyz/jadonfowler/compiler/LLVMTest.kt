@@ -101,4 +101,8 @@ class LLVMTest {
         testIR("classDeclaration")
     }
 
+    @Test fun differentIntTypes() {
+        testIR("differentIntTypes")
+    }
+
 }

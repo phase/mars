@@ -59,7 +59,7 @@ class JVMBackend(module: Module) : Backend(module) {
         fun getJVMType(type: Type): String {
             return when (type) {
                 T_VOID -> "V"
-                xyz.jadonfowler.compiler.ast.T_INT -> "I"
+                xyz.jadonfowler.compiler.ast.T_INT32 -> "I"
                 T_BOOL -> "Z"
                 T_STRING -> "Ljava/lang/String;"
                 is Function -> {

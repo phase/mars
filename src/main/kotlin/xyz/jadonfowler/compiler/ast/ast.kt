@@ -353,10 +353,10 @@ class ClazzInitializerExpression(val classReference: Reference, val arguments: L
  */
 enum class Operator(val string: String, val aType: Type = T_UNDEF, val bType: Type = T_UNDEF, val returnType: Type = T_UNDEF) {
     // Maths
-    PLUS("+", aType = T_INT, bType = T_INT, returnType = T_INT),
-    MINUS("-", aType = T_INT, bType = T_INT, returnType = T_INT),
-    MULTIPLY("*", aType = T_INT, bType = T_INT, returnType = T_INT),
-    DIVIDE("/", aType = T_INT, bType = T_INT, returnType = T_INT),
+    PLUS("+", aType = T_INT32, bType = T_INT32, returnType = T_INT32),
+    MINUS("-", aType = T_INT32, bType = T_INT32, returnType = T_INT32),
+    MULTIPLY("*", aType = T_INT32, bType = T_INT32, returnType = T_INT32),
+    DIVIDE("/", aType = T_INT32, bType = T_INT32, returnType = T_INT32),
 
     // Comparisons
     GREATER_THAN(">", returnType = T_BOOL),

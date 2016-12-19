@@ -17,7 +17,7 @@ class TypeCheckingTest {
         val module = compileString("inferGlobalVariableTypes", code)
         TypePass(module)
 
-        assertEquals(T_INT, module.globalVariables[0].type)
+        assertEquals(T_INT32, module.globalVariables[0].type)
 
         println(PrintPass(module).output)
     }
@@ -35,7 +35,7 @@ class TypeCheckingTest {
 
         assertEquals(3, module.globalFunctions[0].statements.size)
         val statements = module.globalFunctions[0].statements
-        assertEquals(T_INT, (statements[0] as VariableDeclarationStatement).variable.type)
+        assertEquals(T_INT32, (statements[0] as VariableDeclarationStatement).variable.type)
         assertEquals(T_STRING, (statements[1] as VariableDeclarationStatement).variable.type)
         assertEquals(T_BOOL, (statements[2] as VariableDeclarationStatement).variable.type)
 
@@ -53,7 +53,7 @@ class TypeCheckingTest {
         val module = compileString("inferFunctionReturnType", code)
         TypePass(module)
 
-        assertEquals(T_INT, module.globalFunctions[0].returnType)
+        assertEquals(T_INT32, module.globalFunctions[0].returnType)
 
         println(PrintPass(module).output)
     }
@@ -153,9 +153,9 @@ class TypeCheckingTest {
         val module = compileString("correctTypeMarkingAndInference", code)
         TypePass(module)
 
-        assertEquals(T_INT, module.globalClasses[0].methods[0].returnType)
-        assertEquals(T_INT, module.globalFunctions[0].returnType)
-        assertEquals(T_INT, ((module.globalFunctions[1].statements[3] as IfStatement).statements[0]
+        assertEquals(T_INT32, module.globalClasses[0].methods[0].returnType)
+        assertEquals(T_INT32, module.globalFunctions[0].returnType)
+        assertEquals(T_INT32, ((module.globalFunctions[1].statements[3] as IfStatement).statements[0]
                 as VariableDeclarationStatement).variable.type)
 
         println(PrintPass(module).output)
@@ -241,7 +241,7 @@ class TypeCheckingTest {
         val module = compileString("inferReturnTypeForFunctions", code)
         TypePass(module)
 
-        assertEquals(T_INT, (module.globalFunctions[1].statements[0] as VariableDeclarationStatement).variable.type)
+        assertEquals(T_INT32, (module.globalFunctions[1].statements[0] as VariableDeclarationStatement).variable.type)
 
         println(PrintPass(module).output)
     }
@@ -296,7 +296,7 @@ class TypeCheckingTest {
         val module = compileString("inferFieldTypes", code)
         TypePass(module)
 
-        assertEquals(T_INT, module.globalFunctions[0].returnType, "${module.globalFunctions[0].returnType} is not an Int!")
+        assertEquals(T_INT32, module.globalFunctions[0].returnType, "${module.globalFunctions[0].returnType} is not an Int!")
 
         println(PrintPass(module).output)
     }
@@ -328,7 +328,7 @@ class TypeCheckingTest {
         val module = compileString("propagateFormalTypes", code)
         TypePass(module)
 
-        assertEquals(T_INT, module.globalFunctions[0].returnType, "${module.globalFunctions[0].returnType} is not an Int!")
+        assertEquals(T_INT32, module.globalFunctions[0].returnType, "${module.globalFunctions[0].returnType} is not an Int!")
 
         println(PrintPass(module).output)
     }
@@ -341,9 +341,9 @@ class TypeCheckingTest {
         val module = compileString("propagateFormalTypes", code)
         TypePass(module)
 
-        assertEquals(T_INT, module.globalFunctions[0].formals[0].type, "${module.globalFunctions[0].formals[0].name} is not an Int!")
-        assertEquals(T_INT, module.globalFunctions[0].formals[1].type, "${module.globalFunctions[0].formals[1].name} is not an Int!")
-        assertEquals(T_INT, module.globalFunctions[0].returnType, "${module.globalFunctions[0].returnType} is not an Int!")
+        assertEquals(T_INT32, module.globalFunctions[0].formals[0].type, "${module.globalFunctions[0].formals[0].name} is not an Int!")
+        assertEquals(T_INT32, module.globalFunctions[0].formals[1].type, "${module.globalFunctions[0].formals[1].name} is not an Int!")
+        assertEquals(T_INT32, module.globalFunctions[0].returnType, "${module.globalFunctions[0].returnType} is not an Int!")
 
         println(PrintPass(module).output)
     }

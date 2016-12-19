@@ -10,7 +10,7 @@ class TypePass(module: Module) : Pass(module) {
      */
     fun getType(expression: Expression, localVariables: MutableMap<String, Variable>?): Type {
         return when (expression) {
-            is IntegerLiteral -> T_INT
+            is IntegerLiteral -> T_INT32
             is BinaryOperator -> {
                 val returnType = expression.operator.returnType
 
@@ -25,7 +25,7 @@ class TypePass(module: Module) : Pass(module) {
                                 is Variable -> {
                                     if (node.type == T_UNDEF)
                                         node.type = expectedTypeOfA
-                                    else if (node.type != expectedTypeOfA)
+                                    else if (node.type != expectedTypeOfA && (node.type !is IntType && expectedTypeOfA !is IntType))
                                         module.errors.add("${node.name} has the type ${node.type} but was " +
                                                 "expected to have the type $expectedTypeOfA.")
                                 }
@@ -36,7 +36,7 @@ class TypePass(module: Module) : Pass(module) {
                                 is Function -> {
                                     if (node.returnType == T_UNDEF)
                                         node.returnType = expectedTypeOfA
-                                    else if (node.returnType != expectedTypeOfA)
+                                    else if (node.returnType != expectedTypeOfA && (node.returnType !is IntType && expectedTypeOfA !is IntType))
                                         module.errors.add("${node.name} has the return type ${node.returnType} but was" +
                                                 "expected to have the type $expectedTypeOfA.")
                                 }
@@ -54,9 +54,9 @@ class TypePass(module: Module) : Pass(module) {
                             }
                         } else if (expA is FunctionCallExpression) {
                             val node = module.getNodeFromReference(expA.functionCall.functionReference, localVariables)
-                            when(node) {
+                            when (node) {
                                 is Function -> {
-                                    if(node.returnType == T_UNDEF)
+                                    if (node.returnType == T_UNDEF)
                                         node.returnType = getType(expB, localVariables)
                                 }
                             }
@@ -66,7 +66,10 @@ class TypePass(module: Module) : Pass(module) {
                 checkType(expA, expB, expression.operator.aType, expression.operator.bType)
                 checkType(expB, expA, expression.operator.bType, expression.operator.aType)
 
-                returnType
+                if (returnType is IntType) {
+                    getBiggestInt(getType(expA, localVariables) as IntType, getType(expB, localVariables) as IntType)
+                } else
+                    returnType
             }
             is TrueExpression, is FalseExpression -> {
                 T_BOOL

@@ -1,9 +1,9 @@
 import io
 
 class Account
-    var id : Int
+    var id : Int32
 
-    incrementId() : Int
+    incrementId() : Int32
         let previousId = id,
         id = id + 1,
         previousId
@@ -17,7 +17,7 @@ newAccount () : Account
     a.id = 7,
     a
 
-getId (a : Account) : Int
+getId (a : Account) : Int32
     a.id
 
 main ()

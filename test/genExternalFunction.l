@@ -1,1 +1,1 @@
-@extern printInt(a : Int) : Int 0
+@extern printInt(a : Int32) : Int32 0

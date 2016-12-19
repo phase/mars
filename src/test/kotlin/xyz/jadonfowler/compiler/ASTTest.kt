@@ -32,7 +32,7 @@ class ASTTest {
         assertEquals(T_BOOL, testFunction0.formals[2].type, "The third formal of testFunction0 should have a type of" +
                 " Bool.")
 
-        assertEquals("(Int -> String -> Bool -> Int)", testFunction0.toString())
+        assertEquals("(Int32 -> String -> Bool -> Int32)", testFunction0.toString())
 
         println(PrintPass(module).output)
     }

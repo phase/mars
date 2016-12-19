@@ -1,4 +1,4 @@
 import thing
 
-test () : Int
+test () : Int32
     add(7, 8)
