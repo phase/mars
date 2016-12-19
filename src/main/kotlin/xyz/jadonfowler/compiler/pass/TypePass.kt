@@ -17,35 +17,54 @@ class TypePass(module: Module) : Pass(module) {
                 val expA = expression.expA
                 val expB = expression.expB
 
-                val checkType = { exp: Expression, expectedType: Type ->
-                    if (expectedType != T_UNDEF) {
-                        if (exp is ReferenceExpression) {
-                            val node = module.getNodeFromReference(exp.reference, localVariables)
+                val checkType = { expA: Expression, expB: Expression, expectedTypeOfA: Type, expectedTypeOfB: Type ->
+                    if (expectedTypeOfA != T_UNDEF) {
+                        if (expA is ReferenceExpression) {
+                            val node = module.getNodeFromReference(expA.reference, localVariables)
                             when (node) {
                                 is Variable -> {
                                     if (node.type == T_UNDEF)
-                                        node.type = expectedType
-                                    else if (node.type != expectedType)
+                                        node.type = expectedTypeOfA
+                                    else if (node.type != expectedTypeOfA)
                                         module.errors.add("${node.name} has the type ${node.type} but was " +
-                                                "expected to have the type $expectedType.")
+                                                "expected to have the type $expectedTypeOfA.")
                                 }
                             }
-                        } else if (exp is FunctionCallExpression) {
-                            val node = module.getNodeFromReference(exp.functionCall.functionReference, localVariables)
+                        } else if (expA is FunctionCallExpression) {
+                            val node = module.getNodeFromReference(expA.functionCall.functionReference, localVariables)
                             when (node) {
                                 is Function -> {
                                     if (node.returnType == T_UNDEF)
-                                        node.returnType = expectedType
-                                    else if (node.returnType != expectedType)
+                                        node.returnType = expectedTypeOfA
+                                    else if (node.returnType != expectedTypeOfA)
                                         module.errors.add("${node.name} has the return type ${node.returnType} but was" +
-                                                "expected to have the type $expectedType.")
+                                                "expected to have the type $expectedTypeOfA.")
+                                }
+                            }
+                        }
+                    } else if (expectedTypeOfB == T_UNDEF) {
+                        if (expA is ReferenceExpression) {
+                            val node = module.getNodeFromReference(expA.reference, localVariables)
+                            when (node) {
+                                is Variable -> {
+                                    if (node.type == T_UNDEF) {
+                                        node.type = getType(expB, localVariables)
+                                    }
+                                }
+                            }
+                        } else if (expA is FunctionCallExpression) {
+                            val node = module.getNodeFromReference(expA.functionCall.functionReference, localVariables)
+                            when(node) {
+                                is Function -> {
+                                    if(node.returnType == T_UNDEF)
+                                        node.returnType = getType(expB, localVariables)
                                 }
                             }
                         }
                     }
                 }
-                checkType(expA, expression.operator.aType)
-                checkType(expB, expression.operator.bType)
+                checkType(expA, expB, expression.operator.aType, expression.operator.bType)
+                checkType(expB, expA, expression.operator.bType, expression.operator.aType)
 
                 returnType
             }

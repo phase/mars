@@ -4,6 +4,9 @@ class Account
     incrementId() : Int
         id = id + 1,
         id
+
+    isAccount(i)
+        id == i
 ;
 
 newAccount () : Account

@@ -23,3 +23,11 @@ entry:
   store i32 %"(id + 1)", i32* %id, align 4
   ret i32 %"(id + 1)"
 }
+
+define i1 @Account_isAccount(%Account*, i32) {
+entry:
+  %id = getelementptr inbounds %Account, %Account* %0, i64 0, i32 0
+  %id1 = load i32, i32* %id, align 4
+  %"(id == i)" = icmp eq i32 %id1, %1
+  ret i1 %"(id == i)"
+}
