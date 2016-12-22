@@ -100,7 +100,17 @@ class LLVMBackend(module: Module) : Backend(module) {
             val argumentTypes: List<LLVMTypeRef> = it.formals.map { getLLVMType(it.type)!! }
             val llvmFunctionType: LLVMTypeRef = LLVMFunctionType(getLLVMType(it.returnType),
                     PointerPointer<LLVMTypeRef>(*argumentTypes.toTypedArray()), argumentTypes.size, 0)
-            val llvmFunction: LLVMValueRef = LLVMAddFunction(llvmModule, it.name, llvmFunctionType)
+
+            val externAttribute: Attribute? = if (it.attributes.isEmpty()) null
+            else it.attributes.filter { it.name == "extern" }.last()
+
+            val llvmFunctionName = if (externAttribute != null) {
+                if (externAttribute.values.isNotEmpty())
+                    externAttribute.values[0]
+                else it.name
+            } else it.name
+
+            val llvmFunction: LLVMValueRef = LLVMAddFunction(llvmModule, llvmFunctionName, llvmFunctionType)
             namedValues.put(it.name, ValueContainer(ValueType.FUNCTION, llvmFunction, it.returnType))
         }
     }
@@ -135,6 +145,9 @@ class LLVMBackend(module: Module) : Backend(module) {
 
 
     fun visit(function: Function, localVariables: MutableMap<String, ValueContainer>, clazz: Clazz? = null) {
+        val externAttribute: Attribute? = if (function.attributes.isEmpty()) null
+        else function.attributes.filter { it.name == "extern" }.last()
+
         // Get LLVM Types of Arguments
         val argumentTypes: List<LLVMTypeRef> = function.formals.map {
             if (it.type is Clazz) {
@@ -151,12 +164,18 @@ class LLVMBackend(module: Module) : Backend(module) {
 
         val llvmFunctionType: LLVMTypeRef = LLVMFunctionType(returnType,
                 PointerPointer<LLVMTypeRef>(*argumentTypes.toTypedArray()), argumentTypes.size, 0)
-        // Add the Function to the Module
-        val llvmFunction: LLVMValueRef = LLVMAddFunction(llvmModule, function.name, llvmFunctionType)
+
+        val llvmFunctionName = if (externAttribute != null) {
+            if (externAttribute.values.isNotEmpty())
+                externAttribute.values[0]
+            else function.name
+        } else function.name
+
+        val llvmFunction: LLVMValueRef = LLVMAddFunction(llvmModule, llvmFunctionName, llvmFunctionType)
         namedValues.put(function.name, ValueContainer(ValueType.FUNCTION, llvmFunction, function.returnType))
 
         // Don't build the function if it is externally defined
-        if (function.attributes.map { it.name }.contains("extern")) return
+        if (externAttribute != null) return
 
         LLVMSetFunctionCallConv(llvmFunction, LLVMCCallConv)
 

@@ -80,7 +80,7 @@ class Import(val reference: Reference) : Node
 /**
  * Attributes can be put on various declarations
  */
-class Attribute(val name: String) : Node
+class Attribute(val name: String, val values: List<String>) : Node
 
 /**
  * Declaration that can be accessed outside the Module

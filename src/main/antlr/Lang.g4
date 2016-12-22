@@ -28,7 +28,7 @@ attributeList
     | attribute attributeList
     ;
 
-attribute: '@' ID;
+attribute: '@' ID ('(' ID (',' ID)* ')')?;
 
 variableReassignment: ID '=' expression;
 

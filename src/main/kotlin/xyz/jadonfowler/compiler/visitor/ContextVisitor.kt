@@ -98,7 +98,11 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
     }
 
     override fun visitAttribute(ctx: LangParser.AttributeContext?): Attribute {
-        return Attribute(ctx?.ID()?.symbol?.text.orEmpty())
+        val name = ctx?.ID(0)?.symbol?.text.orEmpty()
+        val values: MutableList<String> = mutableListOf()
+        for (i in 1..ctx?.ID()?.size!! - 1)
+            values.add(ctx?.ID(i)?.symbol?.text.orEmpty())
+        return Attribute(name, values)
     }
 
     fun statementListFromStatementListContext(statementListContext: LangParser.StatementListContext?): List<Statement> {

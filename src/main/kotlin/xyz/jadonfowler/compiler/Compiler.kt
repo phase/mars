@@ -88,16 +88,24 @@ fun main(args: Array<String>) {
 
                 // Compile LLVM specific Std Modules
                 val runtime = Runtime.getRuntime()
+
                 val stdLlvmDir = File("std/llvm/")
                 if (!stdLlvmDir.exists() || !stdLlvmDir.isDirectory)
                     stdLlvmDir.mkdirs()
-                val stdLlvmFiles = stdLlvmDir.listFiles().map { it.canonicalPath }.joinToString(separator = " ")
-                val llcProcess = runtime.exec("llc $stdLlvmFiles -filetype=obj -o bin/std_llvm.o")
-                llcProcess.waitFor()
+                val stdLlvmBin = File("bin/llvm")
+                if (!stdLlvmBin.exists())
+                    stdLlvmBin.mkdirs()
 
+                val stdLlvmFiles = stdLlvmDir.listFiles().map { it.canonicalPath }
+                stdLlvmFiles.forEach {
+                    val llcProcess = runtime.exec("llc $it -filetype=obj -o bin/llvm/$it.o")
+                    llcProcess.waitFor()
+                }
                 // Link object files together
                 val linkCommand = modules.map { "bin/${it.name}.o" }.toMutableList()
-                linkCommand.add("bin/std_llvm.o")
+                stdLlvmFiles.forEach {
+                    linkCommand.add(it)
+                }
                 linkCommand.add(0, "clang")
                 linkCommand.add("-o")
                 linkCommand.add("bin/exec/${modules[0].name}")

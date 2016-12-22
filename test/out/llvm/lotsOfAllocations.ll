@@ -6,6 +6,8 @@ declare void @free(i8*)
 
 declare i32 @printInt(i32)
 
+declare i32 @castDownAndPrintInt64(i64)
+
 define i32 @Account_incrementId(%Account*) {
 entry:
   %id = getelementptr inbounds %Account, %Account* %0, i64 0, i32 0
