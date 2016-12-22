@@ -23,6 +23,25 @@ class Module(val name: String, val imports: List<Import>, val globalVariables: L
                 || globalClasses.map { it.name }.contains(reference.name)
     }
 
+    fun getFunctionFromReference(reference: Reference): Function? {
+        val name = reference.name
+        val thingsWithName: List<Function> = globalFunctions.filter { it.name == name }
+        if (thingsWithName.isNotEmpty())
+            return thingsWithName.last()
+
+        // Go through imports
+        val imports = imports.map { it.reference.name }
+        globalModules.forEach {
+            if (imports.contains(it.name)) {
+                val function = it.getFunctionFromReference(reference)
+                if (function != null)
+                    return function
+            }
+        }
+
+        return null
+    }
+
     fun getNodeFromReference(reference: Reference, localVariables: MutableMap<String, Variable>?): Node? {
         val name = reference.name
         val thingsWithName: MutableList<Node> = mutableListOf()

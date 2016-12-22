@@ -2,6 +2,8 @@
 
 declare i8* @malloc(i64)
 
+declare void @free(i8*)
+
 declare i32 @printInt(i32)
 
 define i32 @Account_incrementId(%Account*) {
@@ -58,5 +60,7 @@ entry:
   %"printInt(previousId)" = call i32 @printInt(i32 %"a.incrementId()")
   %"getId(a)" = call i32 @getId(%Account* %"newAccount()")
   %"printInt(getId(a))" = call i32 @printInt(i32 %"getId(a)")
+  %bitPointerToa = bitcast %Account* %"newAccount()" to i8*
+  call void @free(i8* %bitPointerToa)
   ret i32 0
 }

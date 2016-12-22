@@ -105,4 +105,8 @@ class LLVMTest {
         testIR("differentIntTypes")
     }
 
+    @Test fun lotsOfAllocations() {
+        testIR("lotsOfAllocations")
+    }
+
 }

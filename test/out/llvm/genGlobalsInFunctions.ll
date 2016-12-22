@@ -4,6 +4,8 @@
 
 declare i8* @malloc(i64)
 
+declare void @free(i8*)
+
 define i32 @genGlobalsInFunctions(i32, i32, i32, i32) {
 entry:
   %"(42 + x)" = add i32 %2, 42
