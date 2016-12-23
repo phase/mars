@@ -11,6 +11,7 @@ class TypePass(module: Module) : Pass(module) {
     fun getType(expression: Expression, localVariables: MutableMap<String, Variable>?): Type {
         return when (expression) {
             is IntegerLiteral -> T_INT32
+            is FloatLiteral -> expression.type
             is BinaryOperator -> {
                 val returnType = expression.operator.returnType
 
@@ -68,6 +69,8 @@ class TypePass(module: Module) : Pass(module) {
 
                 if (returnType is IntType) {
                     getBiggestInt(getType(expA, localVariables) as IntType, getType(expB, localVariables) as IntType)
+                } else if(returnType is FloatType) {
+                    getBiggestFloat(getType(expA, localVariables) as FloatType, getType(expB, localVariables) as FloatType)
                 } else
                     returnType
             }

@@ -321,6 +321,11 @@ class IntegerLiteral(val value: Int) : Expression() {
     override fun toString(): String = value.toString()
 }
 
+class FloatLiteral(val value: Double, val type: FloatType) : Expression() {
+    override fun accept(visitor: Visitor) = visitor.visit(this)
+    override fun toString(): String = value.toString()
+}
+
 /**
  * StringLiterals are an Expression wrapper for Strings.
  */
@@ -372,10 +377,15 @@ class ClazzInitializerExpression(val classReference: Reference, val arguments: L
  */
 enum class Operator(val string: String, val aType: Type = T_UNDEF, val bType: Type = T_UNDEF, val returnType: Type = T_UNDEF) {
     // Maths
-    PLUS("+", aType = T_INT32, bType = T_INT32, returnType = T_INT32),
-    MINUS("-", aType = T_INT32, bType = T_INT32, returnType = T_INT32),
-    MULTIPLY("*", aType = T_INT32, bType = T_INT32, returnType = T_INT32),
-    DIVIDE("/", aType = T_INT32, bType = T_INT32, returnType = T_INT32),
+    PLUS_INT("+", aType = T_INT32, bType = T_INT32, returnType = T_INT32),
+    MINUS_INT("-", aType = T_INT32, bType = T_INT32, returnType = T_INT32),
+    MULTIPLY_INT("*", aType = T_INT32, bType = T_INT32, returnType = T_INT32),
+    DIVIDE_INT("/", aType = T_INT32, bType = T_INT32, returnType = T_INT32),
+
+    PLUS_FLOAT("+.", aType = T_FLOAT32, bType = T_FLOAT32, returnType = T_FLOAT32),
+    MINUS_FLOAT("-.", aType = T_FLOAT32, bType = T_FLOAT32, returnType = T_FLOAT32),
+    MULTIPLY_FLOAT("*.", aType = T_FLOAT32, bType = T_FLOAT32, returnType = T_FLOAT32),
+    DIVIDE_FLOAT("/.", aType = T_FLOAT32, bType = T_FLOAT32, returnType = T_FLOAT32),
 
     // Comparisons
     GREATER_THAN(">", returnType = T_BOOL),

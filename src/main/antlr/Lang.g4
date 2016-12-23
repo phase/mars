@@ -71,8 +71,8 @@ expressionList
 expression
     : ('-'|'+') expression
     | expression ':' expression
-    | expression ('*'|'/') expression
-    | expression ('+'|'-') expression
+    | expression ('*'|'/'|'*.'|'/.') expression
+    | expression ('+'|'-'|'-.'|'+.') expression
     | expression ('>'|'>='|'<'|'<='|'=='|'!=') expression
     | '!' expression
     | expression ('&'|'&&') expression
@@ -115,9 +115,9 @@ INT: DIGIT+ [Ll]?;
 fragment HEXDIGIT: ('0'..'9'|'a'..'f'|'A'..'F');
 
 FLOAT
-    : DIGIT+ '.' DIGIT* EXP? [Ll]?
-    | DIGIT+ EXP? [Ll]?
-    | '.' DIGIT+ EXP? [Ll]?
+    : DIGIT+ '.' DIGIT* EXP? 'd'?
+    | DIGIT+ EXP? 'd'?
+    | '.' DIGIT+ EXP? 'd'?
     ;
 
 fragment DIGIT: '0'..'9';

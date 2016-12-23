@@ -176,6 +176,10 @@ class PrintPass(module: Module) : Pass(module) {
         printI(integerLiteral.value)
     }
 
+    override fun visit(floatLiteral: FloatLiteral) {
+        printI(floatLiteral.value)
+    }
+
     override fun visit(stringLiteral: StringLiteral) {
         printI("\"${stringLiteral.value}\"")
     }

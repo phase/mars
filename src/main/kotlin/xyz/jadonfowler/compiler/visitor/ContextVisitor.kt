@@ -267,6 +267,13 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
             return visitClassInitializer(ctx?.classInitializer())
         } else if (ctx?.INT() != null) {
             return IntegerLiteral(ctx?.INT()?.text?.toInt()!!)
+        } else if (ctx?.FLOAT() != null) {
+            val text = ctx?.FLOAT()?.text.orEmpty()
+            if (text.endsWith("d"))
+                // Remove double suffix
+                return FloatLiteral(text.substring(0..text.length - 2).toDouble(), T_FLOAT64)
+            else
+                return FloatLiteral(text.toDouble(), T_FLOAT32)
         } else if (ctx?.ID() != null) {
             val id = ctx?.ID()?.symbol?.text.orEmpty()
             return ReferenceExpression(Reference(id))

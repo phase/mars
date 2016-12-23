@@ -311,7 +311,7 @@ class TypeCheckingTest {
         test (thing : Test)
             thing.a = thing
         """
-        val module = compileString("inferFieldTypes", code)
+        val module = compileString("incorrectFieldSetterType", code)
 
         TypePass(module)
         assertTrue(module.errors.size > 0)
@@ -338,12 +338,55 @@ class TypeCheckingTest {
         add (a, b)
             a + b
         """
-        val module = compileString("propagateFormalTypes", code)
+        val module = compileString("inferFormalTypes", code)
         TypePass(module)
 
         assertEquals(T_INT32, module.globalFunctions[0].formals[0].type, "${module.globalFunctions[0].formals[0].name} is not an Int!")
         assertEquals(T_INT32, module.globalFunctions[0].formals[1].type, "${module.globalFunctions[0].formals[1].name} is not an Int!")
         assertEquals(T_INT32, module.globalFunctions[0].returnType, "${module.globalFunctions[0].returnType} is not an Int!")
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun floatTypes() {
+        val code = """
+        add (a, b)
+            a +. b
+        """
+        val module = compileString("floatTypes", code)
+        TypePass(module)
+
+        assertEquals(T_FLOAT32, module.globalFunctions[0].formals[0].type, "${module.globalFunctions[0].formals[0].name} is not a Float32!")
+        assertEquals(T_FLOAT32, module.globalFunctions[0].formals[1].type, "${module.globalFunctions[0].formals[1].name} is not a Float32!")
+        assertEquals(T_FLOAT32, module.globalFunctions[0].returnType, "${module.globalFunctions[0].returnType} is not a Float32!")
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun biggerFloatTypes() {
+        val code = """
+        add (a : Float64, b : Float128)
+            a +. b
+        """
+        val module = compileString("biggerFloatTypes", code)
+        TypePass(module)
+
+        assertEquals(T_FLOAT64, module.globalFunctions[0].formals[0].type, "${module.globalFunctions[0].formals[0].name} is not a Float32!")
+        assertEquals(T_FLOAT128, module.globalFunctions[0].formals[1].type, "${module.globalFunctions[0].formals[1].name} is not a Float32!")
+        assertEquals(T_FLOAT128, module.globalFunctions[0].returnType, "${module.globalFunctions[0].returnType} is not a Float32!")
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun inferFloatLiterals() {
+        val code = """
+        thing ()
+            52.76d +. 215.0
+        """
+        val module = compileString("inferFloatLiterals", code)
+        TypePass(module)
+
+        assertEquals(T_FLOAT64, module.globalFunctions[0].returnType, "${module.globalFunctions[0].returnType} is not a Float32!")
 
         println(PrintPass(module).output)
     }

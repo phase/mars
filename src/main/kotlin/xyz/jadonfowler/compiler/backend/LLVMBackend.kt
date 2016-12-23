@@ -375,10 +375,10 @@ class LLVMBackend(module: Module) : Backend(module) {
                 }
 
                 when (expression.operator) {
-                    Operator.PLUS -> LLVMBuildAdd(builder, A, B, expression.toString())
-                    Operator.MINUS -> LLVMBuildSub(builder, A, B, expression.toString())
-                    Operator.MULTIPLY -> LLVMBuildMul(builder, A, B, expression.toString())
-                    Operator.DIVIDE -> LLVMBuildSDiv(builder, A, B, expression.toString())
+                    Operator.PLUS_INT -> LLVMBuildAdd(builder, A, B, expression.toString())
+                    Operator.MINUS_INT -> LLVMBuildSub(builder, A, B, expression.toString())
+                    Operator.MULTIPLY_INT -> LLVMBuildMul(builder, A, B, expression.toString())
+                    Operator.DIVIDE_INT -> LLVMBuildSDiv(builder, A, B, expression.toString())
                     Operator.EQUALS -> LLVMBuildICmp(builder, LLVMIntEQ, A, B, expression.toString())
                     Operator.NOT_EQUAL -> LLVMBuildICmp(builder, LLVMIntNE, A, B, expression.toString())
                     Operator.GREATER_THAN -> LLVMBuildICmp(builder, LLVMIntSGT, A, B, expression.toString())

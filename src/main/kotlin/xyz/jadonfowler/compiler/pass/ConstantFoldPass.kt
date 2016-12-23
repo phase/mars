@@ -7,10 +7,10 @@ class ConstantFoldPass(module: Module) : Pass(module) {
 
     fun foldIntegerLiterals(originalExpression: Expression, a: IntegerLiteral, b: IntegerLiteral, operator: Operator): Expression {
         return when (operator) {
-            Operator.PLUS -> IntegerLiteral(a.value + b.value)
-            Operator.MINUS -> IntegerLiteral(a.value - b.value)
-            Operator.MULTIPLY -> IntegerLiteral(a.value * b.value)
-            Operator.DIVIDE -> IntegerLiteral(a.value / b.value)
+            Operator.PLUS_INT -> IntegerLiteral(a.value + b.value)
+            Operator.MINUS_INT -> IntegerLiteral(a.value - b.value)
+            Operator.MULTIPLY_INT -> IntegerLiteral(a.value * b.value)
+            Operator.DIVIDE_INT -> IntegerLiteral(a.value / b.value)
             else -> originalExpression
         }
     }

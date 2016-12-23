@@ -56,6 +56,9 @@ open class Pass(module: Module) : Visitor(module) {
     override fun visit(integerLiteral: IntegerLiteral) {
     }
 
+    override fun visit(floatLiteral: FloatLiteral) {
+    }
+
     override fun visit(referenceExpression: ReferenceExpression) {
     }
 
