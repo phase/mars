@@ -20,8 +20,8 @@ class LLVMTest {
         val actualIR = testName.map { File("bin/$it.ll").readLines().joinToString("\n") }
         actualIR.forEach(::println)
 
-        // endsWith is used to ignore header information, which is different on every platform
-        actualIR.forEachIndexed { i, s -> assertTrue(s.endsWith(expectedIR[i]), "Wrong IR emitted!\n\nExpected:\n\n${expectedIR[i]}" +
+        // contains is used to ignore header information, which is different on every platform
+        actualIR.forEachIndexed { i, s -> assertTrue(s.contains(expectedIR[i]), "Wrong IR emitted!\n\nExpected:\n\n${expectedIR[i]}" +
                 "\n\n(Note: Header information is ignored.)\n") }
     }
 
@@ -71,10 +71,6 @@ class LLVMTest {
 
     @Test fun genRecursiveCall() {
         testIR("genRecursiveCall")
-    }
-
-    @Test fun genImportedDeclarations() {
-        testIR("genImportedDeclarations")
     }
 
     @Test fun genRecursiveImport() {
