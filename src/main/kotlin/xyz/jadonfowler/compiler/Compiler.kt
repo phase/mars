@@ -107,6 +107,7 @@ fun main(args: Array<String>) {
                     linkCommand.add(it)
                 }
                 linkCommand.add(0, "clang")
+                linkCommand.add("-lm")
                 linkCommand.add("-o")
                 linkCommand.add("bin/exec/${modules[0].name}")
 

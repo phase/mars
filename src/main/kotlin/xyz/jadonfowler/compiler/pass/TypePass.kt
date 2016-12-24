@@ -26,7 +26,7 @@ class TypePass(module: Module) : Pass(module) {
                                 is Variable -> {
                                     if (node.type == T_UNDEF)
                                         node.type = expectedTypeOfA
-                                    else if (node.type != expectedTypeOfA && (node.type !is IntType && expectedTypeOfA !is IntType))
+                                    else if (node.type != expectedTypeOfA && (node.type !is NumericType && expectedTypeOfA !is NumericType))
                                         module.errors.add("${node.name} has the type ${node.type} but was " +
                                                 "expected to have the type $expectedTypeOfA.")
                                 }
@@ -37,7 +37,7 @@ class TypePass(module: Module) : Pass(module) {
                                 is Function -> {
                                     if (node.returnType == T_UNDEF)
                                         node.returnType = expectedTypeOfA
-                                    else if (node.returnType != expectedTypeOfA && (node.returnType !is IntType && expectedTypeOfA !is IntType))
+                                    else if (node.returnType != expectedTypeOfA && (node.returnType !is NumericType && expectedTypeOfA !is NumericType))
                                         module.errors.add("${node.name} has the return type ${node.returnType} but was" +
                                                 "expected to have the type $expectedTypeOfA.")
                                 }

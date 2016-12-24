@@ -272,6 +272,8 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
             if (text.endsWith("d"))
                 // Remove double suffix
                 return FloatLiteral(text.substring(0..text.length - 2).toDouble(), T_FLOAT64)
+            else if (text.endsWith("q"))
+                return FloatLiteral(text.substring(0..text.length - 2).toDouble(), T_FLOAT128)
             else
                 return FloatLiteral(text.toDouble(), T_FLOAT32)
         } else if (ctx?.ID() != null) {

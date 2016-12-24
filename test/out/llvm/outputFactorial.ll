@@ -1,7 +1,3 @@
-declare i32 @printInt(i32)
-
-declare i32 @castDownAndPrintInt64(i64)
-
 define i32 @fac(i32) {
 entry:
   %"(n <= 1)" = icmp slt i32 %0, 2

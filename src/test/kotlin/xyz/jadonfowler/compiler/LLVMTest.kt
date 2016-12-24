@@ -105,4 +105,8 @@ class LLVMTest {
         testIR("lotsOfAllocations")
     }
 
+    @Test fun differentFloatTypes() {
+        testIR("differentFloatTypes")
+    }
+
 }

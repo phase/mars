@@ -115,9 +115,9 @@ INT: DIGIT+ [Ll]?;
 fragment HEXDIGIT: ('0'..'9'|'a'..'f'|'A'..'F');
 
 FLOAT
-    : DIGIT+ '.' DIGIT* EXP? 'd'?
-    | DIGIT+ EXP? 'd'?
-    | '.' DIGIT+ EXP? 'd'?
+    : DIGIT+ '.' DIGIT* EXP? [dq]?
+    | DIGIT+ EXP? [dq]?
+    | '.' DIGIT+ EXP? [dq]?
     ;
 
 fragment DIGIT: '0'..'9';

@@ -8,6 +8,12 @@ declare i32 @printInt(i32)
 
 declare i32 @castDownAndPrintInt64(i64)
 
+declare i32 @printFloat32(float)
+
+declare i32 @printFloat64(double)
+
+declare i32 @castDownAndPrintFloat128(fp128)
+
 define i32 @Account_incrementId(%Account*) {
 entry:
   %id = getelementptr inbounds %Account, %Account* %0, i64 0, i32 0

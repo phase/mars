@@ -199,7 +199,6 @@ class LLVMBackend(module: Module) : Backend(module) {
         // Build the statements
         function.statements.forEach { visit(it, builder, llvmFunction, localVariables, clazz, allocatedClasses) }
 
-
         val returnName = if (function.expression != null && function.expression is ReferenceExpression)
             (function.expression as ReferenceExpression).reference.name
         else ""
@@ -352,6 +351,7 @@ class LLVMBackend(module: Module) : Backend(module) {
     fun visit(expression: Expression, builder: LLVMBuilderRef, localVariables: MutableMap<String, ValueContainer>, clazz: Clazz?, function: LLVMValueRef?): LLVMValueRef {
         return when (expression) {
             is IntegerLiteral -> LLVMConstInt(LLVMInt32Type(), expression.value.toLong(), 0)
+            is FloatLiteral -> LLVMConstReal(getLLVMType(expression.type), expression.value)
             is BooleanExpression -> {
                 if (expression.value) LLVMConstInt(LLVMInt1Type(), 1, 0)
                 else LLVMConstInt(LLVMInt1Type(), 0, 0)
@@ -372,6 +372,18 @@ class LLVMBackend(module: Module) : Backend(module) {
                         // b has more bits
                         A = LLVMBuildZExt(builder, A, bType, expression.expA.toString() + " extended")
                     }
+                } else if (isLLVMType(A, LLVMFloatTypeKind, LLVMDoubleTypeKind, LLVMFP128TypeKind)
+                        && isLLVMType(B, LLVMFloatTypeKind, LLVMDoubleTypeKind, LLVMFP128TypeKind)) {
+                    val aType = LLVMTypeOf(A)
+                    val bType = LLVMTypeOf(B)
+
+                    if (aType.address() > bType.address()) {
+                        // a has more bits
+                        B = LLVMBuildFPExt(builder, B, aType, expression.expB.toString() + " extended")
+                    } else {
+                        // b has more bits
+                        A = LLVMBuildFPExt(builder, A, bType, expression.expA.toString() + " extended")
+                    }
                 }
 
                 when (expression.operator) {
@@ -379,6 +391,10 @@ class LLVMBackend(module: Module) : Backend(module) {
                     Operator.MINUS_INT -> LLVMBuildSub(builder, A, B, expression.toString())
                     Operator.MULTIPLY_INT -> LLVMBuildMul(builder, A, B, expression.toString())
                     Operator.DIVIDE_INT -> LLVMBuildSDiv(builder, A, B, expression.toString())
+                    Operator.PLUS_FLOAT -> LLVMBuildFAdd(builder, A, B, expression.toString())
+                    Operator.MINUS_FLOAT -> LLVMBuildFSub(builder, A, B, expression.toString())
+                    Operator.MULTIPLY_FLOAT -> LLVMBuildFMul(builder, A, B, expression.toString())
+                    Operator.DIVIDE_FLOAT -> LLVMBuildFDiv(builder, A, B, expression.toString())
                     Operator.EQUALS -> LLVMBuildICmp(builder, LLVMIntEQ, A, B, expression.toString())
                     Operator.NOT_EQUAL -> LLVMBuildICmp(builder, LLVMIntNE, A, B, expression.toString())
                     Operator.GREATER_THAN -> LLVMBuildICmp(builder, LLVMIntSGT, A, B, expression.toString())
@@ -426,9 +442,9 @@ class LLVMBackend(module: Module) : Backend(module) {
                         methodCall.arguments.size + 1, methodCall.toString())
             }
             is ClazzInitializerExpression -> {
-                val clazz = module.getNodeFromReference(expression.classReference, null) as? Clazz
-                if (clazz != null) {
-                    val sizeOfClazz = clazz.fields.map {
+                val clazzOfExpression = module.getNodeFromReference(expression.classReference, null) as? Clazz
+                if (clazzOfExpression != null) {
+                    val sizeOfClazz = clazzOfExpression.fields.map {
                         when (it.type) {
                             T_INT8 -> 1L
                             T_INT16 -> 2L
@@ -442,7 +458,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                     val mallocMemory = LLVMBuildCall(builder, namedValues["malloc"]!!.llvmValueRef,
                             PointerPointer<LLVMValueRef>(*arrayOf(LLVMConstInt(LLVMInt64Type(), sizeOfClazz, 0))), 1, "malloc($sizeOfClazz)")
                     // Cast the i8* that malloc returns to a pointer of the Class we want
-                    LLVMBuildBitCast(builder, mallocMemory, LLVMPointerType(getLLVMType(clazz), 0), "castTo${clazz.name}")
+                    LLVMBuildBitCast(builder, mallocMemory, LLVMPointerType(getLLVMType(clazzOfExpression), 0), "castTo${clazzOfExpression.name}")
                 } else LLVMConstInt(LLVMInt32Type(), 0, 0)
             }
             is FieldGetterExpression -> {
@@ -469,6 +485,9 @@ class LLVMBackend(module: Module) : Backend(module) {
                 T_INT32 -> LLVMInt32Type()
                 T_INT64 -> LLVMInt64Type()
                 T_INT128 -> LLVMInt128Type()
+                T_FLOAT32 -> LLVMFloatType()
+                T_FLOAT64 -> LLVMDoubleType()
+                T_FLOAT128 -> LLVMFP128Type()
                 T_VOID -> LLVMVoidType()
                 is Clazz -> {
                     if (!clazzTypes.containsKey(type.name)) {
@@ -486,8 +505,10 @@ class LLVMBackend(module: Module) : Backend(module) {
             }
         }
 
-        fun isLLVMType(v: LLVMValueRef, t: Int): Boolean {
-            return LLVMGetTypeKind(LLVMTypeOf(v)) == t
+        fun isLLVMType(v: LLVMValueRef, vararg t: Int): Boolean {
+            val typeKind = LLVMGetTypeKind(LLVMTypeOf(v))
+            t.forEach { if (it == typeKind) return true }
+            return false
         }
 
     }
