@@ -109,4 +109,8 @@ class LLVMTest {
         testIR("differentFloatTypes")
     }
 
+    @Test fun elifBranching() {
+        testIR("elifBranching")
+    }
+
 }

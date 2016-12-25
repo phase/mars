@@ -228,7 +228,7 @@ open class CheckedBlock(var exp: Expression, statements: List<Statement>) : Bloc
  *           - sD
  * </pre>
  */
-class IfStatement(exp: Expression, statements: List<Statement>, val elseStatement: IfStatement?) : CheckedBlock(exp, statements) {
+class IfStatement(exp: Expression, statements: List<Statement>, var elseStatement: IfStatement?) : CheckedBlock(exp, statements) {
     override fun accept(visitor: Visitor) = visitor.visit(this)
 }
 

@@ -217,7 +217,7 @@ class TypePass(module: Module) : Pass(module) {
                 assert(T_BOOL == getType(statement.exp, localVariables))
                 statement.statements.forEach { visit(it, localVariables) }
                 if (statement.elseStatement != null)
-                    visit(statement.elseStatement, localVariables)
+                    visit(statement.elseStatement!!, localVariables)
             }
             is WhileStatement -> {
                 visit(statement.exp, localVariables)

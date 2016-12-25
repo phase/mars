@@ -44,11 +44,13 @@ statement
     ;
 
 blockStatement
-    : 'if' expression statementList ';'
-    | 'if' expression statementList 'else' statementList ';'
+    : 'if' expression statementList elif* elseStatement? ';'
     | 'for' ID 'in' expression statementList ';'
     | 'while' expression statementList ';'
     ;
+
+elif: 'elif' expression statementList;
+elseStatement: 'else' statementList;
 
 statementList
     :

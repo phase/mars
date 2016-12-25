@@ -292,7 +292,7 @@ class LLVMBackend(module: Module) : Backend(module) {
 
                 LLVMPositionBuilderAtEnd(builder, falseBlock)
                 if (statement.elseStatement != null)
-                    visit(statement.elseStatement, builder, llvmFunction, localVariables, clazz, allocatedClasses)
+                    visit(statement.elseStatement!!, builder, llvmFunction, localVariables, clazz, allocatedClasses)
                 LLVMBuildBr(builder, mergeBlock)
 
                 LLVMPositionBuilderAtEnd(builder, mergeBlock)
@@ -320,7 +320,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                         .values.filter { it.valueType == ValueType.FUNCTION }.last()
                 val expressions = functionCall.arguments.map { visit(it, builder, localVariables, clazz, llvmFunction) }
                 LLVMBuildCall(builder, function.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
-                        functionCall.arguments.size, statement.functionCall.toString())
+                        functionCall.arguments.size, if (function.type == T_VOID) "" else statement.functionCall.toString())
             }
             is MethodCallStatement -> {
                 val methodCall = statement.methodCall

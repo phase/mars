@@ -212,18 +212,29 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
         return when (id) {
             "if" -> {
                 val expression = visitExpression(ctx?.expression())
-                val statements = statementListFromStatementListContext(ctx?.statementList(0))
+                val statements = statementListFromStatementListContext(ctx?.statementList())
 
-                var elseStatement: IfStatement? = null
-                if (ctx?.getChild(3)?.text.equals("else"))
-                    elseStatement = elseStatement(
-                            statementListFromStatementListContext(ctx?.getChild(4) as LangParser.StatementListContext))
+                val parentIf: IfStatement = IfStatement(expression, statements, null)
+                var currentIf: IfStatement = parentIf
 
-                IfStatement(expression, statements, elseStatement)
+                ctx?.elif()?.forEach {
+                    val elifExpression = visitExpression(it.expression())
+                    val elifStatements = statementListFromStatementListContext(it.statementList())
+                    val elif = IfStatement(elifExpression, elifStatements, null)
+                    currentIf.elseStatement = elif
+                    currentIf = elif
+                }
+
+                if (ctx?.elseStatement() != null) {
+                    val elseStatements = statementListFromStatementListContext(ctx?.elseStatement()?.statementList())
+                    currentIf.elseStatement = IfStatement(TrueExpression(), elseStatements, null)
+                }
+
+                parentIf
             }
             "while" -> {
                 val expression = visitExpression(ctx?.expression())
-                val statements = statementListFromStatementListContext(ctx?.statementList(0))
+                val statements = statementListFromStatementListContext(ctx?.statementList())
                 WhileStatement(expression, statements)
             }
             else -> EmptyNode()
@@ -270,7 +281,7 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
         } else if (ctx?.FLOAT() != null) {
             val text = ctx?.FLOAT()?.text.orEmpty()
             if (text.endsWith("d"))
-                // Remove double suffix
+            // Remove double suffix
                 return FloatLiteral(text.substring(0..text.length - 2).toDouble(), T_FLOAT64)
             else if (text.endsWith("q"))
                 return FloatLiteral(text.substring(0..text.length - 2).toDouble(), T_FLOAT128)
