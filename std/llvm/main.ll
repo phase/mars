@@ -10,8 +10,7 @@ define i32 @main() {
   %seed = trunc i64 %time to i32
   tail call void @srand(i32 %seed)
 
-  %1 = alloca i32, align 4
-  store i32 0, i32* %1, align 4
-  %2 = call i32 @real_main()
-  ret i32 %2
+  ; call main from user program
+  %1 = tail call i32 @real_main()
+  ret i32 %1
 }
