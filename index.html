@@ -3,14 +3,14 @@
   <title>Jadon's Compiler Project</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://unpkg.com/tachyons/css/tachyons.min.css">
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/styles/agate.min.css">
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
+  <link rel="stylesheet" href="hljs/styles/agate.css">
+  <script src="hljs/highlight.pack.js"></script>
   <script>hljs.initHighlightingOnLoad();</script>
   <body class="container moon-gray bg-near-black w-100 pa3 ph5-ns">
     <h1>Jadon's Compiler Project</h1>
-    <p>This is my compiler project. <b><a href="http://www.antlr.org/">ANTLR</a></b>
-       is used for lexing and parsing the language.
-       <b><a href="http://llvm.org">LLVM</a></b> is used as the backend.</p>
+    <p>This is my compiler project. It is opened sourced on
+    <a href="https://github.com/phase/lang-kotlin-antlr-compiler">GitHub</a> & licensed under MPL 2.
+    <a href="http://www.antlr.org/">ANTLR</a> is used for lexing and parsing the language.</p>
 
     <!--
     <img src="http://llvm.org/img/LLVM-Logo-Derivative-5.png" alt="LLVM" style="background-color: white"></img>
@@ -21,8 +21,8 @@
     <hr>
     <h2>What works?</h2>
     <p>Global variables, Functions, Classes, Methods, Automatic Memory
-       Management, Type Inference, Calling External Functions, Modules,
-       etc. An example file below shows some of these features.</p>
+    Management, Type Inference, Calling External Functions, Modules,
+    etc. An example file below shows some of these features.</p>
 
     <pre><code>
 import io
@@ -49,6 +49,46 @@ main ()
     incrementId(account, rand()),
     printInt(account.id),
     0
+    </code></pre>
+    <p>This example, when put through the <a href="http://llvm.org">LLVM</a> backend, will produce
+    LLVM IR and an executable.</p>
+    <pre><code class="llvm">
+%Account = type { i32 }
+
+declare i32 @rand()
+
+@initialAccountId = constant i32 18
+
+define i32 @Account_setId(%Account*, i32) {
+entry:
+  %id = getelementptr inbounds %Account, %Account* %0, i64 0, i32 0
+  store i32 %1, i32* %id, align 4
+  ret i32 %1
+}
+
+define void @incrementId(%Account*, i32) {
+entry:
+  %a = getelementptr inbounds %Account, %Account* %0, i64 0, i32 0
+  %a.id = load i32, i32* %a, align 4
+  %"(a.id + amount)" = add i32 %a.id, %1
+  store i32 %"(a.id + amount)", i32* %a, align 4
+  ret void
+}
+
+define i32 @real_main() {
+entry:
+  %"malloc(4)" = call i8* @malloc(i64 4)
+  %castToAccount = bitcast i8* %"malloc(4)" to %Account*
+  %"account.setId(initialAccountId)" = call i32 @Account_setId(%Account* %castToAccount, i32 18)
+  %"printInt(i)" = call i32 @printInt(i32 %"account.setId(initialAccountId)")
+  %"rand()" = call i32 @rand()
+  call void @incrementId(%Account* %castToAccount, i32 %"rand()")
+  %account = bitcast i8* %"malloc(4)" to i32*
+  %account.id = load i32, i32* %account, align 4
+  %"printInt(account.id)" = call i32 @printInt(i32 %account.id)
+  call void @free(i8* %"malloc(4)")
+  ret i32 0
+}
     </code></pre>
   </body>
 </html>
