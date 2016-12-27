@@ -217,7 +217,8 @@ class LLVMBackend(module: Module) : Backend(module) {
         if (function.expression != null) {
             val ret_value = visit(function.expression!!, builder, localVariables, clazz, llvmFunction)
             LLVMBuildRet(builder, ret_value)
-        }
+        } else
+            LLVMBuildRetVoid(builder)
     }
 
     fun visit(statement: Statement, builder: LLVMBuilderRef, llvmFunction: LLVMValueRef,
