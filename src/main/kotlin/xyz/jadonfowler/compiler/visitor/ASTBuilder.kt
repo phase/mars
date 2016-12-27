@@ -7,9 +7,9 @@ import xyz.jadonfowler.compiler.parser.LangBaseVisitor
 import xyz.jadonfowler.compiler.parser.LangParser
 
 /**
- * ContextVisitor transforms a ContextTree into an AST
+ * ASTBuilder transforms a ContextTree into an AST
  */
-class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
+class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
 
     val imports: MutableList<Import> = mutableListOf()
     val globalVariables: MutableList<Variable> = mutableListOf()
@@ -100,8 +100,9 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
     override fun visitAttribute(ctx: LangParser.AttributeContext?): Attribute {
         val name = ctx?.ID(0)?.symbol?.text.orEmpty()
         val values: MutableList<String> = mutableListOf()
-        for (i in 1..ctx?.ID()?.size!! - 1)
-            values.add(ctx?.ID(i)?.symbol?.text.orEmpty())
+        (1..ctx?.ID()?.size!! - 1).forEach {
+            values.add(ctx?.ID(it)?.symbol?.text.orEmpty())
+        }
         return Attribute(name, values)
     }
 
@@ -227,7 +228,7 @@ class ContextVisitor(val moduleName: String) : LangBaseVisitor<Node>() {
 
                 if (ctx?.elseStatement() != null) {
                     val elseStatements = statementListFromStatementListContext(ctx?.elseStatement()?.statementList())
-                    currentIf.elseStatement = IfStatement(TrueExpression(), elseStatements, null)
+                    currentIf.elseStatement = elseStatement(elseStatements)
                 }
 
                 parentIf

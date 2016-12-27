@@ -1,12 +1,11 @@
 package xyz.jadonfowler.compiler.ast
 
 import xyz.jadonfowler.compiler.globalModules
-import xyz.jadonfowler.compiler.visitor.Visitor
 
 interface Node
 
 /**
- * Used in ContextVisitor for areas where we need to return something.
+ * Used in ASTBuilder for areas where we need to return something.
  */
 class EmptyNode : Node
 
@@ -17,11 +16,12 @@ class Module(val name: String, val imports: List<Import>, val globalVariables: L
 
     val errors: MutableList<String> = mutableListOf()
 
-    fun containsReference(reference: Reference): Boolean {
-        return globalVariables.map { it.name }.contains(reference.name)
-                || globalFunctions.map { it.name }.contains(reference.name)
-                || globalClasses.map { it.name }.contains(reference.name)
-    }
+//    TODO: I thought this was needed but I never used it.
+//    fun containsReference(reference: Reference): Boolean {
+//        return globalVariables.map { it.name }.contains(reference.name)
+//                || globalFunctions.map { it.name }.contains(reference.name)
+//                || globalClasses.map { it.name }.contains(reference.name)
+//    }
 
     fun getFunctionFromReference(reference: Reference): Function? {
         val name = reference.name
@@ -95,8 +95,6 @@ interface Global : Node
  * If there is no last expression, the function returns "void" (aka nothing).
  */
 class Function(val attributes: List<Attribute>, var returnType: Type, var name: String, var formals: List<Formal>, val statements: List<Statement>, var expression: Expression? = null) : Global, Type {
-    fun accept(visitor: Visitor) = visitor.visit(this)
-
     override fun toString(): String {
         val formals = formals.joinToString(separator = " -> ") { it.type.toString() }
         return "($formals -> $returnType)"
@@ -106,9 +104,7 @@ class Function(val attributes: List<Attribute>, var returnType: Type, var name: 
 /**
  * Formals are the arguments for Functions.
  */
-class Formal(type: Type, name: String) : Variable(type, name, null, true) {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
-}
+class Formal(type: Type, name: String) : Variable(type, name, null, true)
 
 /**
  * Variables have a type, name, and can have an initial expression.
@@ -121,9 +117,7 @@ class Formal(type: Type, name: String) : Variable(type, name, null, true) {
  *
  * If 'constant' is true, the value of this variable can't be changed.
  */
-open class Variable(var type: Type, val name: String, var initialExpression: Expression? = null, val constant: Boolean = false) : Global {
-    open fun accept(visitor: Visitor) = visitor.visit(this)
-}
+open class Variable(var type: Type, val name: String, var initialExpression: Expression? = null, val constant: Boolean = false) : Global
 
 /**
  * Classes (Clazz because Java contains a class named Class) are normal OOP classes, and can contain fields and methods.
@@ -131,14 +125,13 @@ open class Variable(var type: Type, val name: String, var initialExpression: Exp
  * TODO: Class Constructors
  */
 class Clazz(val name: String, val fields: List<Variable>, val methods: List<Function>) : Global, Type {
-    fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = "$name(${fields.map { it.type }.joinToString()})"
 }
 
 /**
- * A Reference to a Global declaration.
+ * A Reference to a declaration.
  */
-class Reference(val name: String, var global: Global? = null)
+class Reference(val name: String)
 
 /**
  * Stores the references and arguments for calling a Function.
@@ -164,16 +157,12 @@ class MethodCall(val variableReference: Reference, val methodReference: Referenc
  * Statements are commands that Functions can run to do certain actions. These actions consist of function calls,
  * variable declarations, control flow, etc.
  */
-abstract class Statement : Node {
-    open fun accept(visitor: Visitor) = visitor.visit(this)
-}
+abstract class Statement : Node
 
 /**
  * Blocks are Statements that contain Statements than can be run.S
  */
-open class Block(val statements: List<Statement>) : Statement() {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
-}
+open class Block(val statements: List<Statement>) : Statement()
 
 /**
  * CheckedBlocks are Blocks with an expression to be evaluated before the Statements run.
@@ -184,10 +173,10 @@ open class Block(val statements: List<Statement>) : Statement() {
  *     }
  * </pre>
  *
- * @param exp Expression to test
+ * @param expression Expression to test
  * @param statements Statements to be run
  */
-open class CheckedBlock(var exp: Expression, statements: List<Statement>) : Block(statements)
+open class CheckedBlock(var expression: Expression, statements: List<Statement>) : Block(statements)
 
 /**
  * If Statement
@@ -228,9 +217,7 @@ open class CheckedBlock(var exp: Expression, statements: List<Statement>) : Bloc
  *           - sD
  * </pre>
  */
-class IfStatement(exp: Expression, statements: List<Statement>, var elseStatement: IfStatement?) : CheckedBlock(exp, statements) {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
-}
+class IfStatement(expression: Expression, statements: List<Statement>, var elseStatement: IfStatement?) : CheckedBlock(expression, statements)
 
 /**
  * elseStatement returns an IfStatement with the expression set to a TrueExpression
@@ -243,36 +230,27 @@ fun elseStatement(statements: List<Statement>): IfStatement {
 /**
  * WhileStatements are Blocks that will run over and over as long as their expression is true.
  */
-class WhileStatement(exp: Expression, statements: List<Statement>) : CheckedBlock(exp, statements) {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
-}
+class WhileStatement(expression: Expression, statements: List<Statement>) : CheckedBlock(expression, statements)
 
 /**
  * VariableDeclarationStatements add a Variable to the local variable pool that other Statements can access.
  */
-class VariableDeclarationStatement(val variable: Variable) : Statement() {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
-}
+class VariableDeclarationStatement(val variable: Variable) : Statement()
 
 /**
  *
  */
-class VariableReassignmentStatement(val reference: Reference, var exp: Expression) : Statement() {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
-}
+class VariableReassignmentStatement(val reference: Reference, var expression: Expression) : Statement()
 
 /**
  * Statement wrapper for FunctionCalls
  */
-class FunctionCallStatement(val functionCall: FunctionCall) : Statement() {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
-}
+class FunctionCallStatement(val functionCall: FunctionCall) : Statement()
 
 /**
  * Statement wrapper for MethodCalls
  */
 class MethodCallStatement(val methodCall: MethodCall) : Statement() {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = methodCall.toString()
 }
 
@@ -280,7 +258,6 @@ class MethodCallStatement(val methodCall: MethodCall) : Statement() {
  * Set field of a Class
  */
 class FieldSetterStatement(val variableReference: Reference, val fieldReference: Reference, val expression: Expression) : Statement() {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = variableReference.name + "." + fieldReference.name + " = " + expression.toString()
 }
 
@@ -291,9 +268,7 @@ class FieldSetterStatement(val variableReference: Reference, val fieldReference:
 /**
  * Expressions evaluate to a value.
  */
-abstract class Expression(val child: List<Expression> = listOf()) : Node {
-    open fun accept(visitor: Visitor) = visitor.visit(this)
-}
+abstract class Expression(val child: List<Expression> = listOf()) : Node
 
 abstract class BooleanExpression(val value: Boolean) : Expression()
 
@@ -301,7 +276,6 @@ abstract class BooleanExpression(val value: Boolean) : Expression()
  * TrueExpressions are booleans that are only "true".
  */
 class TrueExpression : BooleanExpression(true) {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = "true"
 }
 
@@ -309,7 +283,6 @@ class TrueExpression : BooleanExpression(true) {
  * FalseExpressions are booleans that are only "false".
  */
 class FalseExpression : BooleanExpression(false) {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = "false"
 }
 
@@ -317,12 +290,10 @@ class FalseExpression : BooleanExpression(false) {
  * IntegerLiterals are an Expression wrapper for Ints.
  */
 class IntegerLiteral(val value: Int) : Expression() {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = value.toString()
 }
 
 class FloatLiteral(val value: Double, val type: FloatType) : Expression() {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = value.toString()
 }
 
@@ -330,7 +301,6 @@ class FloatLiteral(val value: Double, val type: FloatType) : Expression() {
  * StringLiterals are an Expression wrapper for Strings.
  */
 class StringLiteral(val value: String) : Expression() {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = value
 }
 
@@ -338,7 +308,6 @@ class StringLiteral(val value: String) : Expression() {
  * Expression wrapper for References
  */
 class ReferenceExpression(val reference: Reference) : Expression() {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = reference.name
 }
 
@@ -346,7 +315,6 @@ class ReferenceExpression(val reference: Reference) : Expression() {
  * Expression wrapper for FunctionCalls
  */
 class FunctionCallExpression(val functionCall: FunctionCall) : Expression(functionCall.arguments) {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = functionCall.toString()
 }
 
@@ -354,7 +322,6 @@ class FunctionCallExpression(val functionCall: FunctionCall) : Expression(functi
  * Expression wrapper for MethodCalls
  */
 class MethodCallExpression(val methodCall: MethodCall) : Expression(methodCall.arguments) {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = methodCall.toString()
 }
 
@@ -362,12 +329,10 @@ class MethodCallExpression(val methodCall: MethodCall) : Expression(methodCall.a
  * Get field of a Class
  */
 class FieldGetterExpression(val variableReference: Reference, val fieldReference: Reference) : Expression() {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String = "${variableReference.name}.${fieldReference.name}"
 }
 
 class ClazzInitializerExpression(val classReference: Reference, val arguments: List<Expression>) : Expression(arguments) {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
     override fun toString(): String =
             "new ${classReference.name}(" + arguments.map { it.toString() }.joinToString() + ")"
 }
@@ -414,7 +379,6 @@ fun getOperator(s: String): Operator? {
 /**
  * BinaryOperators are Expressions that contain two sub-Expressions and an Operator that operates on them.
  */
-class BinaryOperator(var expA: Expression, val operator: Operator, var expB: Expression) : Expression(listOf(expA, expB)) {
-    override fun accept(visitor: Visitor) = visitor.visit(this)
-    override fun toString(): String = "($expA $operator $expB)"
+class BinaryOperator(var expressionA: Expression, val operator: Operator, var expressionB: Expression) : Expression(listOf(expressionA, expressionB)) {
+    override fun toString(): String = "($expressionA $operator $expressionB)"
 }

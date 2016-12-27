@@ -12,7 +12,7 @@ import xyz.jadonfowler.compiler.parser.LangParser
 import xyz.jadonfowler.compiler.pass.ConstantFoldPass
 import xyz.jadonfowler.compiler.pass.PrintPass
 import xyz.jadonfowler.compiler.pass.TypePass
-import xyz.jadonfowler.compiler.visitor.ContextVisitor
+import xyz.jadonfowler.compiler.visitor.ASTBuilder
 import java.io.File
 
 val globalModules = mutableListOf<Module>()
@@ -28,8 +28,15 @@ fun main(args: Array<String>) {
             files.add(it)
     }
 
+    if (files.isEmpty()) {
+        println("No input files found!")
+        System.exit(2)
+    }
+
     // <Name, Code>
     val modulesToCompile: MutableMap<String, String> = mutableMapOf()
+
+    val nonStdFiles = files.size
 
     // Standard Lib
     val stdDirectory = File("std")
@@ -74,8 +81,8 @@ fun main(args: Array<String>) {
     options.forEach {
         when (it.toLowerCase()) {
             "ast" -> {
-                // Print the AST for each module
-                modules.forEach { println(PrintPass(it).output) }
+                // Print the AST for each input module
+                (0..nonStdFiles - 1).forEach { println(PrintPass(modules[it]).output) }
             }
             "llvm" -> {
                 // Output native code through LLVM Backend
@@ -137,9 +144,9 @@ fun compileString(moduleName: String, code: String, explore: Boolean = false): M
     val tokens = CommonTokenStream(lexer)
     val parser = LangParser(tokens)
     val result = parser.program()
-    val contextVisitor = ContextVisitor(moduleName)
+    val astBuilder = ASTBuilder(moduleName)
     if (explore) explore(result, 0)
-    return contextVisitor.visitProgram(result)
+    return astBuilder.visitProgram(result)
 }
 
 fun explore(ctx: RuleContext, indentation: Int = 0) {

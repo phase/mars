@@ -20,6 +20,17 @@ apply plugin: "jacoco"
 
 mainClassName = "xyz.jadonfowler.compiler.CompilerKt"
 
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'Compiler',
+                   'Implementation-Version': version,
+                   'Main-Class': 'xyz.jadonfowler.compiler.CompilerKt'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
 repositories {
     mavenCentral()
 }

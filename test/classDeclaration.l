@@ -11,6 +11,10 @@ class Account
 
     isAccount(i) : Bool
         id == i
+
+    setId(i : Int32)
+        id = i,
+        id
 ;
 
 newAccount () : Account
@@ -27,6 +31,8 @@ main ()
     var i = 0,
     while i < 10
         printInt(a.incrementId()),
+        let b = 7,
+        a.setId(a.id + 7),
         i = i + 1
     ;
     printInt(previousId),

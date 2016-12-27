@@ -54,9 +54,9 @@ class LLVMBackend(module: Module) : Backend(module) {
         namedValues.put("free", ValueContainer(ValueType.FUNCTION, free, T_VOID))
 
         module.imports.forEach { visit(it) }
-        module.globalVariables.forEach { it.accept(this) }
-        module.globalClasses.forEach { it.accept(this) }
-        module.globalFunctions.forEach { it.accept(this) }
+        module.globalVariables.forEach { visit(it) }
+        module.globalClasses.forEach { visit(it) }
+        module.globalFunctions.forEach { visit(it) }
     }
 
     override fun output(file: File?) {
@@ -252,14 +252,14 @@ class LLVMBackend(module: Module) : Backend(module) {
             }
             is VariableReassignmentStatement -> {
                 val variable = localVariables[statement.reference.name]!!
-                val value = visit(statement.exp, builder, localVariables, clazz, llvmFunction)
+                val value = visit(statement.expression, builder, localVariables, clazz, llvmFunction)
 
                 // Check if we need to free this later
-                if (statement.exp is ClazzInitializerExpression)
+                if (statement.expression is ClazzInitializerExpression)
                     allocatedClasses.put(statement.reference.name, value)
-                else if (statement.exp is FunctionCallExpression) {
+                else if (statement.expression is FunctionCallExpression) {
                     // If the function returns a Class, we need to deallocate it once our scope ends
-                    val functionReference = (statement.exp as FunctionCallExpression).functionCall.functionReference
+                    val functionReference = (statement.expression as FunctionCallExpression).functionCall.functionReference
                     val function = module.getFunctionFromReference(functionReference)
                     if (function != null && function.returnType is Clazz)
                         allocatedClasses.put(statement.reference.name, value)
@@ -270,18 +270,18 @@ class LLVMBackend(module: Module) : Backend(module) {
                     val clazzInstance = LLVMGetFirstParam(llvmFunction)
                     val indexInClass = clazz.fields.map { it.name }.indexOf(statement.reference.name)
                     LLVMBuildStore(builder, value,
-                            LLVMBuildStructGEP(builder, clazzInstance, indexInClass, statement.toString()))
+                            LLVMBuildStructGEP(builder, clazzInstance, indexInClass, statement.reference.name))
                 } else {
                     LLVMBuildStore(builder, value, variable.llvmValueRef)
                 }
             }
             is IfStatement -> {
-                val condition = visit(statement.exp, builder, localVariables, clazz, llvmFunction)
+                val condition = visit(statement.expression, builder, localVariables, clazz, llvmFunction)
 
                 // Add blocks for True & False, and another one where they merge
-                val trueBlock = LLVMAppendBasicBlock(llvmFunction, "if.t ${statement.exp}")
-                val falseBlock = LLVMAppendBasicBlock(llvmFunction, "if.f ${statement.exp}")
-                val mergeBlock = LLVMAppendBasicBlock(llvmFunction, "if.o ${statement.exp}")
+                val trueBlock = LLVMAppendBasicBlock(llvmFunction, "if.t ${statement.expression}")
+                val falseBlock = LLVMAppendBasicBlock(llvmFunction, "if.f ${statement.expression}")
+                val mergeBlock = LLVMAppendBasicBlock(llvmFunction, "if.o ${statement.expression}")
 
                 LLVMBuildCondBr(builder, condition, trueBlock, falseBlock)
 
@@ -298,14 +298,14 @@ class LLVMBackend(module: Module) : Backend(module) {
                 LLVMPositionBuilderAtEnd(builder, mergeBlock)
             }
             is WhileStatement -> {
-                val whileCondition = LLVMAppendBasicBlock(llvmFunction, "while.c ${statement.exp}")
-                val whileBlock = LLVMAppendBasicBlock(llvmFunction, "while.b ${statement.exp}")
-                val outside = LLVMAppendBasicBlock(llvmFunction, "while.o ${statement.exp}")
+                val whileCondition = LLVMAppendBasicBlock(llvmFunction, "while.c ${statement.expression}")
+                val whileBlock = LLVMAppendBasicBlock(llvmFunction, "while.b ${statement.expression}")
+                val outside = LLVMAppendBasicBlock(llvmFunction, "while.o ${statement.expression}")
 
                 LLVMBuildBr(builder, whileCondition)
 
                 LLVMPositionBuilderAtEnd(builder, whileCondition)
-                val condition = visit(statement.exp, builder, localVariables, clazz, llvmFunction)
+                val condition = visit(statement.expression, builder, localVariables, clazz, llvmFunction)
                 LLVMBuildCondBr(builder, condition, whileBlock, outside)
 
                 LLVMPositionBuilderAtEnd(builder, whileBlock)
@@ -357,8 +357,8 @@ class LLVMBackend(module: Module) : Backend(module) {
                 else LLVMConstInt(LLVMInt1Type(), 0, 0)
             }
             is BinaryOperator -> {
-                var A = visit(expression.expA, builder, localVariables, clazz, function)
-                var B = visit(expression.expB, builder, localVariables, clazz, function)
+                var A = visit(expression.expressionA, builder, localVariables, clazz, function)
+                var B = visit(expression.expressionB, builder, localVariables, clazz, function)
 
                 if (isLLVMType(A, LLVMIntegerTypeKind) && isLLVMType(B, LLVMIntegerTypeKind)) {
                     // Higher bit integer types are declared after the lower ones,
@@ -367,10 +367,10 @@ class LLVMBackend(module: Module) : Backend(module) {
                     val bType = LLVMTypeOf(B)
                     if (aType.address() > bType.address()) {
                         // a has more bits
-                        B = LLVMBuildZExt(builder, B, aType, expression.expB.toString() + " extended")
+                        B = LLVMBuildZExt(builder, B, aType, expression.expressionB.toString() + " extended")
                     } else {
                         // b has more bits
-                        A = LLVMBuildZExt(builder, A, bType, expression.expA.toString() + " extended")
+                        A = LLVMBuildZExt(builder, A, bType, expression.expressionA.toString() + " extended")
                     }
                 } else if (isLLVMType(A, LLVMFloatTypeKind, LLVMDoubleTypeKind, LLVMFP128TypeKind)
                         && isLLVMType(B, LLVMFloatTypeKind, LLVMDoubleTypeKind, LLVMFP128TypeKind)) {
@@ -379,10 +379,10 @@ class LLVMBackend(module: Module) : Backend(module) {
 
                     if (aType.address() > bType.address()) {
                         // a has more bits
-                        B = LLVMBuildFPExt(builder, B, aType, expression.expB.toString() + " extended")
+                        B = LLVMBuildFPExt(builder, B, aType, expression.expressionB.toString() + " extended")
                     } else {
                         // b has more bits
-                        A = LLVMBuildFPExt(builder, A, bType, expression.expA.toString() + " extended")
+                        A = LLVMBuildFPExt(builder, A, bType, expression.expressionA.toString() + " extended")
                     }
                 }
 

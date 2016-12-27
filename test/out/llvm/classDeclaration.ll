@@ -1,19 +1,3 @@
-%Account = type { i32, i128 }
-
-declare i8* @malloc(i64)
-
-declare void @free(i8*)
-
-declare i32 @printInt(i32)
-
-declare i32 @castDownAndPrintInt64(i64)
-
-declare i32 @printFloat32(float)
-
-declare i32 @printFloat64(double)
-
-declare i32 @castDownAndPrintFloat128(fp128)
-
 define i32 @Account_incrementId(%Account*) {
 entry:
   %id = getelementptr inbounds %Account, %Account* %0, i64 0, i32 0
@@ -29,6 +13,13 @@ entry:
   %id1 = load i32, i32* %id, align 4
   %"(id == i)" = icmp eq i32 %id1, %1
   ret i1 %"(id == i)"
+}
+
+define i32 @Account_setId(%Account*, i32) {
+entry:
+  %id = getelementptr inbounds %Account, %Account* %0, i64 0, i32 0
+  store i32 %1, i32* %id, align 4
+  ret i32 %1
 }
 
 define %Account* @newAccount() {
@@ -61,6 +52,10 @@ entry:
 "while.b (i < 10)":                               ; preds = %"while.c (i < 10)"
   %"a.incrementId()2" = call i32 @Account_incrementId(%Account* %"newAccount()")
   %"printInt(a.incrementId())" = call i32 @printInt(i32 %"a.incrementId()2")
+  %a = getelementptr inbounds %Account, %Account* %"newAccount()", i64 0, i32 0
+  %a.id = load i32, i32* %a, align 4
+  %"(a.id + 7)" = add i32 %a.id, 7
+  %"a.setId((a.id + 7))" = call i32 @Account_setId(%Account* %"newAccount()", i32 %"(a.id + 7)")
   %"(i + 1)" = add i32 %storemerge, 1
   br label %"while.c (i < 10)"
 

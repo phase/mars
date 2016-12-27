@@ -31,24 +31,24 @@ class PrintPass(module: Module) : Pass(module) {
 
     init {
         println("; Module: ${module.name}")
-        module.globalVariables.map { it.accept(this) }
+        module.globalVariables.map { visit(it) }
         println()
-        module.globalFunctions.map { it.accept(this) }
+        module.globalFunctions.map { visit(it) }
         println()
-        module.globalClasses.map { it.accept(this) }
+        module.globalClasses.map { visit(it) }
     }
 
     override fun visit(function: Function) {
         println("; ${function.name} has ${function.statements.size} statements${if (function.expression != null) " and a return expression" else ""}.")
         print("function ${function.name} (")
-        function.formals.map { it.accept(this); if (function.formals.last() != it) print(", ") }
+        function.formals.map { visit(it); if (function.formals.last() != it) print(", ") }
         printI(") -> ${function.returnType} {\n")
 
         tabIndent++
-        function.statements.map { println("; ${it.javaClass.simpleName}"); it.accept(this) }
+        function.statements.map { println("; ${it.javaClass.simpleName}"); visit(it) }
         if (function.expression != null) {
             print("return ")
-            function.expression!!.accept(this)
+            visit(function.expression!!)
             println()
         }
         tabIndent--
@@ -64,7 +64,7 @@ class PrintPass(module: Module) : Pass(module) {
         print("${if (variable.constant) "constant" else "variable"} ${variable.name}: ${variable.type}")
         if (variable.initialExpression != null) {
             printI(" = ")
-            variable.initialExpression!!.accept(this)
+            visit(variable.initialExpression!!)
         }
         printI("\n")
     }
@@ -72,9 +72,9 @@ class PrintPass(module: Module) : Pass(module) {
     override fun visit(clazz: Clazz) {
         println("class ${clazz.name} {")
         tabIndent++
-        clazz.fields.map { it.accept(this) }
+        clazz.fields.map { visit(it) }
         println()
-        clazz.methods.map { it.accept(this) }
+        clazz.methods.map { visit(it) }
         tabIndent--
         println("}")
     }
@@ -82,7 +82,7 @@ class PrintPass(module: Module) : Pass(module) {
     override fun visit(block: Block) {
         println("{")
         tabIndent++
-        block.statements.map { println("; ${it.javaClass.simpleName}"); it.accept(this) }
+        block.statements.map { println("; ${it.javaClass.simpleName}"); visit(it) }
         tabIndent--
         println("}")
     }
@@ -94,20 +94,20 @@ class PrintPass(module: Module) : Pass(module) {
 
     override fun visit(ifStatement: IfStatement) {
         print("if ")
-        ifStatement.exp.accept(this)
+        visit(ifStatement.expression)
         printI(" {\n")
         tabIndent++
-        ifStatement.statements.map { println("; ${it.javaClass.simpleName}"); it.accept(this) }
+        ifStatement.statements.map { println("; ${it.javaClass.simpleName}"); visit(it) }
         tabIndent--
         println("}")
 
         var child: IfStatement? = ifStatement.elseStatement
         while (child != null) {
             print("else if (")
-            child.exp.accept(this)
+            visit(child.expression)
             printI(") {\n")
             tabIndent++
-            child.statements.map { println("; ${it.javaClass.simpleName}"); it.accept(this) }
+            child.statements.map { println("; ${it.javaClass.simpleName}"); visit(it) }
             tabIndent--
             println("}")
             child = child.elseStatement
@@ -116,27 +116,27 @@ class PrintPass(module: Module) : Pass(module) {
 
     override fun visit(whileStatement: WhileStatement) {
         print("while ")
-        whileStatement.exp.accept(this)
+        visit(whileStatement.expression)
         printI(" {\n")
         tabIndent++
-        whileStatement.statements.map { println("; ${it.javaClass.simpleName}"); it.accept(this) }
+        whileStatement.statements.map { println("; ${it.javaClass.simpleName}"); visit(it) }
         tabIndent--
         println("}")
     }
 
     override fun visit(variableDeclarationStatement: VariableDeclarationStatement) {
-        variableDeclarationStatement.variable.accept(this)
+        visit(variableDeclarationStatement.variable)
     }
 
     override fun visit(variableReassignmentStatement: VariableReassignmentStatement) {
         print("${variableReassignmentStatement.reference.name} = ")
-        variableReassignmentStatement.exp.accept(this)
+        visit(variableReassignmentStatement.expression)
         printI("\n")
     }
 
     override fun visit(functionCallStatement: FunctionCallStatement) {
         print("${functionCallStatement.functionCall.functionReference.name}(")
-        functionCallStatement.functionCall.arguments.map { it.accept(this); printI(", ") }
+        functionCallStatement.functionCall.arguments.map { visit(it); printI(", ") }
         printI(")\n")
     }
 
@@ -154,21 +154,21 @@ class PrintPass(module: Module) : Pass(module) {
 
     override fun visit(fieldSetterStatement: FieldSetterStatement) {
         print(fieldSetterStatement.variableReference.name + "." + fieldSetterStatement.fieldReference.name + " = ")
-        fieldSetterStatement.expression.accept(this)
+        visit(fieldSetterStatement.expression)
         println()
     }
 
     override fun visit(methodCallExpression: MethodCallExpression) {
         printI(methodCallExpression.methodCall.variableReference.name + "."
                 + methodCallExpression.methodCall.methodReference.name + "(")
-        methodCallExpression.methodCall.arguments.forEach { it.accept(this); printI(", ") }
+        methodCallExpression.methodCall.arguments.forEach { visit(it); printI(", ") }
         printI(")")
     }
 
     override fun visit(methodCallStatement: MethodCallStatement) {
         print(methodCallStatement.methodCall.variableReference.name + "."
                 + methodCallStatement.methodCall.methodReference.name + "(")
-        methodCallStatement.methodCall.arguments.forEach { it.accept(this); printI(", ") }
+        methodCallStatement.methodCall.arguments.forEach { visit(it); printI(", ") }
         println(")")
     }
 
@@ -190,21 +190,21 @@ class PrintPass(module: Module) : Pass(module) {
 
     override fun visit(functionCallExpression: FunctionCallExpression) {
         printI("${functionCallExpression.functionCall.functionReference.name}(")
-        functionCallExpression.functionCall.arguments.forEach { it.accept(this); printI(", ") }
+        functionCallExpression.functionCall.arguments.forEach { visit(it); printI(", ") }
         printI(")")
     }
 
     override fun visit(clazzInitializerExpression: ClazzInitializerExpression) {
         printI("new ${clazzInitializerExpression.classReference.name}(")
-        clazzInitializerExpression.arguments.forEach { it.accept(this); printI(", ") }
+        clazzInitializerExpression.arguments.forEach { visit(it); printI(", ") }
         printI(")")
     }
 
     override fun visit(binaryOperator: BinaryOperator) {
         printI("(")
-        binaryOperator.expA.accept(this)
+        visit(binaryOperator.expressionA)
         printI(" ${binaryOperator.operator.string} ")
-        binaryOperator.expB.accept(this)
+        visit(binaryOperator.expressionB)
         printI(")")
     }
 

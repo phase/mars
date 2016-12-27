@@ -56,9 +56,9 @@ class ASTTest {
         assertTrue(statement.variable.initialExpression is BinaryOperator, "The variable's initial expression is not" +
                 " a Binary Operator.")
         val op = statement.variable.initialExpression as BinaryOperator
-        assertTrue(op.expA is ReferenceExpression, "The variable's initial expression's left argument isn't a" +
+        assertTrue(op.expressionA is ReferenceExpression, "The variable's initial expression's left argument isn't a" +
                 " ReferenceExpression.")
-        assertTrue(op.expB is IntegerLiteral, "The variable's initial expression's right argument is not an" +
+        assertTrue(op.expressionB is IntegerLiteral, "The variable's initial expression's right argument is not an" +
                 " IntegerLiteral.")
 
         println(PrintPass(module).output)
@@ -84,7 +84,7 @@ class ASTTest {
         assertNotNull(ifStatement.elseStatement, "There should be an ElseStatement in the IfStatement.")
         assertEquals(1, ifStatement.statements.size)
         assertEquals(1, ifStatement.elseStatement?.statements?.size)
-        assertTrue(((ifStatement.exp as BinaryOperator).expB as BinaryOperator).expA is IntegerLiteral)
+        assertTrue(((ifStatement.expression as BinaryOperator).expressionB as BinaryOperator).expressionA is IntegerLiteral)
         assertTrue(testFunction2.statements[2] is VariableReassignmentStatement)
 
         println(PrintPass(module).output)
@@ -108,8 +108,8 @@ class ASTTest {
         assertTrue(function.statements[2] is WhileStatement)
 
         val statement = function.statements[2] as WhileStatement
-        assertTrue(statement.exp is BinaryOperator)
-        assertEquals("<", (statement.exp as BinaryOperator).operator.toString())
+        assertTrue(statement.expression is BinaryOperator)
+        assertEquals("<", (statement.expression as BinaryOperator).operator.toString())
         assertEquals(2, statement.statements.size)
         assertTrue(statement.statements[1] is VariableReassignmentStatement)
 
@@ -138,10 +138,10 @@ class ASTTest {
         assertNotNull(excitingFunction.expression)
         assertTrue(excitingFunction.expression is BinaryOperator)
         val lastOperator = excitingFunction.expression as BinaryOperator
-        assertEquals("b", (lastOperator.expA as ReferenceExpression).toString(), "ReferenceExpression should" +
+        assertEquals("b", (lastOperator.expressionA as ReferenceExpression).toString(), "ReferenceExpression should" +
                 " reference 'b'.")
         assertEquals("+", lastOperator.operator.toString(), "Operator should be '+'.")
-        assertEquals("1", (lastOperator.expB as IntegerLiteral).toString(), "IntegerLiteral should be '1'.")
+        assertEquals("1", (lastOperator.expressionB as IntegerLiteral).toString(), "IntegerLiteral should be '1'.")
         assertEquals("(b + 1)", lastOperator.toString())
 
         println(PrintPass(module).output)

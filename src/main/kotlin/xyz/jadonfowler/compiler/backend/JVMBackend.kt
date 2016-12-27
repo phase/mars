@@ -1,7 +1,7 @@
 package xyz.jadonfowler.compiler.backend
 
 import org.objectweb.asm.ClassWriter
-import org.objectweb.asm.MethodVisitor
+// import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes.*
 import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.ast.Function
@@ -27,8 +27,8 @@ class JVMBackend(module: Module) : Backend(module) {
         mv.visitInsn(RETURN)
         mv.visitEnd()
 
-        module.globalFunctions.forEach { it.accept(this) }
-        module.globalClasses.forEach { it.accept(this) }
+        module.globalFunctions.forEach { visit(it) }
+        module.globalClasses.forEach { visit(it) }
     }
 
     override fun output(file: File?) {
@@ -47,7 +47,7 @@ class JVMBackend(module: Module) : Backend(module) {
     }
 
     override fun visit(function: Function) {
-        val mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, function.name, getJVMType(function), null, null)
+        // val mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, function.name, getJVMType(function), null, null)
     }
 
     override fun visit(clazz: Clazz) {

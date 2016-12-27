@@ -18,16 +18,16 @@ class ConstantFoldPass(module: Module) : Pass(module) {
     fun foldExpression(expression: Expression): Expression {
         return when (expression) {
             is BinaryOperator -> {
-                val a = foldExpression(expression.expA)
-                expression.expA = a
-                val b = foldExpression(expression.expB)
-                expression.expB = b
+                val a = foldExpression(expression.expressionA)
+                expression.expressionA = a
+                val b = foldExpression(expression.expressionB)
+                expression.expressionB = b
                 var newExpression = expression
                 if (a is IntegerLiteral && b is IntegerLiteral)
                     newExpression = foldIntegerLiterals(expression, a, b, expression.operator)
                 else if (a is BinaryOperator && b is IntegerLiteral) {
-                    val aa = a.expA
-                    val ab = a.expB
+                    val aa = a.expressionA
+                    val ab = a.expressionB
                     if (a.operator == expression.operator) {
                         if (aa is IntegerLiteral)
                             newExpression = BinaryOperator(foldIntegerLiterals(a, aa, b, expression.operator), a.operator, ab)
@@ -35,8 +35,8 @@ class ConstantFoldPass(module: Module) : Pass(module) {
                             newExpression = BinaryOperator(aa, a.operator, foldIntegerLiterals(a, ab, b, expression.operator))
                     }
                 } else if (a is IntegerLiteral && b is BinaryOperator) {
-                    val ba = b.expA
-                    val bb = b.expB
+                    val ba = b.expressionA
+                    val bb = b.expressionB
                     if (b.operator == expression.operator) {
                         if (ba is IntegerLiteral)
                             newExpression = BinaryOperator(foldIntegerLiterals(b, ba, a, expression.operator), b.operator, bb)
@@ -51,14 +51,14 @@ class ConstantFoldPass(module: Module) : Pass(module) {
     }
 
     init {
-        module.globalVariables.forEach { it.accept(this) }
-        module.globalFunctions.forEach { it.accept(this) }
-        module.globalClasses.forEach { it.accept(this) }
+        module.globalVariables.forEach { visit(it) }
+        module.globalFunctions.forEach { visit(it) }
+        module.globalClasses.forEach { visit(it) }
     }
 
     override fun visit(clazz: Clazz) {
-        clazz.fields.forEach { it.accept(this) }
-        clazz.methods.forEach { it.accept(this) }
+        clazz.fields.forEach { visit(it) }
+        clazz.methods.forEach { visit(it) }
     }
 
     override fun visit(variable: Variable) {
@@ -68,15 +68,15 @@ class ConstantFoldPass(module: Module) : Pass(module) {
 
     override fun visit(statement: Statement) {
         when (statement) {
-            is VariableDeclarationStatement -> statement.variable.accept(this)
-            is VariableReassignmentStatement -> statement.exp = foldExpression(statement.exp)
+            is VariableDeclarationStatement -> visit(statement.variable)
+            is VariableReassignmentStatement -> statement.expression = foldExpression(statement.expression)
             is IfStatement -> {
-                statement.exp = foldExpression(statement.exp)
+                statement.expression = foldExpression(statement.expression)
                 statement.statements.forEach { visit(it) }
-                statement.elseStatement?.accept(this)
+                if (statement.elseStatement != null) visit(statement.elseStatement!!)
             }
             is WhileStatement -> {
-                statement.exp = foldExpression(statement.exp)
+                statement.expression = foldExpression(statement.expression)
                 statement.statements.forEach { visit(it) }
             }
         }

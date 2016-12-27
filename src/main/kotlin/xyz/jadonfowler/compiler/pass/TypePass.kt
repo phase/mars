@@ -15,8 +15,8 @@ class TypePass(module: Module) : Pass(module) {
             is BinaryOperator -> {
                 val returnType = expression.operator.returnType
 
-                val expA = expression.expA
-                val expB = expression.expB
+                val expA = expression.expressionA
+                val expB = expression.expressionB
 
                 val checkType = { expA: Expression, expB: Expression, expectedTypeOfA: Type, expectedTypeOfB: Type ->
                     if (expectedTypeOfA != T_UNDEF) {
@@ -122,9 +122,9 @@ class TypePass(module: Module) : Pass(module) {
     }
 
     init {
-        module.globalVariables.forEach { it.accept(this) }
-        module.globalClasses.forEach { it.accept(this) }
-        module.globalFunctions.forEach { it.accept(this) }
+        module.globalVariables.forEach { visit(it) }
+        module.globalClasses.forEach { visit(it) }
+        module.globalFunctions.forEach { visit(it) }
     }
 
     override fun visit(function: Function) {
@@ -188,7 +188,7 @@ class TypePass(module: Module) : Pass(module) {
     }
 
     override fun visit(clazz: Clazz) {
-        clazz.fields.forEach { it.accept(this) }
+        clazz.fields.forEach { visit(it) }
         clazz.methods.forEach { visit(it, clazz) }
     }
 
@@ -213,15 +213,15 @@ class TypePass(module: Module) : Pass(module) {
             is VariableReassignmentStatement -> visit(statement, localVariables)
             is FieldSetterStatement -> visit(statement, localVariables)
             is IfStatement -> {
-                visit(statement.exp, localVariables)
-                assert(T_BOOL == getType(statement.exp, localVariables))
+                visit(statement.expression, localVariables)
+                assert(T_BOOL == getType(statement.expression, localVariables))
                 statement.statements.forEach { visit(it, localVariables) }
                 if (statement.elseStatement != null)
                     visit(statement.elseStatement!!, localVariables)
             }
             is WhileStatement -> {
-                visit(statement.exp, localVariables)
-                assert(T_BOOL == getType(statement.exp, localVariables))
+                visit(statement.expression, localVariables)
+                assert(T_BOOL == getType(statement.expression, localVariables))
                 statement.statements.forEach { visit(it, localVariables) }
             }
             else -> visit(statement)
@@ -254,11 +254,11 @@ class TypePass(module: Module) : Pass(module) {
 
         if (thingsWithName.isNotEmpty()) {
             val variable = thingsWithName.last()
-            visit(variableReassignmentStatement.exp, localVariables)
-            val expressionType = getType(variableReassignmentStatement.exp, localVariables)
+            visit(variableReassignmentStatement.expression, localVariables)
+            val expressionType = getType(variableReassignmentStatement.expression, localVariables)
             if (variable.type != expressionType)
                 module.errors.add("Variable '${variable.name}' is marked with the type '${variable.type}' but the type" +
-                        " of '${variableReassignmentStatement.exp}' is '$expressionType'.")
+                        " of '${variableReassignmentStatement.expression}' is '$expressionType'.")
         }
     }
 
