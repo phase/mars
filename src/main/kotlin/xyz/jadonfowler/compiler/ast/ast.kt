@@ -24,13 +24,14 @@ class Module(val name: String, val imports: List<Import>, val globalVariables: L
 //    }
 
     fun getFunctionFromReference(reference: Reference): Function? {
+        val moduleName = name
         val name = reference.name
         val thingsWithName: List<Function> = globalFunctions.filter { it.name == name }
         if (thingsWithName.isNotEmpty())
             return thingsWithName.last()
 
         // Go through imports
-        val imports = imports.map { it.reference.name }
+        val imports = imports.map { it.reference.name }.filter { it != moduleName }
         globalModules.forEach {
             if (imports.contains(it.name)) {
                 val function = it.getFunctionFromReference(reference)
