@@ -1,3 +1,11 @@
+%Accumulator = type { i32 }
+
+@INITIAL_ACCUMULATOR_VALUE = constant i32 1234
+
+declare i8* @malloc(i64)
+
+declare void @free(i8*)
+
 define void @Accumulator_add(%Accumulator*, i32) {
 entry:
   %a = getelementptr inbounds %Accumulator, %Accumulator* %0, i64 0, i32 0

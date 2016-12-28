@@ -1,3 +1,5 @@
+let INITIAL_ACCUMULATOR_VALUE = 1234
+
 class Accumulator
 
     let a : Int32

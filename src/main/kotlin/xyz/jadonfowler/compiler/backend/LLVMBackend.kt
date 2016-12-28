@@ -460,10 +460,8 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val ref = expression.reference.name
                 if (localVariables.containsKey(ref)) {
                     val value = localVariables[ref]!!
-                    if (value.valueType == ValueType.ALLOCATION) {
+                    if (value.valueType == ValueType.ALLOCATION || value.valueType == ValueType.GLOBAL) {
                         LLVMBuildLoad(builder, value.llvmValueRef, ref)
-                    } else if (value.valueType == ValueType.GLOBAL) {
-                        LLVMGetInitializer(value.llvmValueRef)
                     } else if (value.valueType == ValueType.FIELD && clazz != null && function != null) {
                         val variable = LLVMGetFirstParam(function)
                         val indexInClass = clazz.fields.map { it.name }.indexOf(ref)
