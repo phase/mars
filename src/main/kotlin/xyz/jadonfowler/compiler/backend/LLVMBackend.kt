@@ -95,10 +95,30 @@ class LLVMBackend(module: Module) : Backend(module) {
 
     fun visit(import: Import) {
         val module = globalModules.filter { it.name == import.reference.name }.last()
+
+        module.globalVariables.forEach {
+            val global = LLVMAddGlobal(llvmModule, getLLVMType(it.type), it.name)
+            if (it.constant) LLVMSetGlobalConstant(global, 1)
+            LLVMSetExternallyInitialized(global, 1)
+            namedValues.put(it.name, ValueContainer(ValueType.GLOBAL, global, it.type))
+        }
+
         module.globalFunctions.forEach {
-            // Create the function
-            val argumentTypes: List<LLVMTypeRef> = it.formals.map { getLLVMType(it.type)!! }
-            val llvmFunctionType: LLVMTypeRef = LLVMFunctionType(getLLVMType(it.returnType),
+            val argumentTypes: List<LLVMTypeRef> = it.formals.map {
+                if (it.type is Clazz) {
+                    val classType = getLLVMType(it.type)
+                    LLVMPointerType(classType, 0)
+                } else getLLVMType(it.type)!!
+            }
+
+            // Get the FunctionType of the Function
+            val returnType = if (it.returnType is Clazz) {
+                // Return a pointer if the return type is a class
+                val clazzType = getLLVMType(it.returnType)
+                LLVMPointerType(clazzType, 0)
+            } else getLLVMType(it.returnType)
+
+            val llvmFunctionType: LLVMTypeRef = LLVMFunctionType(returnType,
                     PointerPointer<LLVMTypeRef>(*argumentTypes.toTypedArray()), argumentTypes.size, 0)
 
             val externAttribute: Attribute? = if (it.attributes.isEmpty()) null
@@ -113,10 +133,44 @@ class LLVMBackend(module: Module) : Backend(module) {
             val llvmFunction: LLVMValueRef = LLVMAddFunction(llvmModule, llvmFunctionName, llvmFunctionType)
             namedValues.put(it.name, ValueContainer(ValueType.FUNCTION, llvmFunction, it.returnType))
         }
+
+        module.globalClasses.forEach {
+            val clazz = it
+            clazz.methods.map { methodToFunction(clazz, it) }.forEach {
+                val argumentTypes: List<LLVMTypeRef> = it.formals.map {
+                    if (it.type is Clazz) {
+                        val classType = getLLVMType(it.type)
+                        LLVMPointerType(classType, 0)
+                    } else getLLVMType(it.type)!!
+                }
+
+                // Get the FunctionType of the Function
+                val returnType = if (it.returnType is Clazz) {
+                    // Return a pointer if the return type is a class
+                    val clazzType = getLLVMType(it.returnType)
+                    LLVMPointerType(clazzType, 0)
+                } else getLLVMType(it.returnType)
+
+                val llvmFunctionType: LLVMTypeRef = LLVMFunctionType(returnType,
+                        PointerPointer<LLVMTypeRef>(*argumentTypes.toTypedArray()), argumentTypes.size, 0)
+
+                val externAttribute: Attribute? = if (it.attributes.isEmpty()) null
+                else it.attributes.filter { it.name == "extern" }.last()
+
+                val llvmFunctionName = if (externAttribute != null) {
+                    if (externAttribute.values.isNotEmpty())
+                        externAttribute.values[0]
+                    else it.name
+                } else it.name
+
+                val llvmFunction: LLVMValueRef = LLVMAddFunction(llvmModule, llvmFunctionName, llvmFunctionType)
+                namedValues.put(it.name, ValueContainer(ValueType.FUNCTION, llvmFunction, it.returnType))
+            }
+        }
     }
 
     fun methodToFunction(clazz: Clazz, method: Function): Function {
-        val function = method
+        val function = method.copy()
         val formals = function.formals.toMutableList()
         formals.add(0, Formal(clazz, "_" + clazz.name))
         function.formals = formals
@@ -128,11 +182,9 @@ class LLVMBackend(module: Module) : Backend(module) {
         clazz.methods.map { methodToFunction(clazz, it) }.forEach { visit(it, namedValues, clazz) }
     }
 
-
     override fun visit(variable: Variable) {
         val global = LLVMAddGlobal(llvmModule, getLLVMType(variable.type), variable.name)
         if (variable.initialExpression != null) {
-            val builder = LLVMCreateBuilder()
             LLVMSetInitializer(global, visit(variable.initialExpression!!, builder, mutableMapOf(), null, null))
         }
         if (variable.constant) LLVMSetGlobalConstant(global, 1)
@@ -142,7 +194,6 @@ class LLVMBackend(module: Module) : Backend(module) {
     override fun visit(function: Function) {
         visit(function, namedValues)
     }
-
 
     fun visit(function: Function, localVariables: MutableMap<String, ValueContainer>, clazz: Clazz? = null) {
         val externAttribute: Attribute? = if (function.attributes.isEmpty()) null
@@ -333,7 +384,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val expressions = methodCall.arguments.map { visit(it, builder, localVariables, clazz, llvmFunction) }.toMutableList()
                 expressions.add(0, variable)
                 LLVMBuildCall(builder, function.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
-                        methodCall.arguments.size + 1, methodCall.toString())
+                        methodCall.arguments.size + 1, if (function.type == T_VOID) "" else methodCall.toString())
             }
             is FieldSetterStatement -> {
                 val variable = visit(ReferenceExpression(statement.variableReference), builder, localVariables, clazz, llvmFunction)

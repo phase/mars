@@ -94,11 +94,14 @@ interface Global : Node
  * and an optional last expression. The last expression is used as the return value for the function.
  * If there is no last expression, the function returns "void" (aka nothing).
  */
-class Function(val attributes: List<Attribute>, var returnType: Type, var name: String, var formals: List<Formal>, val statements: List<Statement>, var expression: Expression? = null) : Global, Type {
+class Function(val attributes: List<Attribute>, var returnType: Type, var name: String, var formals: List<Formal>,
+               val statements: List<Statement>, var expression: Expression? = null) : Global, Type {
     override fun toString(): String {
         val formals = formals.joinToString(separator = " -> ") { it.type.toString() }
         return "($formals -> $returnType)"
     }
+
+    fun copy() = Function(attributes, returnType, name, formals, statements, expression)
 }
 
 /**

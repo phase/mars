@@ -113,4 +113,8 @@ class LLVMTest {
         testIR("elifBranching")
     }
 
+    @Test fun importClass() {
+        testIR("importClass1", "importClass2")
+    }
+
 }
