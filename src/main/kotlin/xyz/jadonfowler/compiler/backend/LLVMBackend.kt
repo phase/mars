@@ -494,19 +494,27 @@ class LLVMBackend(module: Module) : Backend(module) {
             is ClazzInitializerExpression -> {
                 val clazzOfExpression = module.getNodeFromReference(expression.classReference, null) as? Clazz
                 if (clazzOfExpression != null) {
-                    val sizeOfClazz = clazzOfExpression.fields.map {
-                        when (it.type) {
+                    fun sizeOfClazz(clazz: Clazz): Long = clazz.fields.map {
+                        val type = it.type
+                        when (type) {
+                            T_BOOL -> 1L
                             T_INT8 -> 1L
                             T_INT16 -> 2L
                             T_INT32 -> 4L
                             T_INT64 -> 8L
                             T_INT128 -> 16L
+                            T_FLOAT32 -> 4L
+                            T_FLOAT64 -> 8L
+                            T_FLOAT128 -> 16L
+                            is Clazz -> sizeOfClazz(type)
                             else -> 4L
                         }
                     }.sum()
+
+                    val size = sizeOfClazz(clazzOfExpression)
                     // Call malloc
                     val mallocMemory = LLVMBuildCall(builder, namedValues["malloc"]!!.llvmValueRef,
-                            PointerPointer<LLVMValueRef>(*arrayOf(LLVMConstInt(LLVMInt64Type(), sizeOfClazz, 0))), 1, "malloc($sizeOfClazz)")
+                            PointerPointer<LLVMValueRef>(*arrayOf(LLVMConstInt(LLVMInt64Type(), size, 0))), 1, "malloc($size)")
                     // Cast the i8* that malloc returns to a pointer of the Class we want
                     LLVMBuildBitCast(builder, mallocMemory, LLVMPointerType(getLLVMType(clazzOfExpression), 0), "castTo${clazzOfExpression.name}")
                 } else LLVMConstInt(LLVMInt32Type(), 0, 0)
