@@ -234,18 +234,19 @@ class LLVMBackend(module: Module) : Backend(module) {
         LLVMPositionBuilderAtEnd(builder, entryBlock)
 
         // Add formals to LVT
-        var formalIndex = 0
-        function.formals.forEach { localVariables.put(it.name, ValueContainer(ValueType.CONSTANT, LLVMGetParam(llvmFunction, formalIndex), it.type)); formalIndex++ }
+        function.formals.forEachIndexed { i, formal ->
+            localVariables.put(formal.name, ValueContainer(ValueType.CONSTANT, LLVMGetParam(llvmFunction, i), formal.type))
+        }
 
         // Add class fields to LVT
         if (clazz != null) {
-            clazz.fields.forEachIndexed { i, variable ->
-                localVariables.put(variable.name, ValueContainer(ValueType.FIELD, null, variable.type))
+            clazz.fields.forEach {
+                localVariables.put(it.name, ValueContainer(ValueType.FIELD, null, it.type))
             }
         }
 
         // Classes to free
-        val allocatedClasses: MutableMap<String, LLVMValueRef> = mutableMapOf()
+        val allocatedClasses: MutableList<TypeContainer> = mutableListOf()
 
         // Build the statements
         function.statements.forEach { visit(it, builder, llvmFunction, localVariables, clazz, allocatedClasses) }
@@ -256,11 +257,33 @@ class LLVMBackend(module: Module) : Backend(module) {
 
         // Free the allocated classes
         allocatedClasses.forEach {
-            if (returnName != it.key) {
-                val bitPointer = LLVMBuildBitCast(builder, it.value,
-                        LLVMPointerType(LLVMInt8Type(), 0), "bitPointerTo${it.key}")
-                LLVMBuildCall(builder, namedValues["free"]!!.llvmValueRef,
-                        PointerPointer<LLVMValueRef>(*arrayOf(bitPointer)), 1, "")
+            if (returnName != it.name) {
+                val thingsToFree: MutableMap<LLVMValueRef?, String> = mutableMapOf()
+
+                // This has to be a Clazz
+                val clazzType = it.type as Clazz
+
+                // Check if fields need to be free
+                clazzType.fields.forEachIndexed { i, variable ->
+                    if (variable.type is Clazz)
+                    // Their is a field that we need to free
+                        thingsToFree.put(
+                                // Load the pointer
+                                LLVMBuildLoad(builder,
+                                        LLVMBuildStructGEP(builder, it.value, i, variable.name),
+                                        "load.${variable.name}"),
+                                variable.name)
+                }
+                // Add the parent
+                thingsToFree.put(it.value, it.name)
+
+                // Call the free function for each pointer
+                thingsToFree.forEach {
+                    val bitPointer = LLVMBuildBitCast(builder, it.key,
+                            LLVMPointerType(LLVMInt8Type(), 0), "bitPointerTo${it.value}")
+                    LLVMBuildCall(builder, namedValues["free"]!!.llvmValueRef,
+                            PointerPointer<LLVMValueRef>(*arrayOf(bitPointer)), 1, "")
+                }
             }
         }
 
@@ -274,7 +297,7 @@ class LLVMBackend(module: Module) : Backend(module) {
 
     fun visit(statement: Statement, builder: LLVMBuilderRef, llvmFunction: LLVMValueRef,
               localVariables: MutableMap<String, ValueContainer>, clazz: Clazz?,
-              allocatedClasses: MutableMap<String, LLVMValueRef>) {
+              allocatedClasses: MutableList<TypeContainer>) {
         when (statement) {
             is VariableDeclarationStatement -> {
                 val variable = statement.variable
@@ -284,12 +307,12 @@ class LLVMBackend(module: Module) : Backend(module) {
 
                         // Check if we need to free this later
                         if (variable.initialExpression is ClazzInitializerExpression)
-                            allocatedClasses.put(variable.name, value)
+                            allocatedClasses.add(TypeContainer(variable.name, value, variable.type))
                         else if (variable.initialExpression is FunctionCallExpression) {
                             val functionReference = (variable.initialExpression as FunctionCallExpression).functionCall.functionReference
                             val function = module.getFunctionFromReference(functionReference)
                             if (function != null && function.returnType is Clazz)
-                                allocatedClasses.put(variable.name, value)
+                                allocatedClasses.add(TypeContainer(variable.name, value, variable.type))
                         }
 
                         localVariables.put(variable.name, ValueContainer(ValueType.CONSTANT, value, variable.type))
@@ -308,13 +331,13 @@ class LLVMBackend(module: Module) : Backend(module) {
 
                 // Check if we need to free this later
                 if (statement.expression is ClazzInitializerExpression)
-                    allocatedClasses.put(statement.reference.name, value)
+                    allocatedClasses.add(TypeContainer(statement.reference.name, value, variable.type))
                 else if (statement.expression is FunctionCallExpression) {
                     // If the function returns a Class, we need to deallocate it once our scope ends
                     val functionReference = (statement.expression as FunctionCallExpression).functionCall.functionReference
                     val function = module.getFunctionFromReference(functionReference)
                     if (function != null && function.returnType is Clazz)
-                        allocatedClasses.put(statement.reference.name, value)
+                        allocatedClasses.add(TypeContainer(statement.reference.name, value, variable.type))
                 }
 
                 if (variable.valueType == ValueType.FIELD && clazz != null) {
@@ -389,8 +412,6 @@ class LLVMBackend(module: Module) : Backend(module) {
             is FieldSetterStatement -> {
                 val variable = visit(ReferenceExpression(statement.variableReference), builder, localVariables, clazz, llvmFunction)
                 val value = visit(statement.expression, builder, localVariables, clazz, llvmFunction)
-                if (statement.expression is ClazzInitializerExpression)
-                    allocatedClasses.put("field shit"/*TODO*/, value)
                 val indexInClass = (localVariables[statement.variableReference.name]?.type as Clazz).fields
                         .map { it.name }.indexOf(statement.fieldReference.name)
                 LLVMBuildStore(builder,
@@ -400,7 +421,8 @@ class LLVMBackend(module: Module) : Backend(module) {
         }
     }
 
-    fun visit(expression: Expression, builder: LLVMBuilderRef, localVariables: MutableMap<String, ValueContainer>, clazz: Clazz?, function: LLVMValueRef?): LLVMValueRef {
+    fun visit(expression: Expression, builder: LLVMBuilderRef, localVariables: MutableMap<String, ValueContainer>,
+              clazz: Clazz?, function: LLVMValueRef?): LLVMValueRef {
         return when (expression) {
             is IntegerLiteral -> LLVMConstInt(LLVMInt32Type(), expression.value.toLong(), 0)
             is FloatLiteral -> LLVMConstReal(getLLVMType(expression.type), expression.value)
@@ -494,6 +516,8 @@ class LLVMBackend(module: Module) : Backend(module) {
             is ClazzInitializerExpression -> {
                 val clazzOfExpression = module.getNodeFromReference(expression.classReference, null) as? Clazz
                 if (clazzOfExpression != null) {
+
+                    // Size of Class in Bytes
                     fun sizeOfClazz(clazz: Clazz): Long = clazz.fields.map {
                         val type = it.type
                         when (type) {
@@ -506,7 +530,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                             T_FLOAT32 -> 4L
                             T_FLOAT64 -> 8L
                             T_FLOAT128 -> 16L
-                            is Clazz -> sizeOfClazz(type)
+                            is Clazz -> 4L // Size of a pointer
                             else -> 4L
                         }
                     }.sum()
@@ -514,9 +538,30 @@ class LLVMBackend(module: Module) : Backend(module) {
                     val size = sizeOfClazz(clazzOfExpression)
                     // Call malloc
                     val mallocMemory = LLVMBuildCall(builder, namedValues["malloc"]!!.llvmValueRef,
-                            PointerPointer<LLVMValueRef>(*arrayOf(LLVMConstInt(LLVMInt64Type(), size, 0))), 1, "malloc($size)")
+                            PointerPointer<LLVMValueRef>(*arrayOf(LLVMConstInt(LLVMInt64Type(), size, 0))),
+                            1, "malloc($size) for ${clazzOfExpression.name}")
                     // Cast the i8* that malloc returns to a pointer of the Class we want
-                    LLVMBuildBitCast(builder, mallocMemory, LLVMPointerType(getLLVMType(clazzOfExpression), 0), "castTo${clazzOfExpression.name}")
+                    val clazzValue = LLVMBuildBitCast(builder, mallocMemory,
+                            LLVMPointerType(getLLVMType(clazzOfExpression), 0), "castTo${clazzOfExpression.name}")
+
+                    clazzOfExpression.fields.forEachIndexed { i, variable ->
+                        if (variable.type is Clazz) {
+                            // Where the field is in the struct
+                            val fieldPointer = LLVMBuildStructGEP(builder, clazzValue, i, variable.name)
+
+                            // Allocate memory for the Class
+                            val fieldSize = sizeOfClazz(variable.type as Clazz)
+                            val fieldMemory = LLVMBuildCall(builder, namedValues["malloc"]!!.llvmValueRef,
+                                    PointerPointer<LLVMValueRef>(*arrayOf(LLVMConstInt(LLVMInt64Type(), fieldSize, 0))),
+                                    1, "malloc($fieldSize) for ${variable.name}")
+                            val fieldValue = LLVMBuildBitCast(builder, fieldMemory,
+                                    LLVMPointerType(getLLVMType(variable.type), 0), "castTo${variable.type}")
+                            LLVMBuildStore(builder, fieldValue, fieldPointer)
+                        }
+                    }
+
+                    // Return the original Class allocation
+                    clazzValue
                 } else LLVMConstInt(LLVMInt32Type(), 0, 0)
             }
             is FieldGetterExpression -> {
@@ -549,7 +594,10 @@ class LLVMBackend(module: Module) : Backend(module) {
                 T_VOID -> LLVMVoidType()
                 is Clazz -> {
                     if (!clazzTypes.containsKey(type.name)) {
-                        val fieldTypes = type.fields.map { getLLVMType(it.type) }
+                        val fieldTypes = type.fields.map {
+                            if (it.type is Clazz) LLVMPointerType(getLLVMType(it.type), 0)
+                            else getLLVMType(it.type)
+                        }
                         val llvmClazzType = LLVMStructCreateNamed(LLVMGetGlobalContext(), type.name)
                         LLVMStructSetBody(llvmClazzType, PointerPointer(*fieldTypes.toTypedArray()), type.fields.size, 0)
                         clazzTypes.put(type.name, llvmClazzType)
@@ -580,5 +628,7 @@ class LLVMBackend(module: Module) : Backend(module) {
     }
 
     class ValueContainer(val valueType: ValueType, val llvmValueRef: LLVMValueRef?, val type: Type)
+
+    class TypeContainer(val name: String, val value: LLVMValueRef?, val type: Type)
 
 }

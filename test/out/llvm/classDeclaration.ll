@@ -24,9 +24,9 @@ entry:
 
 define %Account* @newAccount() {
 entry:
-  %"malloc(20)" = call i8* @malloc(i64 20)
-  %castToAccount = bitcast i8* %"malloc(20)" to %Account*
-  %"a.id = 7" = bitcast i8* %"malloc(20)" to i32*
+  %"malloc(20) for Account" = call i8* @malloc(i64 20)
+  %castToAccount = bitcast i8* %"malloc(20) for Account" to %Account*
+  %"a.id = 7" = bitcast i8* %"malloc(20) for Account" to i32*
   store i32 7, i32* %"a.id = 7", align 4
   ret %Account* %castToAccount
 }

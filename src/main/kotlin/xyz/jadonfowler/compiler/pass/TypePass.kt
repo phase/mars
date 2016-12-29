@@ -229,7 +229,8 @@ class TypePass(module: Module) : Pass(module) {
     }
 
     fun visit(fieldSetterStatement: FieldSetterStatement, localVariables: MutableMap<String, Variable>?) {
-        val varType = localVariables?.get(fieldSetterStatement.variableReference.name)?.type
+        val varName = fieldSetterStatement.variableReference.name
+        val varType = localVariables?.get(varName)?.type
         val fieldName = fieldSetterStatement.fieldReference.name
         if (varType is Clazz) {
             val possibleFields = varType.fields.filter { it.name == fieldName }
@@ -238,7 +239,7 @@ class TypePass(module: Module) : Pass(module) {
             if (fieldType != expressionType)
                 module.errors.add("Can't set '$fieldName' to '${fieldSetterStatement.expression}' because it is of type" +
                         " '$expressionType' and it needs to be of type '$fieldType'.")
-        } else module.errors.add("Can't set field of '$fieldName' because it is of type '$varType'.")
+        } else module.errors.add("Can't set field of '$varName' because it is of type '$varType'.")
     }
 
     fun visit(variableDeclarationStatement: VariableDeclarationStatement, localVariables: MutableMap<String, Variable>?) {

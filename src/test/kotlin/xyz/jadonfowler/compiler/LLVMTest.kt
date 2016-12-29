@@ -117,4 +117,8 @@ class LLVMTest {
         testIR("importClass1", "importClass2")
     }
 
+    @Test fun classInClass() {
+        testIR("classInClass")
+    }
+
 }

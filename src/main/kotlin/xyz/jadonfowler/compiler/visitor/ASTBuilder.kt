@@ -25,9 +25,9 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
             visitVariableDeclaration(it.variableDeclaration())
         }.orEmpty())
 
-        globalClasses.addAll(externalDeclarations?.filter { it.classDeclaration() != null }?.map {
-            visitClassDeclaration(it.classDeclaration())
-        }.orEmpty())
+        externalDeclarations?.filter { it.classDeclaration() != null }?.forEach {
+            globalClasses.add(visitClassDeclaration(it.classDeclaration()))
+        }
 
         globalFunctions.addAll(externalDeclarations?.filter { it.functionDeclaration() != null }?.map {
             visitFunctionDeclaration(it.functionDeclaration())

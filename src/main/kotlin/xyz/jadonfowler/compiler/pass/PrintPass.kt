@@ -87,11 +87,6 @@ class PrintPass(module: Module) : Pass(module) {
         println("}")
     }
 
-    override fun visit(statement: Statement) {
-        println("; ${statement.javaClass.simpleName}")
-        super.visit(statement)
-    }
-
     override fun visit(ifStatement: IfStatement) {
         print("if ")
         visit(ifStatement.expression)
@@ -169,7 +164,7 @@ class PrintPass(module: Module) : Pass(module) {
         print(methodCallStatement.methodCall.variableReference.name + "."
                 + methodCallStatement.methodCall.methodReference.name + "(")
         methodCallStatement.methodCall.arguments.forEach { visit(it); printI(", ") }
-        println(")")
+        printI(")\n")
     }
 
     override fun visit(integerLiteral: IntegerLiteral) {
