@@ -61,7 +61,7 @@ statementList
     ;
 
 classDeclaration
-    : 'class' ID externalDeclaration* ';'
+    : 'class' type externalDeclaration* ';'
     ;
 
 expressionList
@@ -98,7 +98,7 @@ expression
 fieldGetter: ID '.' ID;
 fieldSetter: ID '.' ID '=' expression;
 
-classInitializer: 'new' ID '(' expressionList ')';
+classInitializer: 'new' type '(' expressionList ')';
 
 argumentList: argument (',' argument)*|;
 
@@ -107,8 +107,13 @@ argument
     | variableSignature '=' expression
     ;
 
-typeAnnotation: ':' ID;
+typeAnnotation: ':' type;
 variableSignature: ID typeAnnotation?;
+
+type
+    : ID
+    | ID '<' type (',' type)* '>' // generic
+    ;
 
 HEX: '0' ('x'|'X') HEXDIGIT+ [Ll]?;
 

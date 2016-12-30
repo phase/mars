@@ -96,7 +96,7 @@ interface Global : Node
  * If there is no last expression, the function returns "void" (aka nothing).
  */
 class Function(val attributes: List<Attribute>, var returnType: Type, var name: String, var formals: List<Formal>,
-               val statements: List<Statement>, var expression: Expression? = null) : Global, Type {
+               val statements: List<Statement>, var expression: Expression? = null) : Global, Type() {
     override fun toString(): String {
         val formals = formals.joinToString(separator = " -> ") { it.type.toString() }
         return "($formals -> $returnType)"
@@ -128,7 +128,8 @@ open class Variable(var type: Type, val name: String, var initialExpression: Exp
  *
  * TODO: Class Constructors
  */
-class Clazz(val name: String, val fields: List<Variable>, val methods: List<Function>) : Global, Type {
+class Clazz(generics: List<Type> = listOf(), val name: String,
+            val fields: List<Variable>, val methods: List<Function>) : Global, Type(generics) {
     override fun toString(): String = "$name(${fields.map { it.type }.joinToString()})"
 }
 
@@ -336,7 +337,8 @@ class FieldGetterExpression(val variableReference: Reference, val fieldReference
     override fun toString(): String = "${variableReference.name}.${fieldReference.name}"
 }
 
-class ClazzInitializerExpression(val classReference: Reference, val arguments: List<Expression>) : Expression(arguments) {
+class ClazzInitializerExpression(val classReference: Reference, val generics: List<Reference>,
+                                 val arguments: List<Expression>) : Expression(arguments) {
     override fun toString(): String =
             "new ${classReference.name}(" + arguments.map { it.toString() }.joinToString() + ")"
 }

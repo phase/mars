@@ -57,9 +57,9 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
         if (identifier == "main")
             identifier = "real_main"
 
-        val returnType = getType(ctx?.typeAnnotation()?.ID()?.symbol?.text.orEmpty(), globalClasses)
+        val returnType = visitType(ctx?.typeAnnotation()?.type())
         val formals = ctx?.argumentList()?.argument()?.map {
-            Formal(getType(it.variableSignature()?.typeAnnotation()?.ID()?.symbol?.text.orEmpty(), globalClasses),
+            Formal(visitType(it.variableSignature()?.typeAnnotation()?.type()),
                     it.variableSignature()?.ID()?.symbol?.text.orEmpty())
         }.orEmpty()
 
@@ -130,10 +130,16 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
         return statements
     }
 
+    override fun visitType(ctx: LangParser.TypeContext?): Type {
+        val name = ctx?.ID()?.symbol?.text.orEmpty()
+        val generics = ctx?.type()?.map { visitType(it) }.orEmpty()
+        return getType(name, globalClasses, generics)
+    }
+
     override fun visitVariableDeclaration(ctx: LangParser.VariableDeclarationContext?): Variable {
         val constant: Boolean = ctx?.variableModifier()?.text.equals("let")
         val identifier = ctx?.variableSignature()?.ID()?.symbol?.text.orEmpty()
-        val type = getType(ctx?.variableSignature()?.typeAnnotation()?.ID()?.symbol?.text.orEmpty(), globalClasses)
+        val type = visitType(ctx?.variableSignature()?.typeAnnotation()?.type())
         var expression: Expression? = null
         val expressionContext: LangParser.ExpressionContext? = ctx?.expression()
         if (expressionContext != null)
@@ -142,11 +148,14 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
     }
 
     override fun visitClassDeclaration(ctx: LangParser.ClassDeclarationContext?): Clazz {
-        val identifier = ctx?.ID()?.symbol?.text.orEmpty()
+        val identifier = ctx?.type()?.ID()?.symbol?.text.orEmpty()
+        val generics = ctx?.type()?.type()?.map {
+            makeType(it?.ID()?.symbol?.text.orEmpty())
+        }.orEmpty()
         val declarations = ctx?.externalDeclaration()?.map { visitExternalDeclaration(it) }.orEmpty()
         val fields = declarations.filterIsInstance<Variable>()
         val methods = declarations.filterIsInstance<Function>()
-        return Clazz(identifier, fields, methods)
+        return Clazz(generics, identifier, fields, methods)
     }
 
     override fun visitFunctionCall(ctx: LangParser.FunctionCallContext?): FunctionCall {
@@ -300,9 +309,10 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
     }
 
     override fun visitClassInitializer(ctx: LangParser.ClassInitializerContext?): ClazzInitializerExpression {
-        val className = ctx?.ID()?.symbol?.text.orEmpty()
+        val className = ctx?.type()?.ID()?.symbol?.text.orEmpty()
+        val generics = ctx?.type()?.type()?.map { Reference(it.ID()?.symbol?.text.orEmpty()) }.orEmpty()
         val expressions = expressionListFromContext(ctx?.expressionList())
-        return ClazzInitializerExpression(Reference(className), expressions)
+        return ClazzInitializerExpression(Reference(className), generics, expressions)
     }
 
     override fun visitArgumentList(ctx: LangParser.ArgumentListContext?): Node {

@@ -1,32 +1,32 @@
 package xyz.jadonfowler.compiler.ast
 
-interface Type
+open class Type(val generics: List<Type> = listOf()) : Node
 
-interface NumericType : Type
+open class NumericType : Type()
 
-interface IntType : NumericType {
-    fun getBits(): Int
+abstract class IntType : NumericType() {
+    abstract fun getBits(): Int
 }
 
-interface FloatType : NumericType {
-    fun getBits(): Int
+abstract class FloatType : NumericType() {
+    abstract fun getBits(): Int
 }
 
-private fun makeType(name: String): Type {
-    return object : Type {
+fun makeType(name: String): Type {
+    return object : Type() {
         override fun toString(): String = name
     }
 }
 
 private fun makeIntType(bits: Int): IntType {
-    return object : IntType {
+    return object : IntType() {
         override fun toString(): String = "Int$bits"
         override fun getBits() = bits
     }
 }
 
 private fun makeFloatType(bits: Int): FloatType {
-    return object : FloatType {
+    return object : FloatType() {
         override fun toString(): String = "Float$bits"
         override fun getBits(): Int = bits
     }
@@ -57,7 +57,7 @@ val T_BOOL = makeType("Bool")
 
 val T_STRING = makeType("String")
 
-fun getType(name: String, classes: List<Clazz>): Type {
+fun getType(name: String, classes: List<Clazz>, generics: List<Type>): Type {
     return when (name) {
         "Int8" -> T_INT8
         "Int16" -> T_INT16
@@ -76,8 +76,11 @@ fun getType(name: String, classes: List<Clazz>): Type {
             val possibleClasses = classes.filter { it.name == name }
             if (possibleClasses.isNotEmpty())
                 possibleClasses.last()
-            else
+            else {
+                //check generics
+                generics.forEach { if (it.toString() == name) return it }
                 T_UNDEF
+            }
         }
     }
 }
