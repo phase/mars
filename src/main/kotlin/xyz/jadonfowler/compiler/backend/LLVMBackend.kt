@@ -491,7 +491,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                                 LLVMBuildStructGEP(builder, variable, indexInClass, ref),
                                 expression.toString())
                     } else value.llvmValueRef!!
-                } else LLVMConstInt(LLVMInt32Type(), 0, 0)
+                } else throw Exception("Can't find reference: $expression.")
             }
             is FunctionCallExpression -> {
                 val functionCall = expression.functionCall
@@ -545,24 +545,18 @@ class LLVMBackend(module: Module) : Backend(module) {
                             LLVMPointerType(getLLVMType(clazzOfExpression), 0), "castTo${clazzOfExpression.name}")
 
                     clazzOfExpression.fields.forEachIndexed { i, variable ->
-                        if (variable.type is Clazz) {
+                        if (variable.initialExpression != null) {
                             // Where the field is in the struct
                             val fieldPointer = LLVMBuildStructGEP(builder, clazzValue, i, variable.name)
-
-                            // Allocate memory for the Class
-                            val fieldSize = sizeOfClazz(variable.type as Clazz)
-                            val fieldMemory = LLVMBuildCall(builder, namedValues["malloc"]!!.llvmValueRef,
-                                    PointerPointer<LLVMValueRef>(*arrayOf(LLVMConstInt(LLVMInt64Type(), fieldSize, 0))),
-                                    1, "malloc($fieldSize) for ${variable.name}")
-                            val fieldValue = LLVMBuildBitCast(builder, fieldMemory,
-                                    LLVMPointerType(getLLVMType(variable.type), 0), "castTo${variable.type}")
+                            // Store the value
+                            val fieldValue = visit(variable.initialExpression!!, builder, mutableMapOf(), null, null)
                             LLVMBuildStore(builder, fieldValue, fieldPointer)
                         }
                     }
 
                     // Return the original Class allocation
                     clazzValue
-                } else LLVMConstInt(LLVMInt32Type(), 0, 0)
+                } else throw Exception("Unimplemented ${expression.javaClass.simpleName}: $expression.")
             }
             is FieldGetterExpression -> {
                 val variable = visit(ReferenceExpression(expression.variableReference), builder, localVariables, clazz, function)
@@ -572,7 +566,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                         LLVMBuildStructGEP(builder, variable, indexInClass, expression.variableReference.name),
                         expression.toString())
             }
-            else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
+            else -> throw Exception("Unimplemented ${expression.javaClass.simpleName}: $expression.")
         }
     }
 

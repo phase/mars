@@ -27,40 +27,29 @@ entry:
   ret i32 %acc.a
 }
 
-define void @CPU_initAcc(%CPU*) {
-entry:
-  %"malloc(4) for Accumulator" = call i8* @malloc(i64 4)
-  %1 = bitcast %CPU* %0 to i8**
-  store i8* %"malloc(4) for Accumulator", i8** %1, align 8
-  %"malloc(4) for Accumulator1" = call i8* @malloc(i64 4)
-  %otherAcc = getelementptr inbounds %CPU, %CPU* %0, i64 0, i32 1
-  %2 = bitcast %Accumulator** %otherAcc to i8**
-  store i8* %"malloc(4) for Accumulator1", i8** %2, align 8
-  call void @free(i8* %"malloc(4) for Accumulator")
-  call void @free(i8* %"malloc(4) for Accumulator1")
-  ret void
-}
-
 define i32 @real_main() {
 entry:
   %"malloc(8) for CPU" = call i8* @malloc(i64 8)
   %castToCPU = bitcast i8* %"malloc(8) for CPU" to %CPU*
-  %"malloc(4) for acc" = call i8* @malloc(i64 4)
+  %"malloc(4) for Accumulator" = call i8* @malloc(i64 4)
+  %a = bitcast i8* %"malloc(4) for Accumulator" to i32*
+  store i32 0, i32* %a, align 4
   %0 = bitcast i8* %"malloc(8) for CPU" to i8**
-  store i8* %"malloc(4) for acc", i8** %0, align 8
+  store i8* %"malloc(4) for Accumulator", i8** %0, align 8
   %otherAcc = getelementptr inbounds i8, i8* %"malloc(8) for CPU", i64 8
-  %"malloc(4) for otherAcc" = call i8* @malloc(i64 4)
+  %"malloc(4) for Accumulator1" = call i8* @malloc(i64 4)
+  %a3 = bitcast i8* %"malloc(4) for Accumulator1" to i32*
+  store i32 0, i32* %a3, align 4
   %1 = bitcast i8* %otherAcc to i8**
-  store i8* %"malloc(4) for otherAcc", i8** %1, align 8
-  call void @CPU_za(%CPU* %castToCPU)
+  store i8* %"malloc(4) for Accumulator1", i8** %1, align 8
   call void @CPU_ia(%CPU* %castToCPU)
   call void @CPU_ia(%CPU* %castToCPU)
   %"cpu.ga()" = call i32 @CPU_ga(%CPU* %castToCPU)
   %"printInt(cpu.ga())" = call i32 @printInt(i32 %"cpu.ga()")
-  %load.acc4 = load i8*, i8** %0, align 8
-  %load.otherAcc5 = load i8*, i8** %1, align 8
-  call void @free(i8* %load.acc4)
-  call void @free(i8* %load.otherAcc5)
+  %load.acc6 = load i8*, i8** %0, align 8
+  %load.otherAcc7 = load i8*, i8** %1, align 8
+  call void @free(i8* %load.acc6)
+  call void @free(i8* %load.otherAcc7)
   call void @free(i8* %"malloc(8) for CPU")
   ret i32 0
 }

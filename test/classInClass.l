@@ -1,13 +1,13 @@
 import io
 
 class Accumulator
-    let a : Int32
+    let a = 0
 ;
 
 class CPU
 
-    let acc : Accumulator
-    let otherAcc = Accumulator
+    let acc = new Accumulator()
+    let otherAcc = new Accumulator()
 
     za ()
         acc.a = 0
@@ -18,15 +18,10 @@ class CPU
     ga ()
         acc.a
 
-    initAcc()
-        acc = new Accumulator(),
-        otherAcc = new Accumulator()
-
 ;
 
 main ()
     let cpu = new CPU(),
-    cpu.za(),
     cpu.ia(),
     cpu.ia(),
     printInt(cpu.ga()),
