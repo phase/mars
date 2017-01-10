@@ -17,7 +17,7 @@ class LLVMTest {
 
         main(arrayOf("--llvm", "--ast", *code.toTypedArray()))
 
-        val actualIR = testName.map { File("bin/$it.ll").readLines().joinToString("\n") }
+        val actualIR = testName.map { File("bin/test.$it.ll").readLines().joinToString("\n") }
         actualIR.forEach(::println)
 
         // contains is used to ignore header information, which is different on every platform
