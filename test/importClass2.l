@@ -1,5 +1,5 @@
-import io
-import importClass1
+import std.io
+import test.importClass1
 
 main ()
     let a = new Accumulator(),

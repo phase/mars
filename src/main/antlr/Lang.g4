@@ -2,8 +2,10 @@ grammar Lang;
 
 program: importDeclaration* externalDeclaration* EOF;
 
+id_p: ID ('.' ID)*;
+
 importDeclaration
-    : 'import' ID
+    : 'import' id_p (',' id_p)*
     ;
 
 externalDeclaration

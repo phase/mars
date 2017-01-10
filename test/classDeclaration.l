@@ -1,4 +1,4 @@
-import io
+import std.io
 
 class Account
     var id : Int32

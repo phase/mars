@@ -1,4 +1,4 @@
-import io
+import std.io
 
 class Accumulator
     let a = 0

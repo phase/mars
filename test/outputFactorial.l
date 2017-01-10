@@ -1,4 +1,4 @@
-import io
+import std.io
 
 fac (n)
     var r = 0,

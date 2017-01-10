@@ -1,4 +1,4 @@
-import io
+import std.io
 
 @extern rand() : Int32 0
 

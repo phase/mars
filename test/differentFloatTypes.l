@@ -1,5 +1,4 @@
-import fpmath
-import io
+import std.math.fp, std.io
 
 addFloat32To64 (a : Float32, b : Float64)
     a +. b

@@ -17,6 +17,8 @@ import java.io.File
 
 val globalModules = mutableListOf<Module>()
 
+val EXTENSION = "l"
+
 fun main(args: Array<String>) {
     val files: MutableList<String> = mutableListOf()
     val options: MutableList<String> = mutableListOf()
@@ -42,14 +44,32 @@ fun main(args: Array<String>) {
     val stdDirectory = File("std")
     if (stdDirectory.exists() && stdDirectory.isDirectory) {
         val stdFiles = stdDirectory.listFiles()
-        stdFiles.forEach { if (it.isFile) files.add(it.canonicalPath) }
+        fun addFiles(it: File) {
+            if (it.isFile && it.extension == EXTENSION)
+                files.add(it.canonicalPath)
+            else if (it.isDirectory)
+                it.listFiles().forEach(::addFiles)
+        }
+        stdFiles.forEach(::addFiles)
     }
 
     // Read files that we need to compile
     files.forEach {
         val file = File(it)
         if (file.exists() && !file.isDirectory) {
-            modulesToCompile.put(file.nameWithoutExtension, file.readLines().joinToString("\n"))
+            var moduleName = file.parentFile.name + "." + file.nameWithoutExtension
+
+            // Get package name
+            var parent = file.parentFile.parentFile
+            while (parent != null && parent.isDirectory) {
+                val filesInParent = parent.listFiles().filter { it.extension == EXTENSION }
+                if (filesInParent.isNotEmpty()) {
+                    moduleName = parent.name + "." + moduleName
+                } else break
+                parent = parent.parentFile
+            }
+
+            modulesToCompile.put(moduleName, file.readLines().joinToString("\n"))
         } else {
             println("Can't find file '$it'.")
             System.exit(1)

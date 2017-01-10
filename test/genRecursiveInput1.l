@@ -1,4 +1,4 @@
-import genRecursiveInput2
+import test.genRecursiveInput2
 
 test1 () : Int32
     test4() + 1

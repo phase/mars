@@ -19,7 +19,7 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
     override fun visitProgram(ctx: LangParser.ProgramContext?): Module {
         val externalDeclarations = ctx?.externalDeclaration()
 
-        imports.addAll(ctx?.importDeclaration()?.map { visitImportDeclaration(it) }.orEmpty())
+        imports.addAll(ctx?.importDeclaration()?.map { import(it) }?.flatten()!!)
 
         globalVariables.addAll(externalDeclarations?.filter { it.variableDeclaration() != null }?.map {
             visitVariableDeclaration(it.variableDeclaration())
@@ -38,8 +38,8 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
         return module
     }
 
-    override fun visitImportDeclaration(ctx: LangParser.ImportDeclarationContext?): Import {
-        return Import(Reference(ctx?.ID()?.symbol?.text.orEmpty()))
+    fun import(ctx: LangParser.ImportDeclarationContext?): List<Import> {
+        return ctx?.id_p()?.map { Import(Reference(it?.text ?: "")) }.orEmpty()
     }
 
     override fun visitExternalDeclaration(ctx: LangParser.ExternalDeclarationContext?): Node {
