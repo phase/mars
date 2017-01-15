@@ -125,10 +125,8 @@ open class Variable(var type: Type, val name: String, var initialExpression: Exp
 
 /**
  * Classes (Clazz because Java contains a class named Class) are normal OOP classes, and can contain fields and methods.
- *
- * TODO: Class Constructors
  */
-class Clazz(val name: String, val fields: List<Variable>, val methods: List<Function>) : Global, Type {
+class Clazz(val name: String, val fields: List<Variable>, val methods: List<Function>, val constructor: Function?) : Global, Type {
     override fun toString(): String = "$name(${fields.map { it.type }.joinToString()})"
 }
 

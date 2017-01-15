@@ -179,6 +179,8 @@ class LLVMBackend(module: Module) : Backend(module) {
     }
 
     override fun visit(clazz: Clazz) {
+        if (clazz.constructor != null)
+            visit(methodToFunction(clazz, clazz.constructor), namedValues, clazz)
         clazz.methods.map { methodToFunction(clazz, it) }.forEach { visit(it, namedValues, clazz) }
     }
 
@@ -555,6 +557,23 @@ class LLVMBackend(module: Module) : Backend(module) {
                         }
                     }
 
+                    // Call constructor
+                    if (clazzOfExpression.constructor != null) {
+                        // Find constructor
+                        val functionName = clazzOfExpression.name + "_init"
+                        val method = namedValues.filter { it.key == functionName }
+                                .values.filter { it.valueType == ValueType.FUNCTION }.last()
+
+                        // Build arguments
+                        val arguments = expression.arguments.map { visit(it, builder, localVariables, null, null) }
+                                .toMutableList()
+                        arguments.add(0, clazzValue)
+
+                        LLVMBuildCall(builder, method.llvmValueRef, PointerPointer(*arguments.toTypedArray()),
+                                arguments.size, if (method.type == T_VOID) ""
+                        else "$ { clazzOfExpression.name }_init(${expression.arguments})")
+                    }
+
                     // Return the original Class allocation
                     clazzValue
                 } else throw Exception("Unimplemented ${expression.javaClass.simpleName}: $expression.")
@@ -609,7 +628,7 @@ class LLVMBackend(module: Module) : Backend(module) {
 
         fun getType(v: LLVMValueRef): Type {
             val type = LLVMTypeOf(v)
-            val returnType: Type? = when (type) {
+            return when (type) {
                 LLVMInt1Type() -> T_BOOL
                 LLVMInt8Type() -> T_INT8
                 LLVMInt16Type() -> T_INT16
@@ -620,15 +639,14 @@ class LLVMBackend(module: Module) : Backend(module) {
                 LLVMDoubleType() -> T_FLOAT64
                 LLVMFP128Type() -> T_FLOAT128
                 LLVMVoidType() -> T_VOID
-                else -> null
-            }
-            return returnType ?: run {
-                clazzTypes.forEach {
-                    if (LLVMPointerType(it.value, 0) == type) {
-                        return it.key
+                else -> {
+                    clazzTypes.forEach {
+                        if (LLVMPointerType(it.value, 0) == type) {
+                            return it.key
+                        }
                     }
+                    T_UNDEF
                 }
-                T_UNDEF
             }
         }
 

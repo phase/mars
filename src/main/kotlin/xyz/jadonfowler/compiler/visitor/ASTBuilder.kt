@@ -145,8 +145,12 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
         val identifier = ctx?.ID()?.symbol?.text.orEmpty()
         val declarations = ctx?.externalDeclaration()?.map { visitExternalDeclaration(it) }.orEmpty()
         val fields = declarations.filterIsInstance<Variable>()
-        val methods = declarations.filterIsInstance<Function>()
-        return Clazz(identifier, fields, methods)
+        val methods = declarations.filterIsInstance<Function>().toMutableList()
+        val constructors = methods.filter { it.name == "init" }
+        val constructor: Function? = if (constructors.isNotEmpty()) constructors.last() else null
+        if (constructor != null)
+            methods.remove(constructor)
+        return Clazz(identifier, fields, methods, constructor)
     }
 
     override fun visitFunctionCall(ctx: LangParser.FunctionCallContext?): FunctionCall {

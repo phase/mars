@@ -74,6 +74,8 @@ class PrintPass(module: Module) : Pass(module) {
         tabIndent++
         clazz.fields.map { visit(it) }
         println()
+        if (clazz.constructor != null)
+            visit(clazz.constructor)
         clazz.methods.map { visit(it) }
         tabIndent--
         println("}")

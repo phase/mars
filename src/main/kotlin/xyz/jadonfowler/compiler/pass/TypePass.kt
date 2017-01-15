@@ -69,7 +69,7 @@ class TypePass(module: Module) : Pass(module) {
 
                 if (returnType is IntType) {
                     getBiggestInt(getType(expA, localVariables) as IntType, getType(expB, localVariables) as IntType)
-                } else if(returnType is FloatType) {
+                } else if (returnType is FloatType) {
                     getBiggestFloat(getType(expA, localVariables) as FloatType, getType(expB, localVariables) as FloatType)
                 } else
                     returnType
@@ -188,6 +188,8 @@ class TypePass(module: Module) : Pass(module) {
 
     override fun visit(clazz: Clazz) {
         clazz.fields.forEach { visit(it) }
+        if (clazz.constructor != null)
+            visit(clazz.constructor, clazz)
         clazz.methods.forEach { visit(it, clazz) }
     }
 

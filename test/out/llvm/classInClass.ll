@@ -32,14 +32,18 @@ entry:
   %"malloc(8) for CPU" = call i8* @malloc(i64 8)
   %castToCPU = bitcast i8* %"malloc(8) for CPU" to %CPU*
   %"malloc(4) for Accumulator" = call i8* @malloc(i64 4)
+  %castToAccumulator = bitcast i8* %"malloc(4) for Accumulator" to %Accumulator.1*
   %a = bitcast i8* %"malloc(4) for Accumulator" to i32*
   store i32 0, i32* %a, align 4
+  call void @Accumulator_init(%Accumulator.1* %castToAccumulator, i32 1)
   %0 = bitcast i8* %"malloc(8) for CPU" to i8**
   store i8* %"malloc(4) for Accumulator", i8** %0, align 8
   %otherAcc = getelementptr inbounds i8, i8* %"malloc(8) for CPU", i64 8
   %"malloc(4) for Accumulator1" = call i8* @malloc(i64 4)
+  %castToAccumulator2 = bitcast i8* %"malloc(4) for Accumulator1" to %Accumulator.1*
   %a3 = bitcast i8* %"malloc(4) for Accumulator1" to i32*
   store i32 0, i32* %a3, align 4
+  call void @Accumulator_init(%Accumulator.1* %castToAccumulator2, i32 2)
   %1 = bitcast i8* %otherAcc to i8**
   store i8* %"malloc(4) for Accumulator1", i8** %1, align 8
   call void @CPU_ia(%CPU* %castToCPU)

@@ -2,12 +2,15 @@ import std.io
 
 class Accumulator
     let a = 0
+
+    init (initialValue : Int32)
+        a = initialValue
 ;
 
 class CPU
 
-    let acc = new Accumulator()
-    let otherAcc = new Accumulator()
+    let acc = new Accumulator(1)
+    let otherAcc = new Accumulator(2)
 
     za ()
         acc.a = 0
