@@ -250,7 +250,7 @@ class ASTTest {
         val returnExpression = module.globalFunctions[0].expression
         assertTrue(returnExpression is FieldGetterExpression)
         val field = returnExpression as FieldGetterExpression
-        assertEquals("a", field.variableReference.name)
+        assertEquals("a", field.variable.toString())
         assertEquals("thing", field.fieldReference.name)
 
         println(PrintPass(module).output)
@@ -266,7 +266,7 @@ class ASTTest {
         val statement = module.globalFunctions[0].statements[0]
         assertTrue(statement is FieldSetterStatement)
         val field = statement as FieldSetterStatement
-        assertEquals("a", field.variableReference.name)
+        assertEquals("a", field.variable.toString())
         assertEquals("thing", field.fieldReference.name)
         assertEquals(8, (field.expression as IntegerLiteral).value)
 

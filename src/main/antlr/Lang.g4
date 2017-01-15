@@ -74,7 +74,7 @@ expressionList
 
 expression
     : ('-'|'+') expression
-    | expression ':' expression
+    | expression '.' ID // field getter
     | expression ('*'|'/'|'*.'|'/.') expression
     | expression ('+'|'-'|'-.'|'+.') expression
     | expression ('>'|'>='|'<'|'<='|'=='|'!=') expression
@@ -85,7 +85,6 @@ expression
     | '(' expression ')'
     | expression '`' ID '`' expression // infix function
     | methodCall
-    | fieldGetter
     | classInitializer
     | functionCall
     | ID
@@ -97,8 +96,7 @@ expression
     | 'false'
     ;
 
-fieldGetter: ID '.' ID;
-fieldSetter: ID '.' ID '=' expression;
+fieldSetter: expression '.' ID '=' expression;
 
 classInitializer: 'new' ID '(' expressionList ')';
 

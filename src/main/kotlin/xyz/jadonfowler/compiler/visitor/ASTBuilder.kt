@@ -162,17 +162,11 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
         return MethodCall(Reference(variableName), Reference(methodName), expressions)
     }
 
-    override fun visitFieldGetter(ctx: LangParser.FieldGetterContext?): FieldGetterExpression {
-        val variableReference = Reference(ctx?.ID(0)?.symbol?.text.orEmpty())
-        val fieldReference = Reference(ctx?.ID(1)?.symbol?.text.orEmpty())
-        return FieldGetterExpression(variableReference, fieldReference)
-    }
-
     override fun visitFieldSetter(ctx: LangParser.FieldSetterContext?): FieldSetterStatement {
-        val variableReference = Reference(ctx?.ID(0)?.symbol?.text.orEmpty())
-        val fieldReference = Reference(ctx?.ID(1)?.symbol?.text.orEmpty())
-        val expression = visitExpression(ctx?.expression())
-        return FieldSetterStatement(variableReference, fieldReference, expression)
+        val variable = visitExpression(ctx?.expression(0))
+        val fieldReference = Reference(ctx?.ID()?.symbol?.text.orEmpty())
+        val expression = visitExpression(ctx?.expression(1))
+        return FieldSetterStatement(variable, fieldReference, expression)
     }
 
     fun expressionListFromContext(expressionListContext: LangParser.ExpressionListContext?): List<Expression> {
@@ -255,10 +249,17 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
         }
         when (secondSymbol) {
             "`" -> {
+                // Inline Function Call
                 val firstExpression = visitExpression(ctx?.getChild(0) as LangParser.ExpressionContext?)
                 val secondExpression = visitExpression(ctx?.getChild(4) as LangParser.ExpressionContext?)
                 val functionName = ctx?.getChild(2)?.text.orEmpty()
                 return FunctionCallExpression(FunctionCall(Reference(functionName), listOf(firstExpression, secondExpression)))
+            }
+            "." -> {
+                // Field Getter
+                val variable = visitExpression(ctx?.expression(0))
+                val fieldReference = Reference(ctx?.ID()?.symbol?.text.orEmpty())
+                return FieldGetterExpression(variable, fieldReference)
             }
         }
         if (ctx?.getChild(0) is LangParser.ExpressionContext && ctx?.getChild(2) is LangParser.ExpressionContext) {
@@ -271,8 +272,6 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
             }
         } else if (ctx?.methodCall() != null) {
             return MethodCallExpression(visitMethodCall(ctx?.methodCall()))
-        } else if (ctx?.fieldGetter() != null) {
-            return visitFieldGetter(ctx?.fieldGetter())
         } else if (ctx?.functionCall() != null) {
             return FunctionCallExpression(visitFunctionCall(ctx?.functionCall()))
         } else if (ctx?.classInitializer() != null) {

@@ -24,5 +24,6 @@ main ()
     let cpu = new CPU(),
     cpu.ia(),
     cpu.ia(),
+    cpu.acc.a = 7 - cpu.acc.a,
     printInt(cpu.ga()),
     0

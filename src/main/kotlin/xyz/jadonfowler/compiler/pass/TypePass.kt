@@ -94,7 +94,7 @@ class TypePass(module: Module) : Pass(module) {
                 node as? Clazz ?: T_UNDEF
             }
             is FieldGetterExpression -> {
-                val varType = localVariables?.get(expression.variableReference.name)?.type
+                val varType = getType(expression.variable, localVariables)
                 if (varType is Clazz) {
                     val fieldName = expression.fieldReference.name
                     val possibleFields = varType.fields.filter { it.name == fieldName }
@@ -135,7 +135,6 @@ class TypePass(module: Module) : Pass(module) {
         val localVariables: MutableMap<String, Variable> = mutableMapOf()
 
         if (clazz != null) {
-            println()
             clazz.fields.forEach { localVariables.put(it.name, it) }
         }
 
@@ -229,8 +228,7 @@ class TypePass(module: Module) : Pass(module) {
     }
 
     fun visit(fieldSetterStatement: FieldSetterStatement, localVariables: MutableMap<String, Variable>?) {
-        val varName = fieldSetterStatement.variableReference.name
-        val varType = localVariables?.get(varName)?.type
+        val varType = getType(fieldSetterStatement.variable, localVariables)
         val fieldName = fieldSetterStatement.fieldReference.name
         if (varType is Clazz) {
             val possibleFields = varType.fields.filter { it.name == fieldName }
@@ -239,7 +237,7 @@ class TypePass(module: Module) : Pass(module) {
             if (fieldType != expressionType)
                 module.errors.add("Can't set '$fieldName' to '${fieldSetterStatement.expression}' because it is of type" +
                         " '$expressionType' and it needs to be of type '$fieldType'.")
-        } else module.errors.add("Can't set field of '$varName' because it is of type '$varType'.")
+        } else module.errors.add("Can't set field of '${fieldSetterStatement.variable}' because it is of type '$varType'.")
     }
 
     fun visit(variableDeclarationStatement: VariableDeclarationStatement, localVariables: MutableMap<String, Variable>?) {

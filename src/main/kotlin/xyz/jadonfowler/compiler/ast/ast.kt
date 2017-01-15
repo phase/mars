@@ -135,7 +135,9 @@ class Clazz(val name: String, val fields: List<Variable>, val methods: List<Func
 /**
  * A Reference to a declaration.
  */
-class Reference(val name: String)
+class Reference(val name: String) {
+    override fun toString(): String = name
+}
 
 /**
  * Stores the references and arguments for calling a Function.
@@ -261,8 +263,8 @@ class MethodCallStatement(val methodCall: MethodCall) : Statement() {
 /**
  * Set field of a Class
  */
-class FieldSetterStatement(val variableReference: Reference, val fieldReference: Reference, val expression: Expression) : Statement() {
-    override fun toString(): String = variableReference.name + "." + fieldReference.name + " = " + expression.toString()
+class FieldSetterStatement(val variable: Expression, val fieldReference: Reference, val expression: Expression) : Statement() {
+    override fun toString(): String = "$variable.$fieldReference = $expression"
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -332,8 +334,8 @@ class MethodCallExpression(val methodCall: MethodCall) : Expression(methodCall.a
 /**
  * Get field of a Class
  */
-class FieldGetterExpression(val variableReference: Reference, val fieldReference: Reference) : Expression() {
-    override fun toString(): String = "${variableReference.name}.${fieldReference.name}"
+class FieldGetterExpression(val variable: Expression, val fieldReference: Reference) : Expression() {
+    override fun toString(): String = "$variable.$fieldReference"
 }
 
 class ClazzInitializerExpression(val classReference: Reference, val arguments: List<Expression>) : Expression(arguments) {

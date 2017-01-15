@@ -410,9 +410,10 @@ class LLVMBackend(module: Module) : Backend(module) {
                         methodCall.arguments.size + 1, if (function.type == T_VOID) "" else methodCall.toString())
             }
             is FieldSetterStatement -> {
-                val variable = visit(ReferenceExpression(statement.variableReference), builder, localVariables, clazz, llvmFunction)
+                val variable = visit(statement.variable, builder, localVariables, clazz, llvmFunction)
                 val value = visit(statement.expression, builder, localVariables, clazz, llvmFunction)
-                val indexInClass = (localVariables[statement.variableReference.name]?.type as Clazz).fields
+                val type = getType(variable)
+                val indexInClass = (type as Clazz).fields
                         .map { it.name }.indexOf(statement.fieldReference.name)
                 LLVMBuildStore(builder,
                         value,
@@ -559,11 +560,12 @@ class LLVMBackend(module: Module) : Backend(module) {
                 } else throw Exception("Unimplemented ${expression.javaClass.simpleName}: $expression.")
             }
             is FieldGetterExpression -> {
-                val variable = visit(ReferenceExpression(expression.variableReference), builder, localVariables, clazz, function)
-                val indexInClass = (localVariables[expression.variableReference.name]?.type as Clazz).fields
+                val variable = visit(expression.variable, builder, localVariables, clazz, function)
+                val type = getType(variable)
+                val indexInClass = (type as Clazz).fields
                         .map { it.name }.indexOf(expression.fieldReference.name)
                 LLVMBuildLoad(builder,
-                        LLVMBuildStructGEP(builder, variable, indexInClass, expression.variableReference.name),
+                        LLVMBuildStructGEP(builder, variable, indexInClass, expression.variable.toString()),
                         expression.toString())
             }
             else -> throw Exception("Unimplemented ${expression.javaClass.simpleName}: $expression.")
@@ -572,7 +574,7 @@ class LLVMBackend(module: Module) : Backend(module) {
 
     companion object {
 
-        private val clazzTypes: MutableMap<String, LLVMTypeRef> = mutableMapOf()
+        private val clazzTypes: MutableMap<Clazz, LLVMTypeRef> = mutableMapOf()
 
         fun getLLVMType(type: Type): LLVMTypeRef? {
             return when (type) {
@@ -587,21 +589,46 @@ class LLVMBackend(module: Module) : Backend(module) {
                 T_FLOAT128 -> LLVMFP128Type()
                 T_VOID -> LLVMVoidType()
                 is Clazz -> {
-                    if (!clazzTypes.containsKey(type.name)) {
+                    if (!clazzTypes.containsKey(type)) {
                         val fieldTypes = type.fields.map {
                             if (it.type is Clazz) LLVMPointerType(getLLVMType(it.type), 0)
                             else getLLVMType(it.type)
                         }
                         val llvmClazzType = LLVMStructCreateNamed(LLVMGetGlobalContext(), type.name)
                         LLVMStructSetBody(llvmClazzType, PointerPointer(*fieldTypes.toTypedArray()), type.fields.size, 0)
-                        clazzTypes.put(type.name, llvmClazzType)
+                        clazzTypes.put(type, llvmClazzType)
                     }
-                    clazzTypes[type.name]
+                    clazzTypes[type]
                 }
                 T_UNDEF -> {
                     throw Exception("Can't find LLVM type for Undefined!")
                 }
                 else -> null
+            }
+        }
+
+        fun getType(v: LLVMValueRef): Type {
+            val type = LLVMTypeOf(v)
+            val returnType: Type? = when (type) {
+                LLVMInt1Type() -> T_BOOL
+                LLVMInt8Type() -> T_INT8
+                LLVMInt16Type() -> T_INT16
+                LLVMInt32Type() -> T_INT32
+                LLVMInt64Type() -> T_INT64
+                LLVMInt128Type() -> T_INT128
+                LLVMFloatType() -> T_FLOAT32
+                LLVMDoubleType() -> T_FLOAT64
+                LLVMFP128Type() -> T_FLOAT128
+                LLVMVoidType() -> T_VOID
+                else -> null
+            }
+            return returnType ?: run {
+                clazzTypes.forEach {
+                    if (LLVMPointerType(it.value, 0) == type) {
+                        return it.key
+                    }
+                }
+                T_UNDEF
             }
         }
 
