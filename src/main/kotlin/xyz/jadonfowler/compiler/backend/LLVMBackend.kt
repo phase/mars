@@ -364,7 +364,40 @@ class LLVMBackend(module: Module) : Backend(module) {
 
                 // Visit each branch and tell them to merge afterwards
                 LLVMPositionBuilderAtEnd(builder, trueBlock)
-                statement.statements.forEach { visit(it, builder, llvmFunction, localVariables, clazz, allocatedClasses) }
+
+                val allocatedClassesInIf: MutableList<TypeContainer> = mutableListOf()
+                statement.statements.forEach { visit(it, builder, llvmFunction, localVariables, clazz, allocatedClassesInIf) }
+
+                // Free the allocated classes
+                allocatedClassesInIf.forEach {
+                    val thingsToFree: MutableMap<LLVMValueRef?, String> = mutableMapOf()
+
+                    // This has to be a Clazz
+                    val clazzType = it.type as Clazz
+
+                    // Check if fields need to be free
+                    clazzType.fields.forEachIndexed { i, variable ->
+                        if (variable.type is Clazz)
+                        // Their is a field that we need to free
+                            thingsToFree.put(
+                                    // Load the pointer
+                                    LLVMBuildLoad(builder,
+                                            LLVMBuildStructGEP(builder, it.value, i, variable.name),
+                                            "load.${variable.name}"),
+                                    variable.name)
+                    }
+                    // Add the parent
+                    thingsToFree.put(it.value, it.name)
+
+                    // Call the free function for each pointer
+                    thingsToFree.forEach {
+                        val bitPointer = LLVMBuildBitCast(builder, it.key,
+                                LLVMPointerType(LLVMInt8Type(), 0), "bitPointerTo${it.value}")
+                        LLVMBuildCall(builder, namedValues["free"]!!.llvmValueRef,
+                                PointerPointer<LLVMValueRef>(*arrayOf(bitPointer)), 1, "")
+                    }
+                }
+
                 LLVMBuildBr(builder, mergeBlock)
 
                 LLVMPositionBuilderAtEnd(builder, falseBlock)
@@ -386,7 +419,40 @@ class LLVMBackend(module: Module) : Backend(module) {
                 LLVMBuildCondBr(builder, condition, whileBlock, outside)
 
                 LLVMPositionBuilderAtEnd(builder, whileBlock)
-                statement.statements.forEach { visit(it, builder, llvmFunction, localVariables, clazz, allocatedClasses) }
+
+                val allocatedClassesInLoop: MutableList<TypeContainer> = mutableListOf()
+                statement.statements.forEach { visit(it, builder, llvmFunction, localVariables, clazz, allocatedClassesInLoop) }
+
+                // Free the allocated classes
+                allocatedClassesInLoop.forEach {
+                    val thingsToFree: MutableMap<LLVMValueRef?, String> = mutableMapOf()
+
+                    // This has to be a Clazz
+                    val clazzType = it.type as Clazz
+
+                    // Check if fields need to be free
+                    clazzType.fields.forEachIndexed { i, variable ->
+                        if (variable.type is Clazz)
+                        // Their is a field that we need to free
+                            thingsToFree.put(
+                                    // Load the pointer
+                                    LLVMBuildLoad(builder,
+                                            LLVMBuildStructGEP(builder, it.value, i, variable.name),
+                                            "load.${variable.name}"),
+                                    variable.name)
+                    }
+                    // Add the parent
+                    thingsToFree.put(it.value, it.name)
+
+                    // Call the free function for each pointer
+                    thingsToFree.forEach {
+                        val bitPointer = LLVMBuildBitCast(builder, it.key,
+                                LLVMPointerType(LLVMInt8Type(), 0), "bitPointerTo${it.value}")
+                        LLVMBuildCall(builder, namedValues["free"]!!.llvmValueRef,
+                                PointerPointer<LLVMValueRef>(*arrayOf(bitPointer)), 1, "")
+                    }
+                }
+
                 LLVMBuildBr(builder, whileCondition)
 
                 LLVMPositionBuilderAtEnd(builder, outside)

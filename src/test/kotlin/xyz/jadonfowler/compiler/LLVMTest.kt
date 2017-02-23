@@ -4,12 +4,12 @@ import org.junit.Test
 import java.io.File
 import kotlin.test.assertTrue
 
-class LLVMTest {
+class LLVMTest() {
 
     fun testIR(vararg testName: String) {
         val code = testName.map { "test/$it.l" }
         val files = code.map(::File)
-        files.forEach { assertTrue(it.exists()) }
+        files.forEach { assertTrue(it.exists(), "Can't find file '${it.name}'.") }
 
         val expectedIRFiles = testName.map { File("test/out/llvm/$it.ll") }
         expectedIRFiles.forEach { assertTrue(it.exists(), "Output file doesn't exist!") }
@@ -21,8 +21,10 @@ class LLVMTest {
         actualIR.forEach(::println)
 
         // contains is used to ignore header information, which is different on every platform
-        actualIR.forEachIndexed { i, s -> assertTrue(s.contains(expectedIR[i]), "Wrong IR emitted!\n\nExpected:\n\n${expectedIR[i]}" +
-                "\n\n(Note: Header information is ignored.)\n") }
+        actualIR.forEachIndexed { i, s ->
+            assertTrue(s.contains(expectedIR[i]), "Wrong IR emitted!\n\nExpected:\n\n${expectedIR[i]}" +
+                    "\n\n(Note: Header information is ignored.)\n")
+        }
     }
 
     @Test fun genGlobalConstant() {
@@ -119,6 +121,14 @@ class LLVMTest {
 
     @Test fun classInClass() {
         testIR("classInClass")
+    }
+
+    @Test fun allocationInLoop() {
+        testIR("allocationInLoop")
+    }
+
+    @Test fun allocationInIf() {
+        testIR("allocationInIf")
     }
 
 }

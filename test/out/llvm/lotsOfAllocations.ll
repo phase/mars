@@ -1,22 +1,6 @@
-%Account.0 = type { i32, i128 }
-
-declare i8* @malloc(i64)
-
-declare void @free(i8*)
-
-declare i32 @printInt(i32)
-
-declare i32 @castDownAndPrintInt64(i64)
-
-declare i32 @printFloat32(float)
-
-declare i32 @printFloat64(double)
-
-declare i32 @castDownAndPrintFloat128(fp128)
-
-define i32 @Account_incrementId(%Account.0*) {
+define i32 @Account_incrementId(%Account.1*) {
 entry:
-  %id = getelementptr inbounds %Account.0, %Account.0* %0, i64 0, i32 0
+  %id = getelementptr inbounds %Account.1, %Account.1* %0, i64 0, i32 0
   %id1 = load i32, i32* %id, align 4
   %"(id + 1)" = add i32 %id1, 1
   store i32 %"(id + 1)", i32* %id, align 4
