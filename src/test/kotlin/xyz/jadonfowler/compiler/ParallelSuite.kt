@@ -10,7 +10,7 @@ class ParallelSuite(klass: Class<*>, builder: RunnerBuilder) : Suite(klass, buil
 
     init {
         setScheduler(object : RunnerScheduler {
-            val service = Executors.newFixedThreadPool(8)
+            val service = Executors.newFixedThreadPool(16)
 
             override fun schedule(childStatement: Runnable) {
                 service.submit(childStatement)

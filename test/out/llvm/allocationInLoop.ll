@@ -4,8 +4,8 @@ entry:
 
 "while.c true":                                   ; preds = %"while.c true", %entry
   %"malloc(4) for Box" = call i8* @malloc(i64 4)
-  %castToBox = bitcast i8* %"malloc(4) for Box" to %Box.0*
-  call void @Box_init(%Box.0* %castToBox, i32 7)
+  %castToBox = bitcast i8* %"malloc(4) for Box" to %Box*
+  call void @Box_init(%Box* %castToBox, i32 7)
   call void @free(i8* %"malloc(4) for Box")
   br label %"while.c true"
 }

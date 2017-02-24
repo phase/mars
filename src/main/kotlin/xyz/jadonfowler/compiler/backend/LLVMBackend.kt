@@ -10,22 +10,34 @@ import java.io.File
 class LLVMBackend(module: Module) : Backend(module) {
 
     val llvmModule: LLVMModuleRef
-    val namedValues: MutableMap<String, ValueContainer> = mutableMapOf()
+    val context: LLVMContextRef
+    private val namedValues: MutableMap<String, ValueContainer> = mutableMapOf()
+    private val clazzTypes: MutableMap<Clazz, LLVMTypeRef>
     val builder: LLVMBuilderRef
 
     private val targetMachine: LLVMTargetMachineRef
 
-    init {
-        LLVMInitializeAllTargetInfos()
-        LLVMInitializeAllTargets()
-        LLVMInitializeAllTargetMCs()
-        LLVMLinkInMCJIT()
-        LLVMInitializeNativeAsmPrinter()
-        LLVMInitializeNativeAsmParser()
-        LLVMInitializeNativeDisassembler()
-        LLVMInitializeNativeTarget()
+    private var initialized = false
 
-        llvmModule = LLVMModuleCreateWithName(module.name)
+    fun init() {
+        if (!initialized) {
+            LLVMInitializeAllTargetInfos()
+            LLVMInitializeAllTargets()
+            LLVMInitializeAllTargetMCs()
+            LLVMLinkInMCJIT()
+            LLVMInitializeNativeAsmPrinter()
+            LLVMInitializeNativeAsmParser()
+            LLVMInitializeNativeDisassembler()
+            LLVMInitializeNativeTarget()
+            initialized = true
+        }
+    }
+
+    init {
+        init()
+        clazzTypes = mutableMapOf()
+        context = LLVMContextCreate()
+        llvmModule = LLVMModuleCreateWithNameInContext(module.name, context)
 
         val targetTriple = LLVMGetDefaultTargetTriple()
         LLVMSetTarget(llvmModule, targetTriple)
@@ -42,14 +54,14 @@ class LLVMBackend(module: Module) : Backend(module) {
         builder = LLVMCreateBuilder()
 
         // Declare Malloc
-        val mallocType: LLVMTypeRef = LLVMFunctionType(LLVMPointerType(LLVMInt8Type(), 0),
-                PointerPointer<LLVMTypeRef>(*arrayOf(LLVMInt64Type())), 1, 0)
+        val mallocType: LLVMTypeRef = LLVMFunctionType(LLVMPointerType(LLVMInt8TypeInContext(context), 0),
+                PointerPointer<LLVMTypeRef>(*arrayOf(LLVMInt64TypeInContext(context))), 1, 0)
         val malloc = LLVMAddFunction(llvmModule, "malloc", mallocType)
         namedValues.put("malloc", ValueContainer(ValueType.FUNCTION, malloc, T_INT8))
 
         // Declare Free
-        val freeType: LLVMTypeRef = LLVMFunctionType(LLVMVoidType(),
-                PointerPointer<LLVMTypeRef>(*arrayOf(LLVMPointerType(LLVMInt8Type(), 0))), 1, 0)
+        val freeType: LLVMTypeRef = LLVMFunctionType(LLVMVoidTypeInContext(context),
+                PointerPointer<LLVMTypeRef>(*arrayOf(LLVMPointerType(LLVMInt8TypeInContext(context), 0))), 1, 0)
         val free = LLVMAddFunction(llvmModule, "free", freeType)
         namedValues.put("free", ValueContainer(ValueType.FUNCTION, free, T_VOID))
 
@@ -61,8 +73,8 @@ class LLVMBackend(module: Module) : Backend(module) {
 
     override fun output(file: File?) {
         var error = BytePointer(null as Pointer?)
-        LLVMVerifyModule(llvmModule, LLVMAbortProcessAction, error)
-        LLVMDisposeMessage(error)
+//        LLVMVerifyModule(llvmModule, LLVMAbortProcessAction, error)
+//        LLVMDisposeMessage(error)
 
         val pass = LLVMCreatePassManager()
         LLVMAddConstantPropagationPass(pass)
@@ -90,6 +102,7 @@ class LLVMBackend(module: Module) : Backend(module) {
         }
 
         LLVMDisposeBuilder(builder)
+        LLVMContextDispose(context)
         LLVMDisposePassManager(pass)
     }
 
@@ -282,7 +295,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                 // Call the free function for each pointer
                 thingsToFree.forEach {
                     val bitPointer = LLVMBuildBitCast(builder, it.key,
-                            LLVMPointerType(LLVMInt8Type(), 0), "bitPointerTo${it.value}")
+                            LLVMPointerType(LLVMInt8TypeInContext(context), 0), "bitPointerTo${it.value}")
                     LLVMBuildCall(builder, namedValues["free"]!!.llvmValueRef,
                             PointerPointer<LLVMValueRef>(*arrayOf(bitPointer)), 1, "")
                 }
@@ -392,7 +405,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                     // Call the free function for each pointer
                     thingsToFree.forEach {
                         val bitPointer = LLVMBuildBitCast(builder, it.key,
-                                LLVMPointerType(LLVMInt8Type(), 0), "bitPointerTo${it.value}")
+                                LLVMPointerType(LLVMInt8TypeInContext(context), 0), "bitPointerTo${it.value}")
                         LLVMBuildCall(builder, namedValues["free"]!!.llvmValueRef,
                                 PointerPointer<LLVMValueRef>(*arrayOf(bitPointer)), 1, "")
                     }
@@ -447,7 +460,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                     // Call the free function for each pointer
                     thingsToFree.forEach {
                         val bitPointer = LLVMBuildBitCast(builder, it.key,
-                                LLVMPointerType(LLVMInt8Type(), 0), "bitPointerTo${it.value}")
+                                LLVMPointerType(LLVMInt8TypeInContext(context), 0), "bitPointerTo${it.value}")
                         LLVMBuildCall(builder, namedValues["free"]!!.llvmValueRef,
                                 PointerPointer<LLVMValueRef>(*arrayOf(bitPointer)), 1, "")
                     }
@@ -493,11 +506,11 @@ class LLVMBackend(module: Module) : Backend(module) {
     fun visit(expression: Expression, builder: LLVMBuilderRef, localVariables: MutableMap<String, ValueContainer>,
               clazz: Clazz?, function: LLVMValueRef?): LLVMValueRef {
         return when (expression) {
-            is IntegerLiteral -> LLVMConstInt(LLVMInt32Type(), expression.value.toLong(), 0)
+            is IntegerLiteral -> LLVMConstInt(LLVMInt32TypeInContext(context), expression.value.toLong(), 0)
             is FloatLiteral -> LLVMConstReal(getLLVMType(expression.type), expression.value)
             is BooleanExpression -> {
-                if (expression.value) LLVMConstInt(LLVMInt1Type(), 1, 0)
-                else LLVMConstInt(LLVMInt1Type(), 0, 0)
+                if (expression.value) LLVMConstInt(LLVMInt1TypeInContext(context), 1, 0)
+                else LLVMConstInt(LLVMInt1TypeInContext(context), 0, 0)
             }
             is BinaryOperator -> {
                 var A = visit(expression.expressionA, builder, localVariables, clazz, function)
@@ -544,7 +557,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                     Operator.GREATER_THAN_EQUAL -> LLVMBuildICmp(builder, LLVMIntSGE, A, B, expression.toString())
                     Operator.LESS_THAN -> LLVMBuildICmp(builder, LLVMIntSLT, A, B, expression.toString())
                     Operator.LESS_THAN_EQUAL -> LLVMBuildICmp(builder, LLVMIntSLE, A, B, expression.toString())
-                    else -> LLVMConstInt(LLVMInt32Type(), 0, 0)
+                    else -> LLVMConstInt(LLVMInt32TypeInContext(context), 0, 0)
                 }
             }
             is ReferenceExpression -> {
@@ -607,7 +620,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                     val size = sizeOfClazz(clazzOfExpression)
                     // Call malloc
                     val mallocMemory = LLVMBuildCall(builder, namedValues["malloc"]!!.llvmValueRef,
-                            PointerPointer<LLVMValueRef>(*arrayOf(LLVMConstInt(LLVMInt64Type(), size, 0))),
+                            PointerPointer<LLVMValueRef>(*arrayOf(LLVMConstInt(LLVMInt64TypeInContext(context), size, 0))),
                             1, "malloc($size) for ${clazzOfExpression.name}")
                     // Cast the i8* that malloc returns to a pointer of the Class we want
                     val clazzValue = LLVMBuildBitCast(builder, mallocMemory,
@@ -657,72 +670,70 @@ class LLVMBackend(module: Module) : Backend(module) {
         }
     }
 
-    companion object {
-
-        private val clazzTypes: MutableMap<Clazz, LLVMTypeRef> = mutableMapOf()
-
-        fun getLLVMType(type: Type): LLVMTypeRef? {
-            return when (type) {
-                T_BOOL -> LLVMInt1Type()
-                T_INT8 -> LLVMInt8Type()
-                T_INT16 -> LLVMInt16Type()
-                T_INT32 -> LLVMInt32Type()
-                T_INT64 -> LLVMInt64Type()
-                T_INT128 -> LLVMInt128Type()
-                T_FLOAT32 -> LLVMFloatType()
-                T_FLOAT64 -> LLVMDoubleType()
-                T_FLOAT128 -> LLVMFP128Type()
-                T_VOID -> LLVMVoidType()
-                is Clazz -> {
-                    if (!clazzTypes.containsKey(type)) {
-                        val fieldTypes = type.fields.map {
-                            if (it.type is Clazz) LLVMPointerType(getLLVMType(it.type), 0)
-                            else getLLVMType(it.type)
-                        }
-                        val llvmClazzType = LLVMStructCreateNamed(LLVMGetGlobalContext(), type.name)
-                        LLVMStructSetBody(llvmClazzType, PointerPointer(*fieldTypes.toTypedArray()), type.fields.size, 0)
-                        clazzTypes.put(type, llvmClazzType)
+    fun getLLVMType(type: Type): LLVMTypeRef? {
+        return when (type) {
+            T_BOOL -> LLVMInt1TypeInContext(context)
+            T_INT8 -> LLVMInt8TypeInContext(context)
+            T_INT16 -> LLVMInt16TypeInContext(context)
+            T_INT32 -> LLVMInt32TypeInContext(context)
+            T_INT64 -> LLVMInt64TypeInContext(context)
+            T_INT128 -> LLVMInt128TypeInContext(context)
+            T_FLOAT32 -> LLVMFloatTypeInContext(context)
+            T_FLOAT64 -> LLVMDoubleTypeInContext(context)
+            T_FLOAT128 -> LLVMFP128TypeInContext(context)
+            T_VOID -> LLVMVoidTypeInContext(context)
+            is Clazz -> {
+                if (!clazzTypes.containsKey(type)) {
+                    val fieldTypes = type.fields.map {
+                        if (it.type is Clazz) LLVMPointerType(getLLVMType(it.type), 0)
+                        else getLLVMType(it.type)
                     }
-                    clazzTypes[type]
+                    val llvmClazzType = LLVMStructCreateNamed(context, type.name)
+                    LLVMStructSetBody(llvmClazzType, PointerPointer(*fieldTypes.toTypedArray()), type.fields.size, 0)
+                    clazzTypes.put(type, llvmClazzType)
                 }
-                T_UNDEF -> {
-                    throw Exception("Can't find LLVM type for Undefined!")
-                }
-                else -> null
+                clazzTypes[type]
             }
-        }
-
-        fun getType(v: LLVMValueRef): Type {
-            val type = LLVMTypeOf(v)
-            return when (type) {
-                LLVMInt1Type() -> T_BOOL
-                LLVMInt8Type() -> T_INT8
-                LLVMInt16Type() -> T_INT16
-                LLVMInt32Type() -> T_INT32
-                LLVMInt64Type() -> T_INT64
-                LLVMInt128Type() -> T_INT128
-                LLVMFloatType() -> T_FLOAT32
-                LLVMDoubleType() -> T_FLOAT64
-                LLVMFP128Type() -> T_FLOAT128
-                LLVMVoidType() -> T_VOID
-                else -> {
-                    clazzTypes.forEach {
-                        if (LLVMPointerType(it.value, 0) == type) {
-                            return it.key
-                        }
-                    }
-                    T_UNDEF
-                }
+            T_UNDEF -> {
+                throw Exception("Can't find LLVM type for Undefined!")
             }
+            else -> null
         }
-
-        fun isLLVMType(v: LLVMValueRef, vararg t: Int): Boolean {
-            val typeKind = LLVMGetTypeKind(LLVMTypeOf(v))
-            t.forEach { if (it == typeKind) return true }
-            return false
-        }
-
     }
+
+    fun getType(v: LLVMValueRef): Type {
+        return getType(LLVMTypeOf(v))
+    }
+
+    fun getType(type: LLVMTypeRef): Type {
+        return when (type) {
+            LLVMInt1TypeInContext(context) -> T_BOOL
+            LLVMInt8TypeInContext(context) -> T_INT8
+            LLVMInt16TypeInContext(context) -> T_INT16
+            LLVMInt32TypeInContext(context) -> T_INT32
+            LLVMInt64TypeInContext(context) -> T_INT64
+            LLVMInt128TypeInContext(context) -> T_INT128
+            LLVMFloatTypeInContext(context) -> T_FLOAT32
+            LLVMDoubleTypeInContext(context) -> T_FLOAT64
+            LLVMFP128TypeInContext(context) -> T_FLOAT128
+            LLVMVoidTypeInContext(context) -> T_VOID
+            else -> {
+                clazzTypes.forEach {
+                    if (LLVMPointerType(it.value, 0) == type) {
+                        return it.key
+                    }
+                }
+                T_UNDEF
+            }
+        }
+    }
+
+    fun isLLVMType(v: LLVMValueRef, vararg t: Int): Boolean {
+        val typeKind = LLVMGetTypeKind(LLVMTypeOf(v))
+        t.forEach { if (it == typeKind) return true }
+        return false
+    }
+
 
     enum class ValueType {
         FUNCTION,
