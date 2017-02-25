@@ -596,9 +596,8 @@ class LLVMBackend(module: Module) : Backend(module) {
                         methodCall.arguments.size + 1, methodCall.toString())
             }
             is ClazzInitializerExpression -> {
-                val clazzOfExpression = module.getNodeFromReference(expression.classReference, null) as? Clazz
+                val clazzOfExpression = module.getClazzFromReference(expression.classReference)
                 if (clazzOfExpression != null) {
-
                     // Size of Class in Bytes
                     fun sizeOfClazz(clazz: Clazz): Long = clazz.fields.map {
                         val type = it.type
@@ -733,7 +732,6 @@ class LLVMBackend(module: Module) : Backend(module) {
         t.forEach { if (it == typeKind) return true }
         return false
     }
-
 
     enum class ValueType {
         FUNCTION,

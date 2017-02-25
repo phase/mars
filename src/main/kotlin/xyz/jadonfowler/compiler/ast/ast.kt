@@ -1,6 +1,7 @@
 package xyz.jadonfowler.compiler.ast
 
 import xyz.jadonfowler.compiler.globalModules
+import java.util.*
 
 interface Node
 
@@ -37,6 +38,26 @@ class Module(val name: String, val imports: List<Import>, val globalVariables: L
                 val function = it.getFunctionFromReference(reference)
                 if (function != null)
                     return function
+            }
+        }
+
+        return null
+    }
+
+    fun getClazzFromReference(reference: Reference): Clazz? {
+        val moduleName = name
+        val name = reference.name
+        val thingsWithName: List<Clazz> = globalClasses.filter { it.name == name }
+        if (thingsWithName.isNotEmpty())
+            return thingsWithName.last()
+
+        // Go through imports
+        val imports = imports.map { it.reference.name }.filter { it != moduleName }
+        globalModules.forEach {
+            if (imports.contains(it.name)) {
+                val clazz = it.getClazzFromReference(reference)
+                if (clazz != null)
+                    return clazz
             }
         }
 
@@ -81,7 +102,12 @@ class Import(val reference: Reference) : Node
 /**
  * Attributes can be put on various declarations
  */
-class Attribute(val name: String, val values: List<String>) : Node
+class Attribute(val name: String, val values: List<String>) : Node {
+    override fun toString(): String = "@$name"
+    override fun hashCode(): Int = Objects.hash(name, values)
+    override fun equals(other: Any?): Boolean =
+            other is Attribute && other.name == name && other.values == values && other.hashCode() == hashCode()
+}
 
 /**
  * Declaration that can be accessed outside the Module
@@ -102,6 +128,12 @@ class Function(val attributes: List<Attribute>, var returnType: Type, var name: 
         return "($formals -> $returnType)"
     }
 
+    override fun hashCode(): Int = Objects.hash(attributes, returnType, name, formals, statements, expression)
+
+    override fun equals(other: Any?): Boolean =
+            other is Function && other.hashCode() == hashCode() && other.attributes == attributes
+                && other.returnType == returnType && other.name == name && other.formals == formals
+
     fun copy() = Function(attributes, returnType, name, formals, statements, expression)
 }
 
@@ -121,13 +153,23 @@ class Formal(type: Type, name: String) : Variable(type, name, null, true)
  *
  * If 'constant' is true, the value of this variable can't be changed.
  */
-open class Variable(var type: Type, val name: String, var initialExpression: Expression? = null, val constant: Boolean = false) : Global
+open class Variable(var type: Type, val name: String, var initialExpression: Expression? = null, val constant: Boolean = false) : Global {
+    override fun toString(): String = "${if (constant) "let" else "var"} $name : $type${if (initialExpression != null) " = $initialExpression" else ""}"
+
+    override fun hashCode(): Int = type.hashCode() + name.hashCode() + constant.hashCode()
+    override fun equals(other: Any?): Boolean =
+            other is Variable && other.name == name && other.type == type && other.constant == constant && other.hashCode() == hashCode()
+}
 
 /**
  * Classes (Clazz because Java contains a class named Class) are normal OOP classes, and can contain fields and methods.
  */
 class Clazz(val name: String, val fields: List<Variable>, val methods: List<Function>, val constructor: Function?) : Global, Type {
     override fun toString(): String = "$name(${fields.map { it.type }.joinToString()})"
+    override fun hashCode(): Int = Objects.hash(name, fields, methods, constructor)
+    override fun equals(other: Any?): Boolean =
+            other is Clazz && other.hashCode() == hashCode() && other.name == name
+                    && other.fields == fields && other.methods == methods && other.constructor == constructor
 }
 
 /**
@@ -135,6 +177,8 @@ class Clazz(val name: String, val fields: List<Variable>, val methods: List<Func
  */
 class Reference(val name: String) {
     override fun toString(): String = name
+    override fun hashCode(): Int = name.hashCode()
+    override fun equals(other: Any?): Boolean = name == other
 }
 
 /**
@@ -143,6 +187,10 @@ class Reference(val name: String) {
 class FunctionCall(val functionReference: Reference, val arguments: List<Expression> = listOf()) : Node {
     override fun toString(): String =
             functionReference.name + "(" + arguments.map { it.toString() }.joinToString() + ")"
+
+    override fun hashCode(): Int = Objects.hash(functionReference, arguments)
+    override fun equals(other: Any?): Boolean =
+            other is FunctionCall && other.functionReference == functionReference && other.arguments == arguments
 }
 
 /**
@@ -151,6 +199,11 @@ class FunctionCall(val functionReference: Reference, val arguments: List<Express
 class MethodCall(val variableReference: Reference, val methodReference: Reference, val arguments: List<Expression> = listOf()) : Node {
     override fun toString(): String =
             variableReference.name + "." + methodReference.name + "(" + arguments.map { it.toString() }.joinToString() + ")"
+
+    override fun hashCode(): Int = Objects.hash(variableReference, methodReference, arguments)
+    override fun equals(other: Any?): Boolean =
+            other is MethodCall && other.variableReference == variableReference
+                    && other.methodReference == methodReference && other.arguments == arguments
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -161,12 +214,18 @@ class MethodCall(val variableReference: Reference, val methodReference: Referenc
  * Statements are commands that Functions can run to do certain actions. These actions consist of function calls,
  * variable declarations, control flow, etc.
  */
-abstract class Statement : Node
+abstract class Statement : Node {
+    override fun equals(other: Any?): Boolean = other is Statement && other.hashCode() == hashCode()
+}
 
 /**
- * Blocks are Statements that contain Statements than can be run.S
+ * Blocks are Statements that contain Statements than can be run.
  */
-open class Block(val statements: List<Statement>) : Statement()
+open class Block(val statements: List<Statement>) : Statement() {
+    override fun hashCode(): Int = Objects.hash(statements)
+    override fun equals(other: Any?): Boolean =
+            other is Block && other.statements == statements && other.hashCode() == hashCode()
+}
 
 /**
  * CheckedBlocks are Blocks with an expression to be evaluated before the Statements run.
@@ -244,7 +303,12 @@ class VariableDeclarationStatement(val variable: Variable) : Statement()
 /**
  *
  */
-class VariableReassignmentStatement(val reference: Reference, var expression: Expression) : Statement()
+class VariableReassignmentStatement(val reference: Reference, var expression: Expression) : Statement() {
+    override fun toString(): String = "$reference = $expression (${reference.hashCode()}, ${expression.hashCode()})"
+    override fun hashCode(): Int = Objects.hash(reference, expression)
+    override fun equals(other: Any?): Boolean =
+            other is VariableReassignmentStatement && other.reference == reference && other.expression == expression
+}
 
 /**
  * Statement wrapper for FunctionCalls
@@ -313,6 +377,8 @@ class StringLiteral(val value: String) : Expression() {
  */
 class ReferenceExpression(val reference: Reference) : Expression() {
     override fun toString(): String = reference.name
+    override fun hashCode(): Int = reference.hashCode()
+    override fun equals(other: Any?): Boolean = reference == other
 }
 
 /**
@@ -385,4 +451,8 @@ fun getOperator(s: String): Operator? {
  */
 class BinaryOperator(var expressionA: Expression, val operator: Operator, var expressionB: Expression) : Expression(listOf(expressionA, expressionB)) {
     override fun toString(): String = "($expressionA $operator $expressionB)"
+    override fun hashCode(): Int = Objects.hash(expressionA, operator, expressionB)
+    override fun equals(other: Any?): Boolean {
+        return other is BinaryOperator && other.expressionA == expressionA && other.operator == operator && other.expressionB == expressionB
+    }
 }
