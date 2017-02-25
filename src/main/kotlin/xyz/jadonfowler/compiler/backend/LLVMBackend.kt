@@ -73,8 +73,8 @@ class LLVMBackend(module: Module) : Backend(module) {
 
     override fun output(file: File?) {
         var error = BytePointer(null as Pointer?)
-//        LLVMVerifyModule(llvmModule, LLVMAbortProcessAction, error)
-//        LLVMDisposeMessage(error)
+        LLVMVerifyModule(llvmModule, LLVMAbortProcessAction, error)
+        LLVMDisposeMessage(error)
 
         val pass = LLVMCreatePassManager()
         LLVMAddConstantPropagationPass(pass)
