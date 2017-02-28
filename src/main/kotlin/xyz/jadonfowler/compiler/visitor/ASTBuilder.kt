@@ -43,9 +43,9 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
     }
 
     override fun visitExternalDeclaration(ctx: LangParser.ExternalDeclarationContext?): Node {
-        if (ctx?.variableDeclaration() != null) return visitVariableDeclaration(ctx?.variableDeclaration())
-        if (ctx?.functionDeclaration() != null) return visitFunctionDeclaration(ctx?.functionDeclaration())
-        if (ctx?.classDeclaration() != null) return visitClassDeclaration(ctx?.classDeclaration())
+        ctx?.variableDeclaration()?.let { return visitVariableDeclaration(it) }
+        ctx?.functionDeclaration()?.let { return visitFunctionDeclaration(it) }
+        ctx?.classDeclaration()?.let { return visitClassDeclaration(it) }
         // Should be unreachable
         return EmptyNode()
     }
@@ -65,22 +65,20 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
 
         val statements = statementListFromStatementListContext(ctx?.statementList()).toMutableList()
 
-        if (ctx?.statement() != null) {
-            val statementNode = visitStatement(ctx?.statement())
+        ctx?.statement()?.let {
+            val statementNode = visitStatement(it)
             if (statementNode is Statement)
                 statements.add(statementNode)
         }
 
-        if (ctx?.blockStatement() != null) {
-            val blockStatementNode = visitBlockStatement(ctx?.blockStatement())
+        ctx?.blockStatement()?.let {
+            val blockStatementNode = visitBlockStatement(it)
             if (blockStatementNode is Block)
                 statements.add(blockStatementNode)
         }
 
         var expression: Expression? = null
-        val expressionContext = ctx?.expression()
-        if (expressionContext != null)
-            expression = visitExpression(ctx?.expression())
+        ctx?.expression()?.let { expression = visitExpression(it) }
 
         val attributes = attributeListFromAttributeListContext(ctx?.attributeList())
 
@@ -114,16 +112,17 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
             val blockStatementContext = context.blockStatement()
             val statementContext = context.statement()
             // There is either a blockStatement or a normal statement, so the order here doesn't matter.
-            if (blockStatementContext != null) {
-                val blockStatementNode = visitBlockStatement(blockStatementContext)
+            blockStatementContext?.let {
+                val blockStatementNode = visitBlockStatement(it)
                 if (blockStatementNode is Statement) statement = blockStatementNode
             }
-            if (statementContext != null) {
-                val statementNode = visitStatement(statementContext)
+            statementContext?.let {
+                val statementNode = visitStatement(it)
                 if (statementNode is Statement) statement = statementNode
             }
-            if (statement != null)
-                statements.add(statement)
+            statement?.let {
+                statements.add(it)
+            }
             // Set current context as child
             context = context.statementList()
         }
@@ -135,9 +134,9 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
         val identifier = ctx?.variableSignature()?.ID()?.symbol?.text.orEmpty()
         val type = getType(ctx?.variableSignature()?.typeAnnotation()?.ID()?.symbol?.text.orEmpty(), globalClasses)
         var expression: Expression? = null
-        val expressionContext: LangParser.ExpressionContext? = ctx?.expression()
-        if (expressionContext != null)
-            expression = visitExpression(expressionContext)
+        ctx?.expression()?.let {
+            expression = visitExpression(it)
+        }
         return Variable(type, identifier, expression, constant)
     }
 
@@ -148,8 +147,9 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
         val methods = declarations.filterIsInstance<Function>().toMutableList()
         val constructors = methods.filter { it.name == "init" }
         val constructor: Function? = if (constructors.isNotEmpty()) constructors.last() else null
-        if (constructor != null)
+        constructor?.let {
             methods.remove(constructor)
+        }
         return Clazz(identifier, fields, methods, constructor)
     }
 
@@ -193,16 +193,21 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
     }
 
     override fun visitStatement(ctx: LangParser.StatementContext?): Node /*TODO: return Statement */ {
-        if (ctx?.fieldSetter() != null)
-            return visitFieldSetter(ctx?.fieldSetter())
-        if (ctx?.variableDeclaration() != null)
-            return VariableDeclarationStatement(visitVariableDeclaration(ctx?.variableDeclaration()))
-        if (ctx?.variableReassignment() != null)
-            return visitVariableReassignment(ctx?.variableReassignment())
-        if (ctx?.methodCall() != null)
-            return MethodCallStatement(visitMethodCall(ctx?.methodCall()))
-        if (ctx?.functionCall() != null)
-            return FunctionCallStatement(visitFunctionCall(ctx?.functionCall()))
+        ctx?.fieldSetter()?.let {
+            return visitFieldSetter(it)
+        }
+        ctx?.variableDeclaration()?.let {
+            return VariableDeclarationStatement(visitVariableDeclaration(it))
+        }
+        ctx?.variableReassignment()?.let {
+            return visitVariableReassignment(it)
+        }
+        ctx?.methodCall()?.let {
+            return MethodCallStatement(visitMethodCall(it))
+        }
+        ctx?.functionCall()?.let {
+            return FunctionCallStatement(visitFunctionCall(it))
+        }
         return EmptyNode()
     }
 
@@ -224,8 +229,8 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
                     currentIf = elif
                 }
 
-                if (ctx?.elseStatement() != null) {
-                    val elseStatements = statementListFromStatementListContext(ctx?.elseStatement()?.statementList())
+                ctx?.elseStatement()?.let {
+                    val elseStatements = statementListFromStatementListContext(it.statementList())
                     currentIf.elseStatement = elseStatement(elseStatements)
                 }
 
@@ -271,19 +276,24 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
             val expressionB = visitExpression(ctx?.getChild(2) as LangParser.ExpressionContext?)
             val between = ctx?.getChild(1)?.text.orEmpty()
             val operator = getOperator(between)
-            if (operator != null) {
-                return BinaryOperator(expressionA, operator, expressionB)
+            operator?.let {
+                return BinaryOperator(expressionA, it, expressionB)
             }
-        } else if (ctx?.methodCall() != null) {
-            return MethodCallExpression(visitMethodCall(ctx?.methodCall()))
-        } else if (ctx?.functionCall() != null) {
-            return FunctionCallExpression(visitFunctionCall(ctx?.functionCall()))
-        } else if (ctx?.classInitializer() != null) {
-            return visitClassInitializer(ctx?.classInitializer())
-        } else if (ctx?.INT() != null) {
-            return IntegerLiteral(ctx?.INT()?.text?.toInt()!!)
-        } else if (ctx?.FLOAT() != null) {
-            val text = ctx?.FLOAT()?.text.orEmpty()
+        }
+        ctx?.methodCall()?.let {
+            return MethodCallExpression(visitMethodCall(it))
+        }
+        ctx?.functionCall()?.let {
+            return FunctionCallExpression(visitFunctionCall(it))
+        }
+        ctx?.classInitializer()?.let {
+            return visitClassInitializer(it)
+        }
+        ctx?.INT()?.let {
+            return IntegerLiteral(it.text?.toInt()!!)
+        }
+        ctx?.FLOAT()?.let {
+            val text = it.text.orEmpty()
             if (text.endsWith("d"))
             // Remove double suffix
                 return FloatLiteral(text.substring(0..text.length - 2).toDouble(), T_FLOAT64)
@@ -291,11 +301,13 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
                 return FloatLiteral(text.substring(0..text.length - 2).toDouble(), T_FLOAT128)
             else
                 return FloatLiteral(text.toDouble(), T_FLOAT32)
-        } else if (ctx?.ID() != null) {
-            val id = ctx?.ID()?.symbol?.text.orEmpty()
+        }
+        ctx?.ID()?.let {
+            val id = it.symbol?.text.orEmpty()
             return ReferenceExpression(Reference(id))
-        } else if (ctx?.STRING() != null) {
-            val value = ctx?.STRING()?.symbol?.text.orEmpty()
+        }
+        ctx?.STRING()?.let {
+            val value = it.symbol?.text.orEmpty()
             // Remove quotes around string
             return StringLiteral(value.substring(1..value.length - 2))
         }
