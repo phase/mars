@@ -4,7 +4,7 @@ import org.junit.Test
 import java.io.File
 import kotlin.test.assertTrue
 
-class LLVMTest() {
+class LLVMTest {
 
     fun testIR(vararg testName: String) {
         val code = testName.map { "test/$it.l" }
@@ -129,6 +129,10 @@ class LLVMTest() {
 
     @Test fun allocationInIf() {
         testIR("allocationInIf")
+    }
+
+    @Test fun allocationPutInField() {
+        testIR("allocationPutInField")
     }
 
 }

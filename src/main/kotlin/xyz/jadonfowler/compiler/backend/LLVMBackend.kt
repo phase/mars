@@ -200,7 +200,7 @@ class LLVMBackend(module: Module) : Backend(module) {
     override fun visit(variable: Variable) {
         val global = LLVMAddGlobal(llvmModule, getLLVMType(variable.type), variable.name)
         if (variable.initialExpression != null) {
-            LLVMSetInitializer(global, visit(variable.initialExpression!!, builder, mutableMapOf(), null, null))
+            LLVMSetInitializer(global, visit(variable.initialExpression!!, builder, mutableMapOf(), null, null, mutableListOf()))
         }
         if (variable.constant) LLVMSetGlobalConstant(global, 1)
         namedValues.put(variable.name, ValueContainer(ValueType.GLOBAL, global, variable.type))
@@ -304,7 +304,7 @@ class LLVMBackend(module: Module) : Backend(module) {
 
         // Add a return statement with the last expression
         if (function.expression != null) {
-            val ret_value = visit(function.expression!!, builder, localVariables, clazz, llvmFunction)
+            val ret_value = visit(function.expression!!, builder, localVariables, clazz, llvmFunction, allocatedClasses)
             LLVMBuildRet(builder, ret_value)
         } else
             LLVMBuildRetVoid(builder)
@@ -318,7 +318,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val variable = statement.variable
                 if (variable.initialExpression != null) {
                     if (variable.constant) {
-                        val value = visit(variable.initialExpression!!, builder, localVariables, clazz, llvmFunction)
+                        val value = visit(variable.initialExpression!!, builder, localVariables, clazz, llvmFunction, allocatedClasses)
 
                         // Check if we need to free this later
                         if (variable.initialExpression is ClazzInitializerExpression)
@@ -334,7 +334,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                     } else {
                         // Allocate memory so we can modify the value later
                         val allocation = LLVMBuildAlloca(builder, getLLVMType(variable.type), variable.name)
-                        val value = visit(variable.initialExpression!!, builder, localVariables, clazz, llvmFunction)
+                        val value = visit(variable.initialExpression!!, builder, localVariables, clazz, llvmFunction, allocatedClasses)
                         LLVMBuildStore(builder, value, allocation)
                         localVariables.put(variable.name, ValueContainer(ValueType.ALLOCATION, allocation, variable.type))
                     }
@@ -342,7 +342,7 @@ class LLVMBackend(module: Module) : Backend(module) {
             }
             is VariableReassignmentStatement -> {
                 val variable = localVariables[statement.reference.name]!!
-                val value = visit(statement.expression, builder, localVariables, clazz, llvmFunction)
+                val value = visit(statement.expression, builder, localVariables, clazz, llvmFunction, allocatedClasses)
 
                 // Check if we need to free this later
                 if (statement.expression is ClazzInitializerExpression)
@@ -366,7 +366,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                 }
             }
             is IfStatement -> {
-                val condition = visit(statement.expression, builder, localVariables, clazz, llvmFunction)
+                val condition = visit(statement.expression, builder, localVariables, clazz, llvmFunction, allocatedClasses)
 
                 // Add blocks for True & False, and another one where they merge
                 val trueBlock = LLVMAppendBasicBlock(llvmFunction, "if.t ${statement.expression}")
@@ -428,7 +428,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                 LLVMBuildBr(builder, whileCondition)
 
                 LLVMPositionBuilderAtEnd(builder, whileCondition)
-                val condition = visit(statement.expression, builder, localVariables, clazz, llvmFunction)
+                val condition = visit(statement.expression, builder, localVariables, clazz, llvmFunction, allocatedClasses)
                 LLVMBuildCondBr(builder, condition, whileBlock, outside)
 
                 LLVMPositionBuilderAtEnd(builder, whileBlock)
@@ -474,25 +474,36 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val functionCall = statement.functionCall
                 val function = namedValues.filter { it.key == functionCall.functionReference.name }
                         .values.filter { it.valueType == ValueType.FUNCTION }.last()
-                val expressions = functionCall.arguments.map { visit(it, builder, localVariables, clazz, llvmFunction) }
+                val expressions = functionCall.arguments.map { visit(it, builder, localVariables, clazz, llvmFunction, allocatedClasses) }
                 LLVMBuildCall(builder, function.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
                         functionCall.arguments.size, if (function.type == T_VOID) "" else statement.functionCall.toString())
             }
             is MethodCallStatement -> {
                 val methodCall = statement.methodCall
-                val variable = visit(ReferenceExpression(methodCall.variableReference), builder, localVariables, clazz, llvmFunction)
+                val variable = visit(ReferenceExpression(methodCall.variableReference), builder, localVariables, clazz, llvmFunction, allocatedClasses)
                 val clazzName = (localVariables[methodCall.variableReference.name]?.type as? Clazz)?.name ?: "null"
                 val functionName = clazzName + "_" + methodCall.methodReference.name
                 val function = namedValues.filter { it.key == functionName }
                         .values.filter { it.valueType == ValueType.FUNCTION }.last()
-                val expressions = methodCall.arguments.map { visit(it, builder, localVariables, clazz, llvmFunction) }.toMutableList()
+                val expressions = methodCall.arguments.map { visit(it, builder, localVariables, clazz, llvmFunction, allocatedClasses) }.toMutableList()
                 expressions.add(0, variable)
                 LLVMBuildCall(builder, function.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
                         methodCall.arguments.size + 1, if (function.type == T_VOID) "" else methodCall.toString())
             }
             is FieldSetterStatement -> {
-                val variable = visit(statement.variable, builder, localVariables, clazz, llvmFunction)
-                val value = visit(statement.expression, builder, localVariables, clazz, llvmFunction)
+                val variable = visit(statement.variable, builder, localVariables, clazz, llvmFunction, allocatedClasses)
+                val value = visit(statement.expression, builder, localVariables, clazz, llvmFunction, allocatedClasses)
+
+                // Don't free class at the end of a function
+                val expression = statement.expression
+                if (expression is ReferenceExpression) {
+                    val name = expression.reference.name
+                    allocatedClasses.forEach {
+                        if (it.name == name)
+                            allocatedClasses.remove(it)
+                    }
+                }
+
                 val type = getType(variable)
                 val indexInClass = (type as Clazz).fields
                         .map { it.name }.indexOf(statement.fieldReference.name)
@@ -504,7 +515,7 @@ class LLVMBackend(module: Module) : Backend(module) {
     }
 
     fun visit(expression: Expression, builder: LLVMBuilderRef, localVariables: MutableMap<String, ValueContainer>,
-              clazz: Clazz?, function: LLVMValueRef?): LLVMValueRef {
+              clazz: Clazz?, function: LLVMValueRef?, allocatedClasses: MutableList<TypeContainer>): LLVMValueRef {
         return when (expression) {
             is IntegerLiteral -> LLVMConstInt(LLVMInt32TypeInContext(context), expression.value.toLong(), 0)
             is FloatLiteral -> LLVMConstReal(getLLVMType(expression.type), expression.value)
@@ -513,8 +524,8 @@ class LLVMBackend(module: Module) : Backend(module) {
                 else LLVMConstInt(LLVMInt1TypeInContext(context), 0, 0)
             }
             is BinaryOperator -> {
-                var A = visit(expression.expressionA, builder, localVariables, clazz, function)
-                var B = visit(expression.expressionB, builder, localVariables, clazz, function)
+                var A = visit(expression.expressionA, builder, localVariables, clazz, function, allocatedClasses)
+                var B = visit(expression.expressionB, builder, localVariables, clazz, function, allocatedClasses)
 
                 if (isLLVMType(A, LLVMIntegerTypeKind) && isLLVMType(B, LLVMIntegerTypeKind)) {
                     // Higher bit integer types are declared after the lower ones,
@@ -579,18 +590,18 @@ class LLVMBackend(module: Module) : Backend(module) {
                 val functionCall = expression.functionCall
                 val llvmFunction = namedValues.filter { it.key == functionCall.functionReference.name }
                         .values.filter { it.valueType == ValueType.FUNCTION }.last()
-                val expressions = functionCall.arguments.map { visit(it, builder, localVariables, clazz, function) }
+                val expressions = functionCall.arguments.map { visit(it, builder, localVariables, clazz, function, allocatedClasses) }
                 LLVMBuildCall(builder, llvmFunction.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
                         functionCall.arguments.size, functionCall.toString())
             }
             is MethodCallExpression -> {
                 val methodCall = expression.methodCall
-                val variable = visit(ReferenceExpression(methodCall.variableReference), builder, localVariables, clazz, function)
+                val variable = visit(ReferenceExpression(methodCall.variableReference), builder, localVariables, clazz, function, allocatedClasses)
                 val clazzName = (localVariables[methodCall.variableReference.name]?.type as? Clazz)?.name ?: "null"
                 val functionName = clazzName + "_" + methodCall.methodReference.name
                 val method = namedValues.filter { it.key == functionName }
                         .values.filter { it.valueType == ValueType.FUNCTION }.last()
-                val expressions = methodCall.arguments.map { visit(it, builder, localVariables, clazz, function) }.toMutableList()
+                val expressions = methodCall.arguments.map { visit(it, builder, localVariables, clazz, function, allocatedClasses) }.toMutableList()
                 expressions.add(0, variable)
                 LLVMBuildCall(builder, method.llvmValueRef, PointerPointer(*expressions.toTypedArray()),
                         methodCall.arguments.size + 1, methodCall.toString())
@@ -630,7 +641,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                             // Where the field is in the struct
                             val fieldPointer = LLVMBuildStructGEP(builder, clazzValue, i, variable.name)
                             // Store the value
-                            val fieldValue = visit(variable.initialExpression!!, builder, mutableMapOf(), null, null)
+                            val fieldValue = visit(variable.initialExpression!!, builder, mutableMapOf(), null, null, mutableListOf())
                             LLVMBuildStore(builder, fieldValue, fieldPointer)
                         }
                     }
@@ -643,8 +654,22 @@ class LLVMBackend(module: Module) : Backend(module) {
                                 .values.filter { it.valueType == ValueType.FUNCTION }.last()
 
                         // Build arguments
-                        val arguments = expression.arguments.map { visit(it, builder, localVariables, null, null) }
-                                .toMutableList()
+                        val arguments = expression.arguments.map {
+                            val e = visit(it, builder, localVariables, null, null, allocatedClasses)
+                            // Don't free class at the end of a function
+                            if (it is ReferenceExpression) {
+                                val name = it.reference.name
+                                val allocationsToRemove = mutableListOf<TypeContainer>()
+                                allocatedClasses.forEach {
+                                    if (it.name == name)
+                                        allocationsToRemove.add(it)
+                                }
+                                allocationsToRemove.forEach {
+                                    allocatedClasses.remove(it)
+                                }
+                            }
+                            e
+                        }.toMutableList()
                         arguments.add(0, clazzValue)
 
                         LLVMBuildCall(builder, method.llvmValueRef, PointerPointer(*arguments.toTypedArray()),
@@ -657,7 +682,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                 } else throw Exception("Unimplemented ${expression.javaClass.simpleName}: $expression.")
             }
             is FieldGetterExpression -> {
-                val variable = visit(expression.variable, builder, localVariables, clazz, function)
+                val variable = visit(expression.variable, builder, localVariables, clazz, function, allocatedClasses)
                 val type = getType(variable)
                 val indexInClass = (type as Clazz).fields
                         .map { it.name }.indexOf(expression.fieldReference.name)
