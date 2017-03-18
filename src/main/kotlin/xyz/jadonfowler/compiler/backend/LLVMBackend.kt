@@ -185,7 +185,7 @@ class LLVMBackend(module: Module) : Backend(module) {
     fun methodToFunction(clazz: Clazz, method: Function): Function {
         val function = method.copy()
         val formals = function.formals.toMutableList()
-        formals.add(0, Formal(clazz, "_" + clazz.name))
+        formals.add(0, Formal(clazz, "_" + clazz.name, method.context))
         function.formals = formals
         function.name = clazz.name + "_" + method.name
         return function
@@ -480,7 +480,7 @@ class LLVMBackend(module: Module) : Backend(module) {
             }
             is MethodCallStatement -> {
                 val methodCall = statement.methodCall
-                val variable = visit(ReferenceExpression(methodCall.variableReference), builder, localVariables, clazz, llvmFunction, allocatedClasses)
+                val variable = visit(ReferenceExpression(methodCall.variableReference, statement.context), builder, localVariables, clazz, llvmFunction, allocatedClasses)
                 val clazzName = (localVariables[methodCall.variableReference.name]?.type as? Clazz)?.name ?: "null"
                 val functionName = clazzName + "_" + methodCall.methodReference.name
                 val function = namedValues.filter { it.key == functionName }
@@ -596,7 +596,7 @@ class LLVMBackend(module: Module) : Backend(module) {
             }
             is MethodCallExpression -> {
                 val methodCall = expression.methodCall
-                val variable = visit(ReferenceExpression(methodCall.variableReference), builder, localVariables, clazz, function, allocatedClasses)
+                val variable = visit(ReferenceExpression(methodCall.variableReference, expression.context), builder, localVariables, clazz, function, allocatedClasses)
                 val clazzName = (localVariables[methodCall.variableReference.name]?.type as? Clazz)?.name ?: "null"
                 val functionName = clazzName + "_" + methodCall.methodReference.name
                 val method = namedValues.filter { it.key == functionName }

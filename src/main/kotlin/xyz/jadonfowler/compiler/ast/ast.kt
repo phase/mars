@@ -1,5 +1,6 @@
 package xyz.jadonfowler.compiler.ast
 
+import org.antlr.v4.runtime.ParserRuleContext
 import xyz.jadonfowler.compiler.globalModules
 import java.util.*
 
@@ -13,7 +14,7 @@ class EmptyNode : Node
 /**
  * Modules are compilation units that contain global variables, functions, and classes.
  */
-class Module(val name: String, val imports: List<Import>, val globalVariables: List<Variable>, val globalFunctions: List<Function>, val globalClasses: List<Clazz>) : Node {
+class Module(val name: String, val imports: List<Import>, val globalVariables: List<Variable>, val globalFunctions: List<Function>, val globalClasses: List<Clazz>, val source: String) : Node {
 
     val errors: MutableList<String> = mutableListOf()
 
@@ -97,12 +98,12 @@ class Module(val name: String, val imports: List<Import>, val globalVariables: L
 /**
  * Container for name of module to import
  */
-class Import(val reference: Reference) : Node
+class Import(val reference: Reference, val context: ParserRuleContext) : Node
 
 /**
  * Attributes can be put on various declarations
  */
-class Attribute(val name: String, val values: List<String>) : Node {
+class Attribute(val name: String, val values: List<String>, val context: ParserRuleContext) : Node {
     override fun toString(): String = "@$name"
     override fun hashCode(): Int = Objects.hash(name, values)
     override fun equals(other: Any?): Boolean =
@@ -122,7 +123,8 @@ interface Global : Node
  * If there is no last expression, the function returns "void" (aka nothing).
  */
 class Function(val attributes: List<Attribute>, var returnType: Type, var name: String, var formals: List<Formal>,
-               val statements: List<Statement>, var expression: Expression? = null) : Global, Type {
+               val statements: List<Statement>, var expression: Expression? = null,
+               val context: ParserRuleContext) : Global, Type {
     override fun toString(): String {
         val formals = formals.joinToString(separator = " -> ") { it.type.toString() }
         return "($formals -> $returnType)"
@@ -132,15 +134,15 @@ class Function(val attributes: List<Attribute>, var returnType: Type, var name: 
 
     override fun equals(other: Any?): Boolean =
             other is Function && other.hashCode() == hashCode() && other.attributes == attributes
-                && other.returnType == returnType && other.name == name && other.formals == formals
+                    && other.returnType == returnType && other.name == name && other.formals == formals
 
-    fun copy() = Function(attributes, returnType, name, formals, statements, expression)
+    fun copy() = Function(attributes, returnType, name, formals, statements, expression, context)
 }
 
 /**
  * Formals are the arguments for Functions.
  */
-class Formal(type: Type, name: String) : Variable(type, name, null, true)
+class Formal(type: Type, name: String, context: ParserRuleContext) : Variable(type, name, null, true, context)
 
 /**
  * Variables have a type, name, and can have an initial expression.
@@ -153,7 +155,8 @@ class Formal(type: Type, name: String) : Variable(type, name, null, true)
  *
  * If 'constant' is true, the value of this variable can't be changed.
  */
-open class Variable(var type: Type, val name: String, var initialExpression: Expression? = null, val constant: Boolean = false) : Global {
+open class Variable(var type: Type, val name: String, var initialExpression: Expression? = null,
+                    val constant: Boolean = false, val context: ParserRuleContext) : Global {
     override fun toString(): String = "${if (constant) "let" else "var"} $name : $type${if (initialExpression != null) " = $initialExpression" else ""}"
 
     override fun hashCode(): Int = type.hashCode() + name.hashCode() + constant.hashCode()
@@ -164,7 +167,8 @@ open class Variable(var type: Type, val name: String, var initialExpression: Exp
 /**
  * Classes (Clazz because Java contains a class named Class) are normal OOP classes, and can contain fields and methods.
  */
-class Clazz(val name: String, val fields: List<Variable>, val methods: List<Function>, val constructor: Function?) : Global, Type {
+class Clazz(val name: String, val fields: List<Variable>, val methods: List<Function>, val constructor: Function?,
+            val context: ParserRuleContext) : Global, Type {
     override fun toString(): String = "$name(${fields.map { it.type }.joinToString()})"
     override fun hashCode(): Int = Objects.hash(name, fields, methods, constructor)
     override fun equals(other: Any?): Boolean =
@@ -280,30 +284,31 @@ open class CheckedBlock(var expression: Expression, statements: List<Statement>)
  *           - sD
  * </pre>
  */
-class IfStatement(expression: Expression, statements: List<Statement>, var elseStatement: IfStatement?) : CheckedBlock(expression, statements)
+class IfStatement(expression: Expression, statements: List<Statement>, var elseStatement: IfStatement?,
+                  val context: ParserRuleContext) : CheckedBlock(expression, statements)
 
 /**
  * elseStatement returns an IfStatement with the expression set to a TrueExpression
  * @param statements Statements to run
  */
-fun elseStatement(statements: List<Statement>): IfStatement {
-    return IfStatement(TrueExpression(), statements, null)
+fun elseStatement(statements: List<Statement>, context: ParserRuleContext): IfStatement {
+    return IfStatement(TrueExpression(context), statements, null, context)
 }
 
 /**
  * WhileStatements are Blocks that will run over and over as long as their expression is true.
  */
-class WhileStatement(expression: Expression, statements: List<Statement>) : CheckedBlock(expression, statements)
+class WhileStatement(expression: Expression, statements: List<Statement>, val context: ParserRuleContext) : CheckedBlock(expression, statements)
 
 /**
  * VariableDeclarationStatements add a Variable to the local variable pool that other Statements can access.
  */
-class VariableDeclarationStatement(val variable: Variable) : Statement()
+class VariableDeclarationStatement(val variable: Variable, val context: ParserRuleContext) : Statement()
 
 /**
  *
  */
-class VariableReassignmentStatement(val reference: Reference, var expression: Expression) : Statement() {
+class VariableReassignmentStatement(val reference: Reference, var expression: Expression, val context: ParserRuleContext) : Statement() {
     override fun toString(): String = "$reference = $expression (${reference.hashCode()}, ${expression.hashCode()})"
     override fun hashCode(): Int = Objects.hash(reference, expression)
     override fun equals(other: Any?): Boolean =
@@ -313,19 +318,19 @@ class VariableReassignmentStatement(val reference: Reference, var expression: Ex
 /**
  * Statement wrapper for FunctionCalls
  */
-class FunctionCallStatement(val functionCall: FunctionCall) : Statement()
+class FunctionCallStatement(val functionCall: FunctionCall, val context: ParserRuleContext) : Statement()
 
 /**
  * Statement wrapper for MethodCalls
  */
-class MethodCallStatement(val methodCall: MethodCall) : Statement() {
+class MethodCallStatement(val methodCall: MethodCall, val context: ParserRuleContext) : Statement() {
     override fun toString(): String = methodCall.toString()
 }
 
 /**
  * Set field of a Class
  */
-class FieldSetterStatement(val variable: Expression, val fieldReference: Reference, val expression: Expression) : Statement() {
+class FieldSetterStatement(val variable: Expression, val fieldReference: Reference, val expression: Expression, val context: ParserRuleContext) : Statement() {
     override fun toString(): String = "$variable.$fieldReference = $expression"
 }
 
@@ -338,44 +343,44 @@ class FieldSetterStatement(val variable: Expression, val fieldReference: Referen
  */
 abstract class Expression(val child: List<Expression> = listOf()) : Node
 
-abstract class BooleanExpression(val value: Boolean) : Expression()
+abstract class BooleanExpression(val value: Boolean, val context: ParserRuleContext) : Expression()
 
 /**
  * TrueExpressions are booleans that are only "true".
  */
-class TrueExpression : BooleanExpression(true) {
+class TrueExpression(context: ParserRuleContext) : BooleanExpression(true, context) {
     override fun toString(): String = "true"
 }
 
 /**
  * FalseExpressions are booleans that are only "false".
  */
-class FalseExpression : BooleanExpression(false) {
+class FalseExpression(context: ParserRuleContext) : BooleanExpression(false, context) {
     override fun toString(): String = "false"
 }
 
 /**
  * IntegerLiterals are an Expression wrapper for Ints.
  */
-class IntegerLiteral(val value: Int) : Expression() {
+class IntegerLiteral(val value: Int, val context: ParserRuleContext) : Expression() {
     override fun toString(): String = value.toString()
 }
 
-class FloatLiteral(val value: Double, val type: FloatType) : Expression() {
+class FloatLiteral(val value: Double, val type: FloatType, val context: ParserRuleContext) : Expression() {
     override fun toString(): String = value.toString()
 }
 
 /**
  * StringLiterals are an Expression wrapper for Strings.
  */
-class StringLiteral(val value: String) : Expression() {
+class StringLiteral(val value: String, val context: ParserRuleContext) : Expression() {
     override fun toString(): String = value
 }
 
 /**
  * Expression wrapper for References
  */
-class ReferenceExpression(val reference: Reference) : Expression() {
+class ReferenceExpression(val reference: Reference, val context: ParserRuleContext) : Expression() {
     override fun toString(): String = reference.name
     override fun hashCode(): Int = reference.hashCode()
     override fun equals(other: Any?): Boolean = reference == other
@@ -384,25 +389,25 @@ class ReferenceExpression(val reference: Reference) : Expression() {
 /**
  * Expression wrapper for FunctionCalls
  */
-class FunctionCallExpression(val functionCall: FunctionCall) : Expression(functionCall.arguments) {
+class FunctionCallExpression(val functionCall: FunctionCall, val context: ParserRuleContext) : Expression(functionCall.arguments) {
     override fun toString(): String = functionCall.toString()
 }
 
 /**
  * Expression wrapper for MethodCalls
  */
-class MethodCallExpression(val methodCall: MethodCall) : Expression(methodCall.arguments) {
+class MethodCallExpression(val methodCall: MethodCall, val context: ParserRuleContext) : Expression(methodCall.arguments) {
     override fun toString(): String = methodCall.toString()
 }
 
 /**
  * Get field of a Class
  */
-class FieldGetterExpression(val variable: Expression, val fieldReference: Reference) : Expression() {
+class FieldGetterExpression(val variable: Expression, val fieldReference: Reference, val context: ParserRuleContext) : Expression() {
     override fun toString(): String = "$variable.$fieldReference"
 }
 
-class ClazzInitializerExpression(val classReference: Reference, val arguments: List<Expression>) : Expression(arguments) {
+class ClazzInitializerExpression(val classReference: Reference, val arguments: List<Expression>, val context: ParserRuleContext) : Expression(arguments) {
     override fun toString(): String =
             "new ${classReference.name}(" + arguments.map { it.toString() }.joinToString() + ")"
 }
@@ -449,7 +454,7 @@ fun getOperator(s: String): Operator? {
 /**
  * BinaryOperators are Expressions that contain two sub-Expressions and an Operator that operates on them.
  */
-class BinaryOperator(var expressionA: Expression, val operator: Operator, var expressionB: Expression) : Expression(listOf(expressionA, expressionB)) {
+class BinaryOperator(var expressionA: Expression, val operator: Operator, var expressionB: Expression, val context: ParserRuleContext) : Expression(listOf(expressionA, expressionB)) {
     override fun toString(): String = "($expressionA $operator $expressionB)"
     override fun hashCode(): Int = Objects.hash(expressionA, operator, expressionB)
     override fun equals(other: Any?): Boolean {

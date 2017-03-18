@@ -172,7 +172,9 @@ class TypeCheckingTest {
         """
         val module = compileString("incorrectConditionTypeInIfStatement", code)
 
-        assertFails { TypePass(module) }
+        TypePass(module)
+        assertTrue(module.errors.size > 0)
+        module.errors.forEach(::println)
 
         println(PrintPass(module).output)
     }
@@ -188,7 +190,9 @@ class TypeCheckingTest {
         """
         val module = compileString("incorrectConditionTypeInWhileStatement", code)
 
-        assertFails { TypePass(module) }
+        TypePass(module)
+        assertTrue(module.errors.size > 0)
+        module.errors.forEach(::println)
 
         println(PrintPass(module).output)
     }
@@ -224,7 +228,9 @@ class TypeCheckingTest {
         """
         val module = compileString("incorrectTypeSigForVoidFunction", code)
 
-        assertFails { TypePass(module) }
+        TypePass(module)
+        assertTrue(module.errors.size > 0)
+        module.errors.forEach(::println)
 
         println(PrintPass(module).output)
     }
@@ -387,6 +393,17 @@ class TypeCheckingTest {
         TypePass(module)
 
         assertEquals(T_FLOAT64, module.globalFunctions[0].returnType, "${module.globalFunctions[0].returnType} is not a Float32!")
+
+        println(PrintPass(module).output)
+    }
+
+    @Test fun incorrectFloatLiteral() {
+        val code = "let a : Float32 = 7.0d"
+        val module = compileString("incorrectFloatLiteral", code)
+
+        TypePass(module)
+        assertTrue(module.errors.size > 0)
+        module.errors.forEach(::println)
 
         println(PrintPass(module).output)
     }

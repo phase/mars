@@ -7,10 +7,10 @@ class ConstantFoldPass(module: Module) : Pass(module) {
 
     fun foldIntegerLiterals(originalExpression: Expression, a: IntegerLiteral, b: IntegerLiteral, operator: Operator): Expression {
         return when (operator) {
-            Operator.PLUS_INT -> IntegerLiteral(a.value + b.value)
-            Operator.MINUS_INT -> IntegerLiteral(a.value - b.value)
-            Operator.MULTIPLY_INT -> IntegerLiteral(a.value * b.value)
-            Operator.DIVIDE_INT -> IntegerLiteral(a.value / b.value)
+            Operator.PLUS_INT -> IntegerLiteral(a.value + b.value, a.context)
+            Operator.MINUS_INT -> IntegerLiteral(a.value - b.value, a.context)
+            Operator.MULTIPLY_INT -> IntegerLiteral(a.value * b.value, a.context)
+            Operator.DIVIDE_INT -> IntegerLiteral(a.value / b.value, a.context)
             else -> originalExpression
         }
     }
@@ -30,18 +30,18 @@ class ConstantFoldPass(module: Module) : Pass(module) {
                     val ab = a.expressionB
                     if (a.operator == expression.operator) {
                         if (aa is IntegerLiteral)
-                            newExpression = BinaryOperator(foldIntegerLiterals(a, aa, b, expression.operator), a.operator, ab)
+                            newExpression = BinaryOperator(foldIntegerLiterals(a, aa, b, expression.operator), a.operator, ab, aa.context)
                         else if (ab is IntegerLiteral)
-                            newExpression = BinaryOperator(aa, a.operator, foldIntegerLiterals(a, ab, b, expression.operator))
+                            newExpression = BinaryOperator(aa, a.operator, foldIntegerLiterals(a, ab, b, expression.operator), ab.context)
                     }
                 } else if (a is IntegerLiteral && b is BinaryOperator) {
                     val ba = b.expressionA
                     val bb = b.expressionB
                     if (b.operator == expression.operator) {
                         if (ba is IntegerLiteral)
-                            newExpression = BinaryOperator(foldIntegerLiterals(b, ba, a, expression.operator), b.operator, bb)
+                            newExpression = BinaryOperator(foldIntegerLiterals(b, ba, a, expression.operator), b.operator, bb, ba.context)
                         else if (bb is IntegerLiteral)
-                            newExpression = BinaryOperator(ba, b.operator, foldIntegerLiterals(b, bb, a, expression.operator))
+                            newExpression = BinaryOperator(ba, b.operator, foldIntegerLiterals(b, bb, a, expression.operator), bb.context)
                     }
                 }
                 newExpression

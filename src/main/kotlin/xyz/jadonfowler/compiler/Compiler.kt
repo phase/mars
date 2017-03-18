@@ -164,7 +164,7 @@ fun compileString(moduleName: String, code: String, explore: Boolean = false): M
     val tokens = CommonTokenStream(lexer)
     val parser = LangParser(tokens)
     val result = parser.program()
-    val astBuilder = ASTBuilder(moduleName)
+    val astBuilder = ASTBuilder(moduleName, code)
     if (explore) explore(result, 0)
     return astBuilder.visitProgram(result)
 }

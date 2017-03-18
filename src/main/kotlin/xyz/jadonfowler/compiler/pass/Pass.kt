@@ -1,10 +1,25 @@
 package xyz.jadonfowler.compiler.pass
 
+import org.antlr.v4.runtime.ParserRuleContext
 import xyz.jadonfowler.compiler.ast.*
 import xyz.jadonfowler.compiler.ast.Function
 import xyz.jadonfowler.compiler.visitor.Visitor
 
 open class Pass(module: Module) : Visitor(module) {
+
+    fun reportError(problem: String, context: ParserRuleContext) {
+        val line = context.start.line - 1
+        val lines = module.source.split("\n")
+
+        val before = if (line > 0) "$line ${lines[line - 1]}\n" else ""
+        val errorLine = "${line + 1} ${lines[line]}\n"
+        val after = if (line + 1 < lines.size) "${line + 2} ${lines[line + 1]}\n" else ""
+
+        val column = context.start.charPositionInLine
+        val arrow = " ".repeat(line.toString().length + 1) + "~".repeat(column) + "^"
+        module.errors.add("$before$errorLine$arrow\n$after$problem\n")
+    }
+
     override fun visit(variable: Variable) {
     }
 

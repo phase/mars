@@ -9,7 +9,7 @@ import xyz.jadonfowler.compiler.parser.LangParser
 /**
  * ASTBuilder transforms a ContextTree into an AST
  */
-class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
+class ASTBuilder(val moduleName: String, val source: String) : LangBaseVisitor<Node>() {
 
     val imports: MutableList<Import> = mutableListOf()
     val globalVariables: MutableList<Variable> = mutableListOf()
@@ -33,13 +33,13 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
             visitFunctionDeclaration(it.functionDeclaration())
         }.orEmpty())
 
-        val module = Module(moduleName, imports, globalVariables, globalFunctions, globalClasses)
+        val module = Module(moduleName, imports, globalVariables, globalFunctions, globalClasses, source)
         globalModules.add(module)
         return module
     }
 
     fun import(ctx: LangParser.ImportDeclarationContext?): List<Import> {
-        return ctx?.id_p()?.map { Import(Reference(it?.text ?: "")) }.orEmpty()
+        return ctx?.id_p()?.map { Import(Reference(it?.text ?: ""), ctx) }.orEmpty()
     }
 
     override fun visitExternalDeclaration(ctx: LangParser.ExternalDeclarationContext?): Node {
@@ -60,7 +60,7 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
         val returnType = getType(ctx?.typeAnnotation()?.ID()?.symbol?.text.orEmpty(), globalClasses)
         val formals = ctx?.argumentList()?.argument()?.map {
             Formal(getType(it.variableSignature()?.typeAnnotation()?.ID()?.symbol?.text.orEmpty(), globalClasses),
-                    it.variableSignature()?.ID()?.symbol?.text.orEmpty())
+                    it.variableSignature()?.ID()?.symbol?.text.orEmpty(), ctx)
         }.orEmpty()
 
         val statements = statementListFromStatementListContext(ctx?.statementList()).toMutableList()
@@ -82,7 +82,7 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
 
         val attributes = attributeListFromAttributeListContext(ctx?.attributeList())
 
-        return Function(attributes, returnType, identifier, formals, statements, expression)
+        return Function(attributes, returnType, identifier, formals, statements, expression, ctx!!)
     }
 
     fun attributeListFromAttributeListContext(attributeListContext: LangParser.AttributeListContext?): List<Attribute> {
@@ -101,7 +101,7 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
         (1..ctx?.ID()?.size!! - 1).forEach {
             values.add(ctx?.ID(it)?.symbol?.text.orEmpty())
         }
-        return Attribute(name, values)
+        return Attribute(name, values, ctx!!)
     }
 
     fun statementListFromStatementListContext(statementListContext: LangParser.StatementListContext?): List<Statement> {
@@ -137,7 +137,7 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
         ctx?.expression()?.let {
             expression = visitExpression(it)
         }
-        return Variable(type, identifier, expression, constant)
+        return Variable(type, identifier, expression, constant, ctx!!)
     }
 
     override fun visitClassDeclaration(ctx: LangParser.ClassDeclarationContext?): Clazz {
@@ -150,7 +150,7 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
         constructor?.let {
             methods.remove(constructor)
         }
-        return Clazz(identifier, fields, methods, constructor)
+        return Clazz(identifier, fields, methods, constructor, ctx!!)
     }
 
     override fun visitFunctionCall(ctx: LangParser.FunctionCallContext?): FunctionCall {
@@ -170,7 +170,7 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
         val variable = visitExpression(ctx?.expression(0))
         val fieldReference = Reference(ctx?.ID()?.symbol?.text.orEmpty())
         val expression = visitExpression(ctx?.expression(1))
-        return FieldSetterStatement(variable, fieldReference, expression)
+        return FieldSetterStatement(variable, fieldReference, expression, ctx!!)
     }
 
     fun expressionListFromContext(expressionListContext: LangParser.ExpressionListContext?): List<Expression> {
@@ -189,7 +189,7 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
     }
 
     override fun visitVariableReassignment(ctx: LangParser.VariableReassignmentContext?): VariableReassignmentStatement {
-        return VariableReassignmentStatement(Reference(ctx?.ID()?.symbol?.text.orEmpty()), visitExpression(ctx?.expression()))
+        return VariableReassignmentStatement(Reference(ctx?.ID()?.symbol?.text.orEmpty()), visitExpression(ctx?.expression()), ctx!!)
     }
 
     override fun visitStatement(ctx: LangParser.StatementContext?): Node /*TODO: return Statement */ {
@@ -197,16 +197,16 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
             return visitFieldSetter(it)
         }
         ctx?.variableDeclaration()?.let {
-            return VariableDeclarationStatement(visitVariableDeclaration(it))
+            return VariableDeclarationStatement(visitVariableDeclaration(it), ctx)
         }
         ctx?.variableReassignment()?.let {
             return visitVariableReassignment(it)
         }
         ctx?.methodCall()?.let {
-            return MethodCallStatement(visitMethodCall(it))
+            return MethodCallStatement(visitMethodCall(it), ctx)
         }
         ctx?.functionCall()?.let {
-            return FunctionCallStatement(visitFunctionCall(it))
+            return FunctionCallStatement(visitFunctionCall(it), ctx)
         }
         return EmptyNode()
     }
@@ -218,20 +218,20 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
                 val expression = visitExpression(ctx?.expression())
                 val statements = statementListFromStatementListContext(ctx?.statementList())
 
-                val parentIf: IfStatement = IfStatement(expression, statements, null)
+                val parentIf: IfStatement = IfStatement(expression, statements, null, ctx!!)
                 var currentIf: IfStatement = parentIf
 
-                ctx?.elif()?.forEach {
+                ctx.elif()?.forEach {
                     val elifExpression = visitExpression(it.expression())
                     val elifStatements = statementListFromStatementListContext(it.statementList())
-                    val elif = IfStatement(elifExpression, elifStatements, null)
+                    val elif = IfStatement(elifExpression, elifStatements, null, ctx)
                     currentIf.elseStatement = elif
                     currentIf = elif
                 }
 
-                ctx?.elseStatement()?.let {
+                ctx.elseStatement()?.let {
                     val elseStatements = statementListFromStatementListContext(it.statementList())
-                    currentIf.elseStatement = elseStatement(elseStatements)
+                    currentIf.elseStatement = elseStatement(elseStatements, ctx)
                 }
 
                 parentIf
@@ -239,7 +239,7 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
             "while" -> {
                 val expression = visitExpression(ctx?.expression())
                 val statements = statementListFromStatementListContext(ctx?.statementList())
-                WhileStatement(expression, statements)
+                WhileStatement(expression, statements, ctx!!)
             }
             else -> EmptyNode()
         }
@@ -253,8 +253,8 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
                 // | '(' expression ')'
                 return visitExpression(ctx?.getChild(1) as LangParser.ExpressionContext?)
             }
-            "true" -> return TrueExpression()
-            "false" -> return FalseExpression()
+            "true" -> return TrueExpression(ctx!!)
+            "false" -> return FalseExpression(ctx!!)
         }
         when (secondSymbol) {
             "`" -> {
@@ -262,13 +262,13 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
                 val firstExpression = visitExpression(ctx?.getChild(0) as LangParser.ExpressionContext?)
                 val secondExpression = visitExpression(ctx?.getChild(4) as LangParser.ExpressionContext?)
                 val functionName = ctx?.getChild(2)?.text.orEmpty()
-                return FunctionCallExpression(FunctionCall(Reference(functionName), listOf(firstExpression, secondExpression)))
+                return FunctionCallExpression(FunctionCall(Reference(functionName), listOf(firstExpression, secondExpression)), ctx!!)
             }
             "." -> {
                 // Field Getter
                 val variable = visitExpression(ctx?.expression(0))
                 val fieldReference = Reference(ctx?.ID()?.symbol?.text.orEmpty())
-                return FieldGetterExpression(variable, fieldReference)
+                return FieldGetterExpression(variable, fieldReference, ctx!!)
             }
         }
         if (ctx?.getChild(0) is LangParser.ExpressionContext && ctx?.getChild(2) is LangParser.ExpressionContext) {
@@ -277,39 +277,39 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
             val between = ctx?.getChild(1)?.text.orEmpty()
             val operator = getOperator(between)
             operator?.let {
-                return BinaryOperator(expressionA, it, expressionB)
+                return BinaryOperator(expressionA, it, expressionB, ctx!!)
             }
         }
         ctx?.methodCall()?.let {
-            return MethodCallExpression(visitMethodCall(it))
+            return MethodCallExpression(visitMethodCall(it), ctx)
         }
         ctx?.functionCall()?.let {
-            return FunctionCallExpression(visitFunctionCall(it))
+            return FunctionCallExpression(visitFunctionCall(it), ctx)
         }
         ctx?.classInitializer()?.let {
             return visitClassInitializer(it)
         }
         ctx?.INT()?.let {
-            return IntegerLiteral(it.text?.toInt()!!)
+            return IntegerLiteral(it.text?.toInt()!!, ctx)
         }
         ctx?.FLOAT()?.let {
             val text = it.text.orEmpty()
             if (text.endsWith("d"))
             // Remove double suffix
-                return FloatLiteral(text.substring(0..text.length - 2).toDouble(), T_FLOAT64)
+                return FloatLiteral(text.substring(0..text.length - 2).toDouble(), T_FLOAT64, ctx)
             else if (text.endsWith("q"))
-                return FloatLiteral(text.substring(0..text.length - 2).toDouble(), T_FLOAT128)
+                return FloatLiteral(text.substring(0..text.length - 2).toDouble(), T_FLOAT128, ctx)
             else
-                return FloatLiteral(text.toDouble(), T_FLOAT32)
+                return FloatLiteral(text.toDouble(), T_FLOAT32, ctx)
         }
         ctx?.ID()?.let {
             val id = it.symbol?.text.orEmpty()
-            return ReferenceExpression(Reference(id))
+            return ReferenceExpression(Reference(id), ctx)
         }
         ctx?.STRING()?.let {
             val value = it.symbol?.text.orEmpty()
             // Remove quotes around string
-            return StringLiteral(value.substring(1..value.length - 2))
+            return StringLiteral(value.substring(1..value.length - 2), ctx)
         }
         throw Exception("${ctx?.text} can't be handled yet")
     }
@@ -317,7 +317,7 @@ class ASTBuilder(val moduleName: String) : LangBaseVisitor<Node>() {
     override fun visitClassInitializer(ctx: LangParser.ClassInitializerContext?): ClazzInitializerExpression {
         val className = ctx?.ID()?.symbol?.text.orEmpty()
         val expressions = expressionListFromContext(ctx?.expressionList())
-        return ClazzInitializerExpression(Reference(className), expressions)
+        return ClazzInitializerExpression(Reference(className), expressions, ctx!!)
     }
 
     override fun visitArgumentList(ctx: LangParser.ArgumentListContext?): Node {
