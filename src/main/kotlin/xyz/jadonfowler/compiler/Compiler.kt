@@ -11,6 +11,7 @@ import xyz.jadonfowler.compiler.parser.LangLexer
 import xyz.jadonfowler.compiler.parser.LangParser
 import xyz.jadonfowler.compiler.pass.ConstantFoldPass
 import xyz.jadonfowler.compiler.pass.PrintPass
+import xyz.jadonfowler.compiler.pass.SemanticAnalysis
 import xyz.jadonfowler.compiler.pass.TypePass
 import xyz.jadonfowler.compiler.visitor.ASTBuilder
 import java.io.File
@@ -83,12 +84,13 @@ fun main(args: Array<String>) {
 
     // Default passes
     modules.forEach {
+        SemanticAnalysis(it)
         TypePass(it)
         ConstantFoldPass(it)
 
         if (it.errors.size > 0) {
-            println("Found errors in ${it.name}:")
-            it.errors.forEach { println("    $it") }
+            println("Found ${it.errors.size} errors in ${it.name}:")
+            it.errors.forEach(::println)
             failed = true
         }
     }

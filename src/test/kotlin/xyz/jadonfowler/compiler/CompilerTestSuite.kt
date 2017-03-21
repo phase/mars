@@ -9,6 +9,7 @@ import org.junit.runners.Suite
         TypeCheckingTest::class,
         ConstantFoldTest::class,
         JVMTest::class,
-        LLVMTest::class
+        LLVMTest::class,
+        SemanticsTest::class
 )
 class CompilerTestSuite
