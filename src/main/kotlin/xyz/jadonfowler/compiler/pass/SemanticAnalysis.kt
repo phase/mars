@@ -13,6 +13,9 @@ class SemanticAnalysis(module: Module) : Pass(module) {
                 list.addAll(getReferences(expression.expressionA))
                 list.addAll(getReferences(expression.expressionB))
             }
+            is FieldGetterExpression -> {
+                list.addAll(getReferences(expression.variable))
+            }
         }
         return list
     }
