@@ -1,9 +1,21 @@
 package xyz.jadonfowler.compiler.pass
 
-import xyz.jadonfowler.compiler.ast.Module
-import xyz.jadonfowler.compiler.ast.Variable
+import xyz.jadonfowler.compiler.ast.*
+import xyz.jadonfowler.compiler.ast.Function
 
 class SemanticAnalysis(module: Module) : Pass(module) {
+
+    fun getReferences(expression: Expression): List<String> {
+        val list = mutableListOf<String>()
+        when (expression) {
+            is ReferenceExpression -> list.add(expression.reference.name)
+            is BinaryOperator -> {
+                list.addAll(getReferences(expression.expressionA))
+                list.addAll(getReferences(expression.expressionB))
+            }
+        }
+        return list
+    }
 
     init {
         module.globalVariables.forEach { visit(it, true) }
@@ -20,10 +32,40 @@ class SemanticAnalysis(module: Module) : Pass(module) {
             if (!variable.constant)
                 reportError("Global variable '${variable.name}' needs to be a constant.", variable.context)
 
-            variable.initialExpression?.let {
-                visit(it)
+            if (variable.initialExpression == null)
+                reportError("Global variable '${variable.name}' needs to be assigned an expression.", variable.context)
+        }
+    }
+
+    override fun visit(function: Function) {
+        val unusedReferences = mutableListOf<String>()
+        val usedReferences = mutableListOf<String>()
+
+        function.statements.forEach {
+            when (it) {
+                is VariableDeclarationStatement -> {
+                    val context = it.context
+                    it.variable.initialExpression?.let {
+                        val refs = getReferences(it)
+                        refs.forEach {
+                            if (usedReferences.contains(it)) {
+                                reportError("Reference to '$it' has already been used.", context)
+                            } else {
+                                if (unusedReferences.contains(it))
+                                    unusedReferences.remove(it)
+                                usedReferences.add(it)
+                            }
+                        }
+                    }
+                    unusedReferences.add(it.variable.name)
+                }
+                else -> visit(it)
             }
         }
+    }
+
+    override fun visit(fieldSetterStatement: FieldSetterStatement) {
+        super.visit(fieldSetterStatement)
     }
 
 }

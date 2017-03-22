@@ -12,7 +12,7 @@ genGlobalsInFunctions (z, y, x, w : Int32)
     else
         t = v - z
     ;
-    let l = 74 * 3 - v + z * x - w,
+    let l = 74 * 3 - u + z,
     5 + u * z * v + t * G2 - G0 * G1 + 2 * l
 
 returnGlobal ()

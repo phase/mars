@@ -19,4 +19,19 @@ class SemanticsTest {
         module.errors.forEach(::println)
     }
 
+    @Test fun referenceUsing() {
+        val code = """
+        f () : Int
+            let a = 7,
+            let b = a,
+            let c = a + b,
+            0
+        """
+        val module = compileString("referenceUsing", code)
+
+        SemanticAnalysis(module)
+        assertTrue(module.errors.size > 0)
+        module.errors.forEach(::println)
+    }
+
 }
