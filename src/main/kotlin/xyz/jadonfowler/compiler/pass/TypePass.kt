@@ -24,22 +24,25 @@ class TypePass(module: Module) : Pass(module) {
                             val node = module.getNodeFromReference(expA.reference, localVariables)
                             when (node) {
                                 is Variable -> {
-                                    if (node.type == T_UNDEF)
+                                    if (node.type == T_UNDEF) {
                                         node.type = expectedTypeOfA
-                                    else if (node.type != expectedTypeOfA && (node.type !is NumericType && expectedTypeOfA !is NumericType))
+                                        expA.reference.type = expectedTypeOfA
+                                    } else if (node.type != expectedTypeOfA && (node.type !is NumericType && expectedTypeOfA !is NumericType)) {
                                         reportError("${node.name} has the type ${node.type} but was " +
                                                 "expected to have the type $expectedTypeOfA.", node.context)
+                                    }
                                 }
                             }
                         } else if (expA is FunctionCallExpression) {
                             val node = module.getNodeFromReference(expA.functionCall.functionReference, localVariables)
                             when (node) {
                                 is Function -> {
-                                    if (node.returnType == T_UNDEF)
+                                    if (node.returnType == T_UNDEF) {
                                         node.returnType = expectedTypeOfA
-                                    else if (node.returnType != expectedTypeOfA && (node.returnType !is NumericType && expectedTypeOfA !is NumericType))
+                                    } else if (node.returnType != expectedTypeOfA && (node.returnType !is NumericType && expectedTypeOfA !is NumericType)) {
                                         reportError("${node.name} has the return type ${node.returnType} but was" +
                                                 "expected to have the type $expectedTypeOfA.", node.context)
+                                    }
                                 }
                             }
                         }
@@ -49,7 +52,9 @@ class TypePass(module: Module) : Pass(module) {
                             when (node) {
                                 is Variable -> {
                                     if (node.type == T_UNDEF) {
-                                        node.type = getType(expB, localVariables)
+                                        val type = getType(expB, localVariables)
+                                        node.type = type
+                                        expA.reference.type = type
                                     }
                                 }
                             }
@@ -57,8 +62,9 @@ class TypePass(module: Module) : Pass(module) {
                             val node = module.getNodeFromReference(expA.functionCall.functionReference, localVariables)
                             when (node) {
                                 is Function -> {
-                                    if (node.returnType == T_UNDEF)
+                                    if (node.returnType == T_UNDEF) {
                                         node.returnType = getType(expB, localVariables)
+                                    }
                                 }
                             }
                         }
@@ -104,7 +110,7 @@ class TypePass(module: Module) : Pass(module) {
             }
             is ReferenceExpression -> {
                 val node = module.getNodeFromReference(expression.reference, localVariables)
-                if (node != null) {
+                val type = if (node != null) {
                     when (node) {
                         is Clazz -> node
                         is Function -> node
@@ -116,6 +122,8 @@ class TypePass(module: Module) : Pass(module) {
                     reportError("Can't find type for '$expression'.", expression.context)
                     T_UNDEF
                 }
+                expression.reference.type = type
+                type
             }
             else -> T_UNDEF
         }
@@ -160,11 +168,14 @@ class TypePass(module: Module) : Pass(module) {
     fun visit(variable: Variable, localVariables: MutableMap<String, Variable>?) {
         if (variable.initialExpression != null) {
             visit(variable.initialExpression!!, localVariables)
+
             // Variable should have the same type as their initial expression.
             val expressionType = getType(variable.initialExpression!!, localVariables)
+
             if (variable.type != T_UNDEF && variable.type != expressionType)
                 reportError("Variable '${variable.name}' is marked with the type '${variable.type}' " +
                         "but its initial expression is of type '$expressionType'.", variable.context)
+
             variable.type = expressionType
         }
     }

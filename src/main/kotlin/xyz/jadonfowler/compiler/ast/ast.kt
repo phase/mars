@@ -155,8 +155,21 @@ class Formal(type: Type, name: String, context: ParserRuleContext) : Variable(ty
  *
  * If 'constant' is true, the value of this variable can't be changed.
  */
-open class Variable(var type: Type, val name: String, var initialExpression: Expression? = null,
+open class Variable(val reference: Reference, var initialExpression: Expression? = null,
                     val constant: Boolean = false, val context: ParserRuleContext) : Global {
+
+    constructor(type: Type, name: String, initialExpression: Expression? = null, constant: Boolean = false,
+                context: ParserRuleContext) : this(Reference(name, type), initialExpression, constant, context)
+
+    val name: String
+        get() = reference.name
+
+    var type: Type
+        get() = reference.type
+        set(value) {
+            reference.type = value
+        }
+
     override fun toString(): String = "${if (constant) "let" else "var"} $name : $type${if (initialExpression != null) " = $initialExpression" else ""}"
 
     override fun hashCode(): Int = type.hashCode() + name.hashCode() + constant.hashCode()
@@ -179,9 +192,9 @@ class Clazz(val name: String, val fields: List<Variable>, val methods: List<Func
 /**
  * A Reference to a declaration.
  */
-class Reference(val name: String) {
+class Reference(val name: String, var type: Type = T_UNDEF) {
     override fun toString(): String = name
-    override fun hashCode(): Int = name.hashCode()
+    override fun hashCode(): Int = Objects.hash(name, type)
     override fun equals(other: Any?): Boolean = name == other
 }
 

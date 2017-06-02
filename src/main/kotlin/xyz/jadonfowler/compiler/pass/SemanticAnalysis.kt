@@ -8,7 +8,9 @@ class SemanticAnalysis(module: Module) : Pass(module) {
     fun getReferences(expression: Expression): List<String> {
         val list = mutableListOf<String>()
         when (expression) {
-            is ReferenceExpression -> list.add(expression.reference.name)
+            is ReferenceExpression -> {
+                list.add(expression.reference.name)
+            }
             is BinaryOperator -> {
                 list.addAll(getReferences(expression.expressionA))
                 list.addAll(getReferences(expression.expressionB))

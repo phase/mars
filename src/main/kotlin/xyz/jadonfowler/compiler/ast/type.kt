@@ -36,7 +36,9 @@ private fun makeFloatType(bits: Int): FloatType {
  * This isn't like JavaScript's "undefined".
  * This type is used internally to tag objects that don't have a type *yet*.
  */
-val T_UNDEF = makeType("Undefined")
+object T_UNDEF : Type {
+    override fun toString(): String = "Undefined"
+}
 
 /**
  * Void is only used on Functions.
