@@ -30,6 +30,7 @@ class SemanticsTest {
         """
         val module = compileString("referenceUsing", code)
 
+        TypePass(module)
         SemanticAnalysis(module)
         assertTrue(module.errors.size > 0)
         module.errors.forEach(::println)

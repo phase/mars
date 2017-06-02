@@ -133,23 +133,10 @@ class TypePass(module: Module) : Pass(module) {
 
     fun visit(function: Function, clazz: Clazz?) {
         val localVariables: MutableMap<String, Variable> = mutableMapOf()
+        function.formals.forEach { localVariables.put(it.name, it) }
 
         if (clazz != null) {
             clazz.fields.forEach { localVariables.put(it.name, it) }
-        }
-
-        /*
-         * add types to untyped formals, such as
-         *     add (a, b : Int) a + b
-         * a's type is set to b's type
-         */
-        var previousFormalType = T_UNDEF
-        function.formals.reversed().forEach {
-            if (it.type == T_UNDEF)
-                it.type = previousFormalType
-            else
-                previousFormalType = it.type
-            localVariables.put(it.name, it)
         }
 
         function.statements.forEach { visit(it, localVariables) }
@@ -259,11 +246,19 @@ class TypePass(module: Module) : Pass(module) {
 
         if (thingsWithName.isNotEmpty()) {
             val variable = thingsWithName.last()
-            visit(variableReassignmentStatement.expression, localVariables)
-            val expressionType = getType(variableReassignmentStatement.expression, localVariables)
+            val expression = variableReassignmentStatement.expression
+            visit(expression, localVariables)
+            val expressionType = getType(expression, localVariables)
+            if (expressionType == T_UNDEF && expression is ReferenceExpression) {
+                val node = module.getNodeFromReference(expression.reference, localVariables)
+                if (node is Variable) {
+                    node.type = variable.type
+                    return
+                }
+            }
             if (variable.type != expressionType)
                 reportError("Variable '${variable.name}' is marked with the type '${variable.type}' but the type" +
-                        " of '${variableReassignmentStatement.expression}' is '$expressionType'.", variableReassignmentStatement.context)
+                        " of '$expression' is '$expressionType'.", variableReassignmentStatement.context)
         }
     }
 

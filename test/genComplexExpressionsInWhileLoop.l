@@ -7,7 +7,7 @@ genComplexExpressionsInWhileLoop (a, z, y, x, w : Int32)
         v = v * 2 - z,
         var t = 1,
         if z < 10
-            t = v * z + 24 - 15
+            t = v * z + 24 - 15 + y
         else
             t = v - 7 + 8 + 8 - z
         ;
