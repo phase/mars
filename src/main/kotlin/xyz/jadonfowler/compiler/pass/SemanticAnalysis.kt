@@ -9,7 +9,9 @@ class SemanticAnalysis(module: Module) : Pass(module) {
         val list = mutableListOf<String>()
         when (expression) {
             is ReferenceExpression -> {
-                list.add(expression.reference.name)
+                if (!expression.reference.type.isCopyable()) {
+                    list.add(expression.reference.name)
+                }
             }
             is BinaryOperator -> {
                 list.addAll(getReferences(expression.expressionA))

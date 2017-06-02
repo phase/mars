@@ -16,11 +16,11 @@ class SemanticsTest {
         val module = compileString("mutableGlobalVariable", code)
 
         SemanticAnalysis(module)
-        assertTrue(module.errors.size > 0)
         module.errors.forEach(::println)
+        assertTrue(module.errors.size > 0)
     }
 
-    @Test fun referenceUsing() {
+    @Test fun primitiveCopying() {
         val code = """
         f () : Int
             let a = 7,
@@ -28,15 +28,15 @@ class SemanticsTest {
             let c = a + b,
             0
         """
-        val module = compileString("referenceUsing", code)
+        val module = compileString("primitiveCopying", code)
 
         TypePass(module)
         SemanticAnalysis(module)
-        assertTrue(module.errors.size > 0)
         module.errors.forEach(::println)
+        assertTrue(module.errors.size == 0)
     }
 
-    @Test fun referenceUsing2() {
+    @Test fun referenceUsing() {
         val code = """
         class P
             let x : Int
@@ -51,12 +51,12 @@ class SemanticsTest {
             let c = a.x + b.x,
             0
         """
-        val module = compileString("referenceUsing2", code)
+        val module = compileString("referenceUsing", code)
 
         TypePass(module)
         SemanticAnalysis(module)
-        assertTrue(module.errors.size > 0)
         module.errors.forEach(::println)
+        assertTrue(module.errors.size > 0)
     }
 
 }

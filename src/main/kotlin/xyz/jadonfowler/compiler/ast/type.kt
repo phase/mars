@@ -1,8 +1,12 @@
 package xyz.jadonfowler.compiler.ast
 
-interface Type
+interface Type {
+    fun isCopyable(): Boolean
+}
 
-interface NumericType : Type
+interface NumericType : Type {
+    override fun isCopyable(): Boolean = true
+}
 
 interface IntType : NumericType {
     fun getBits(): Int
@@ -12,9 +16,10 @@ interface FloatType : NumericType {
     fun getBits(): Int
 }
 
-private fun makeType(name: String): Type {
+private fun makeType(name: String, copyable: Boolean): Type {
     return object : Type {
         override fun toString(): String = name
+        override fun isCopyable(): Boolean = copyable
     }
 }
 
@@ -38,12 +43,13 @@ private fun makeFloatType(bits: Int): FloatType {
  */
 object T_UNDEF : Type {
     override fun toString(): String = "Undefined"
+    override fun isCopyable(): Boolean = false
 }
 
 /**
  * Void is only used on Functions.
  */
-val T_VOID = makeType("Void")
+val T_VOID = makeType("Void", false)
 
 val T_INT8 = makeIntType(8)
 val T_INT16 = makeIntType(16)
@@ -55,9 +61,9 @@ val T_FLOAT32 = makeFloatType(32)
 val T_FLOAT64 = makeFloatType(64)
 val T_FLOAT128 = makeFloatType(128)
 
-val T_BOOL = makeType("Bool")
+val T_BOOL = makeType("Bool", true)
 
-val T_STRING = makeType("String")
+val T_STRING = makeType("String", false)
 
 fun getType(name: String, classes: List<Clazz>): Type {
     return when (name) {

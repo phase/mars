@@ -137,6 +137,8 @@ class Function(val attributes: List<Attribute>, var returnType: Type, var name: 
                     && other.returnType == returnType && other.name == name && other.formals == formals
 
     fun copy() = Function(attributes, returnType, name, formals, statements, expression, context)
+
+    override fun isCopyable(): Boolean = false
 }
 
 /**
@@ -187,6 +189,9 @@ class Clazz(val name: String, val fields: List<Variable>, val methods: List<Func
     override fun equals(other: Any?): Boolean =
             other is Clazz && other.hashCode() == hashCode() && other.name == name
                     && other.fields == fields && other.methods == methods && other.constructor == constructor
+
+    // TODO: Check for Copy Trait/Attribute
+    override fun isCopyable(): Boolean = false
 }
 
 /**
