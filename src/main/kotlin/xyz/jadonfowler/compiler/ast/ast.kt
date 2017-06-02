@@ -122,9 +122,13 @@ interface Global : Node
  * and an optional last expression. The last expression is used as the return value for the function.
  * If there is no last expression, the function returns "void" (aka nothing).
  */
-class Function(val attributes: List<Attribute>, var returnType: Type, var name: String, var formals: List<Formal>,
-               val statements: List<Statement>, var expression: Expression? = null,
+class Function(val prototype: Prototype, val statements: List<Statement>, var expression: Expression? = null,
                val context: ParserRuleContext) : Global, Type {
+
+    constructor(attributes: List<Attribute>, returnType: Type, name: String, formals: List<Formal>,
+                statements: List<Statement>, expression: Expression? = null, context: ParserRuleContext)
+            : this(Prototype(attributes, returnType, name, formals), statements, expression, context)
+
     override fun toString(): String {
         val formals = formals.joinToString(separator = " -> ") { it.type.toString() }
         return "($formals -> $returnType)"
@@ -139,6 +143,32 @@ class Function(val attributes: List<Attribute>, var returnType: Type, var name: 
     fun copy() = Function(attributes, returnType, name, formals, statements, expression, context)
 
     override fun isCopyable(): Boolean = false
+
+    class Prototype(val attributes: List<Attribute>, var returnType: Type, var name: String, var formals: List<Formal>)
+
+    // Prototype Boilerplate
+
+    val attributes: List<Attribute>
+        get() = prototype.attributes
+
+    var returnType: Type
+        get() = prototype.returnType
+        set(value) {
+            prototype.returnType = value
+        }
+
+    var name: String
+        get() = prototype.name
+        set(value) {
+            prototype.name = value
+        }
+
+    var formals: List<Formal>
+        get() = prototype.formals
+        set(value) {
+            prototype.formals = value
+        }
+
 }
 
 /**

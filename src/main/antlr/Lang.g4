@@ -14,7 +14,8 @@ externalDeclaration
     | classDeclaration
     ;
 
-functionDeclaration: attributeList ID '(' argumentList ')' typeAnnotation? statementList (expression | statement | blockStatement);
+functionPrototype: attributeList ID '(' argumentList ')' typeAnnotation?;
+functionDeclaration: functionPrototype statementList (expression | statement | blockStatement);
 variableDeclaration: variableModifier variableSignature ('=' expression)?;
 
 functionCall: ID '(' expressionList ')';

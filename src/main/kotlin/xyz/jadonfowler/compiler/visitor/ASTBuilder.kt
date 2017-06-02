@@ -50,7 +50,7 @@ class ASTBuilder(val moduleName: String, val source: String) : LangBaseVisitor<N
         return EmptyNode()
     }
 
-    override fun visitFunctionDeclaration(ctx: LangParser.FunctionDeclarationContext?): Function {
+    fun getFunctionPrototype(ctx: LangParser.FunctionPrototypeContext?): Function.Prototype {
         var identifier = ctx?.ID()?.symbol?.text.orEmpty()
 
         // replace `main` with `real_main` for wrapping
@@ -62,6 +62,13 @@ class ASTBuilder(val moduleName: String, val source: String) : LangBaseVisitor<N
             Formal(getType(it.variableSignature()?.typeAnnotation()?.ID()?.symbol?.text.orEmpty(), globalClasses),
                     it.variableSignature()?.ID()?.symbol?.text.orEmpty(), ctx)
         }.orEmpty()
+
+        val attributes = attributeListFromAttributeListContext(ctx?.attributeList())
+
+        return Function.Prototype(attributes, returnType, identifier, formals)
+    }
+
+    override fun visitFunctionDeclaration(ctx: LangParser.FunctionDeclarationContext?): Function {
 
         val statements = statementListFromStatementListContext(ctx?.statementList()).toMutableList()
 
@@ -80,9 +87,8 @@ class ASTBuilder(val moduleName: String, val source: String) : LangBaseVisitor<N
         var expression: Expression? = null
         ctx?.expression()?.let { expression = visitExpression(it) }
 
-        val attributes = attributeListFromAttributeListContext(ctx?.attributeList())
 
-        return Function(attributes, returnType, identifier, formals, statements, expression, ctx!!)
+        return Function(getFunctionPrototype(ctx?.functionPrototype()), statements, expression, ctx!!)
     }
 
     fun attributeListFromAttributeListContext(attributeListContext: LangParser.AttributeListContext?): List<Attribute> {
