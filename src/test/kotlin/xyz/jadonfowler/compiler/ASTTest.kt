@@ -291,4 +291,30 @@ class ASTTest {
         println(PrintPass(module).output)
     }
 
+    @Test fun traitParsing() {
+        val code = """
+        trait Test
+            a (a : Int32) : Int32
+            b (b : Int32) : Int32
+        ;
+
+        class TestImpl : Test
+            a (a : Int32) : Int32
+                a + 12
+
+            b (b : Int32) : Int32
+                b + 13
+        ;
+        """
+        val module = compileString("traitParsing", code)
+
+        val trait = module.globalTraits[0]
+        assertEquals(trait.name, "Test")
+        val clazz = module.globalClasses[0]
+        assertEquals(clazz.traits[0], trait)
+        clazz.methods.forEachIndexed { i, function ->
+            assertEquals(function.prototype, trait.functions[i])
+        }
+    }
+
 }

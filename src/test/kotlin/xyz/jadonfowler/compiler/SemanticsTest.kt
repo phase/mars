@@ -59,4 +59,28 @@ class SemanticsTest {
         assertTrue(module.errors.size > 0)
     }
 
+    @Test fun copyableClass() {
+        val code = """
+        class P : Copy
+            let x : Int
+
+            init (v : Int)
+                x = v
+        ;
+
+        main () : Int
+            let a = new P(7),
+            let b = a,
+            let c = a.x + b.x,
+            0
+        """
+
+        val module = compileString("copyableClass", code)
+
+        TypePass(module)
+        SemanticAnalysis(module)
+        module.errors.forEach(::println)
+        assertTrue(module.errors.size == 0)
+    }
+
 }

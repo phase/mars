@@ -14,7 +14,9 @@ class EmptyNode : Node
 /**
  * Modules are compilation units that contain global variables, functions, and classes.
  */
-class Module(val name: String, val imports: List<Import>, val globalVariables: List<Variable>, val globalFunctions: List<Function>, val globalClasses: List<Clazz>, val source: String) : Node {
+class Module(val name: String, val imports: List<Import>, val globalVariables: List<Variable>,
+             val globalFunctions: List<Function>, val globalClasses: List<Clazz>,
+             val globalTraits: List<Trait>, val source: String) : Node {
 
     val errors: MutableList<String> = mutableListOf()
 
@@ -70,6 +72,7 @@ class Module(val name: String, val imports: List<Import>, val globalVariables: L
         val thingsWithName: MutableList<Node> = mutableListOf()
 
         thingsWithName.addAll(globalClasses.filter { it.name == name })
+        thingsWithName.addAll(globalTraits.filter { it.name == name })
         thingsWithName.addAll(globalFunctions.filter { it.name == name })
         thingsWithName.addAll(globalVariables.filter { it.name == name })
         localVariables?.forEach { if (it.key == name) thingsWithName.add(it.value) }
@@ -78,6 +81,7 @@ class Module(val name: String, val imports: List<Import>, val globalVariables: L
             val lastThingWithName = thingsWithName.last()
             when (lastThingWithName) {
                 is Clazz -> return lastThingWithName
+                is Trait -> return lastThingWithName
                 is Function -> return lastThingWithName
                 is Variable -> return lastThingWithName
                 is Formal -> return lastThingWithName
@@ -144,7 +148,12 @@ class Function(val prototype: Prototype, val statements: List<Statement>, var ex
 
     override fun isCopyable(): Boolean = false
 
-    class Prototype(val attributes: List<Attribute>, var returnType: Type, var name: String, var formals: List<Formal>)
+    class Prototype(val attributes: List<Attribute>, var returnType: Type, var name: String, var formals: List<Formal>) {
+        override fun hashCode(): Int = Objects.hash(attributes, returnType, name, formals)
+        override fun equals(other: Any?): Boolean = other is Prototype
+                && other.attributes == attributes && other.returnType == returnType
+                && other.name == name && other.formals == formals
+    }
 
     // Prototype Boilerplate
 
@@ -213,16 +222,27 @@ open class Variable(val reference: Reference, var initialExpression: Expression?
  * Classes (Clazz because Java contains a class named Class) are normal OOP classes, and can contain fields and methods.
  */
 class Clazz(val name: String, val fields: List<Variable>, val methods: List<Function>, val constructor: Function?,
-            val context: ParserRuleContext) : Global, Type {
+            val traits: List<Trait>, val context: ParserRuleContext) : Global, Type {
+
     override fun toString(): String = "$name(${fields.map { it.type }.joinToString()})"
+
     override fun hashCode(): Int = Objects.hash(name, fields, methods, constructor)
+
     override fun equals(other: Any?): Boolean =
             other is Clazz && other.hashCode() == hashCode() && other.name == name
                     && other.fields == fields && other.methods == methods && other.constructor == constructor
 
-    // TODO: Check for Copy Trait/Attribute
-    override fun isCopyable(): Boolean = false
+    override fun isCopyable(): Boolean = traits.filter { it.name == "Copy" }.isNotEmpty()
 }
+
+open class Trait(val name: String, val functions: List<Function.Prototype> = listOf()) : Node, Type {
+    override fun toString(): String = name
+    override fun isCopyable(): Boolean = name == "Copy" // This seems ghetto
+}
+
+object CopyTrait : Trait("Copy", listOf())
+
+val defaultTraits: List<Trait> = listOf(CopyTrait)
 
 /**
  * A Reference to a declaration.

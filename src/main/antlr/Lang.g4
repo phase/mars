@@ -12,6 +12,7 @@ externalDeclaration
     : functionDeclaration
     | variableDeclaration
     | classDeclaration
+    | traitDeclaration
     ;
 
 functionPrototype: attributeList ID '(' argumentList ')' typeAnnotation?;
@@ -64,7 +65,11 @@ statementList
     ;
 
 classDeclaration
-    : 'class' ID externalDeclaration* ';'
+    : 'class' ID (':' ID (',' ID)*)? externalDeclaration* ';'
+    ;
+
+traitDeclaration
+    : 'trait' ID functionPrototype* ';'
     ;
 
 expressionList

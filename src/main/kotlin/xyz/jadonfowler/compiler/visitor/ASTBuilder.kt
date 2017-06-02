@@ -15,6 +15,7 @@ class ASTBuilder(val moduleName: String, val source: String) : LangBaseVisitor<N
     val globalVariables: MutableList<Variable> = mutableListOf()
     val globalFunctions: MutableList<Function> = mutableListOf()
     val globalClasses: MutableList<Clazz> = mutableListOf()
+    val globalTraits: MutableList<Trait> = mutableListOf()
 
     override fun visitProgram(ctx: LangParser.ProgramContext?): Module {
         val externalDeclarations = ctx?.externalDeclaration()
@@ -25,6 +26,10 @@ class ASTBuilder(val moduleName: String, val source: String) : LangBaseVisitor<N
             visitVariableDeclaration(it.variableDeclaration())
         }.orEmpty())
 
+        externalDeclarations?.filter { it.traitDeclaration() != null }?.forEach {
+            globalTraits.add(visitTraitDeclaration(it.traitDeclaration()))
+        }
+
         externalDeclarations?.filter { it.classDeclaration() != null }?.forEach {
             globalClasses.add(visitClassDeclaration(it.classDeclaration()))
         }
@@ -33,7 +38,7 @@ class ASTBuilder(val moduleName: String, val source: String) : LangBaseVisitor<N
             visitFunctionDeclaration(it.functionDeclaration())
         }.orEmpty())
 
-        val module = Module(moduleName, imports, globalVariables, globalFunctions, globalClasses, source)
+        val module = Module(moduleName, imports, globalVariables, globalFunctions, globalClasses, globalTraits, source)
         globalModules.add(module)
         return module
     }
@@ -147,7 +152,7 @@ class ASTBuilder(val moduleName: String, val source: String) : LangBaseVisitor<N
     }
 
     override fun visitClassDeclaration(ctx: LangParser.ClassDeclarationContext?): Clazz {
-        val identifier = ctx?.ID()?.symbol?.text.orEmpty()
+        val identifier = ctx?.ID(0)?.symbol?.text.orEmpty()
         val declarations = ctx?.externalDeclaration()?.map { visitExternalDeclaration(it) }.orEmpty()
         val fields = declarations.filterIsInstance<Variable>()
         val methods = declarations.filterIsInstance<Function>().toMutableList()
@@ -156,7 +161,24 @@ class ASTBuilder(val moduleName: String, val source: String) : LangBaseVisitor<N
         constructor?.let {
             methods.remove(constructor)
         }
-        return Clazz(identifier, fields, methods, constructor, ctx!!)
+
+        val ids = ctx?.ID().orEmpty()
+        val traits = if (ids.size > 1) {
+            ctx?.ID()?.subList(1, ctx.ID().lastIndex + 1)?.map {
+                val traitName = it.symbol.text
+                val traits = defaultTraits.toMutableList()
+                traits.addAll(globalTraits)
+                traits.filter { it.name == traitName }.last()
+            }.orEmpty()
+        } else listOf()
+
+        return Clazz(identifier, fields, methods, constructor, traits, ctx!!)
+    }
+
+    override fun visitTraitDeclaration(ctx: LangParser.TraitDeclarationContext?): Trait {
+        val name = ctx?.ID()?.symbol?.text.orEmpty()
+        val prototypes = ctx?.functionPrototype()?.map { getFunctionPrototype(it) }.orEmpty()
+        return Trait(name, prototypes)
     }
 
     override fun visitFunctionCall(ctx: LangParser.FunctionCallContext?): FunctionCall {
