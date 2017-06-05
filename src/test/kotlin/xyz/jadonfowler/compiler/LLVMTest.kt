@@ -135,4 +135,8 @@ class LLVMTest {
         testIR("allocationPutInField")
     }
 
+    @Test fun copyClass() {
+        testIR("copyClass")
+    }
+
 }

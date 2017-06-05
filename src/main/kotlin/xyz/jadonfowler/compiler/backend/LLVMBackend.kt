@@ -491,7 +491,7 @@ class LLVMBackend(module: Module) : Backend(module) {
                         methodCall.arguments.size + 1, if (function.type == T_VOID) "" else methodCall.toString())
             }
             is FieldSetterStatement -> {
-                val variable = visit(statement.variable, builder, localVariables, clazz, llvmFunction, allocatedClasses)
+                val variable = visit(statement.variable, builder, localVariables, clazz, llvmFunction, allocatedClasses, stopCopy = true)
                 val value = visit(statement.expression, builder, localVariables, clazz, llvmFunction, allocatedClasses)
 
                 // Don't free class at the end of a function
@@ -515,7 +515,39 @@ class LLVMBackend(module: Module) : Backend(module) {
     }
 
     fun visit(expression: Expression, builder: LLVMBuilderRef, localVariables: MutableMap<String, ValueContainer>,
-              clazz: Clazz?, function: LLVMValueRef?, allocatedClasses: MutableList<TypeContainer>): LLVMValueRef {
+              clazz: Clazz?, function: LLVMValueRef?, allocatedClasses: MutableList<TypeContainer>,
+              stopCopy: Boolean = false): LLVMValueRef {
+
+        fun allocateClazz(clazz: Clazz): LLVMValueRef {
+            // Size of Class in Bytes
+            fun sizeOfClazz(clazz: Clazz): Long = clazz.fields.map {
+                val type = it.type
+                when (type) {
+                    T_BOOL -> 1L
+                    T_INT8 -> 1L
+                    T_INT16 -> 2L
+                    T_INT32 -> 4L
+                    T_INT64 -> 8L
+                    T_INT128 -> 16L
+                    T_FLOAT32 -> 4L
+                    T_FLOAT64 -> 8L
+                    T_FLOAT128 -> 16L
+                    is Clazz -> 4L // Size of a pointer
+                    else -> 4L
+                }
+            }.sum()
+
+            val size = sizeOfClazz(clazz)
+            // Call malloc
+            val mallocMemory = LLVMBuildCall(builder, namedValues["malloc"]!!.llvmValueRef,
+                    PointerPointer<LLVMValueRef>(*arrayOf(LLVMConstInt(LLVMInt64TypeInContext(context), size, 0))),
+                    1, "malloc($size) for ${clazz.name}")
+            // Cast the i8* that malloc returns to a pointer of the Class we want
+            return LLVMBuildBitCast(builder, mallocMemory,
+                    LLVMPointerType(getLLVMType(clazz), 0), "castTo${clazz.name}")
+
+        }
+
         return when (expression) {
             is IntegerLiteral -> LLVMConstInt(LLVMInt32TypeInContext(context), expression.value.toLong(), 0)
             is FloatLiteral -> LLVMConstReal(getLLVMType(expression.type), expression.value)
@@ -573,9 +605,31 @@ class LLVMBackend(module: Module) : Backend(module) {
             }
             is ReferenceExpression -> {
                 val ref = expression.reference.name
+                val type = expression.reference.type
                 if (localVariables.containsKey(ref)) {
                     val value = localVariables[ref]!!
-                    if (value.valueType == ValueType.ALLOCATION || value.valueType == ValueType.GLOBAL) {
+                    if (type is Clazz
+                            && !(value.valueType == ValueType.ALLOCATION
+                            || value.valueType == ValueType.GLOBAL
+                            || value.valueType == ValueType.FIELD)) {
+                        if (type.isCopyable() && !stopCopy) {
+                            // Copy the structure
+                            val clazzValue = allocateClazz(type)
+                            type.fields.forEachIndexed { i, variable ->
+                                // Where the field is in the struct
+                                val fieldPointer = LLVMBuildStructGEP(builder, clazzValue, i, "copying.$ref.${variable.name}.p")
+                                // Get the value from the old struct
+                                val fieldValue = LLVMBuildLoad(builder,
+                                        LLVMBuildStructGEP(builder, value.llvmValueRef, i, "copying.$ref.${variable.name}"),
+                                        "copying.$ref.${variable.name}")
+                                // Store it in the new one
+                                LLVMBuildStore(builder, fieldValue, fieldPointer)
+                            }
+                            clazzValue
+                        } else {
+                            value.llvmValueRef!!
+                        }
+                    } else if (value.valueType == ValueType.ALLOCATION || value.valueType == ValueType.GLOBAL) {
                         LLVMBuildLoad(builder, value.llvmValueRef, ref)
                     } else if (value.valueType == ValueType.FIELD && clazz != null && function != null) {
                         val variable = LLVMGetFirstParam(function)
@@ -609,32 +663,7 @@ class LLVMBackend(module: Module) : Backend(module) {
             is ClazzInitializerExpression -> {
                 val clazzOfExpression = module.getClazzFromReference(expression.classReference)
                 if (clazzOfExpression != null) {
-                    // Size of Class in Bytes
-                    fun sizeOfClazz(clazz: Clazz): Long = clazz.fields.map {
-                        val type = it.type
-                        when (type) {
-                            T_BOOL -> 1L
-                            T_INT8 -> 1L
-                            T_INT16 -> 2L
-                            T_INT32 -> 4L
-                            T_INT64 -> 8L
-                            T_INT128 -> 16L
-                            T_FLOAT32 -> 4L
-                            T_FLOAT64 -> 8L
-                            T_FLOAT128 -> 16L
-                            is Clazz -> 4L // Size of a pointer
-                            else -> 4L
-                        }
-                    }.sum()
-
-                    val size = sizeOfClazz(clazzOfExpression)
-                    // Call malloc
-                    val mallocMemory = LLVMBuildCall(builder, namedValues["malloc"]!!.llvmValueRef,
-                            PointerPointer<LLVMValueRef>(*arrayOf(LLVMConstInt(LLVMInt64TypeInContext(context), size, 0))),
-                            1, "malloc($size) for ${clazzOfExpression.name}")
-                    // Cast the i8* that malloc returns to a pointer of the Class we want
-                    val clazzValue = LLVMBuildBitCast(builder, mallocMemory,
-                            LLVMPointerType(getLLVMType(clazzOfExpression), 0), "castTo${clazzOfExpression.name}")
+                    val clazzValue = allocateClazz(clazzOfExpression)
 
                     clazzOfExpression.fields.forEachIndexed { i, variable ->
                         if (variable.initialExpression != null) {
